@@ -34,8 +34,7 @@ class MemoryTape
 		void Write(void);
 
 		unsigned int PointerPosition() const;
-		bool NullCell();
-		void AfterFork(MemoryTape<T>* child_mem);
+		T* const GetPointer() const;
 
 		void SimpleMemoryDump(unsigned n_nonzero_cells = 100);
 

@@ -133,6 +133,8 @@ void MemoryTape<T>::MoveLeft(void)
 template < typename T >
 void MemoryTape<T>::Read(void)
 {
+	EnterCriticalSection(&cout_critical_section);
+
 	if(std::cin.peek() == std::char_traits<char>::eof())
 	{
 		 if(eof_behavior == MemoryTape<T>::eoZero)*pointer = 0;
@@ -142,6 +144,8 @@ void MemoryTape<T>::Read(void)
 
 	}
 	else *pointer = std::cin.get();
+
+	LeaveCriticalSection(&cout_critical_section);
 }
 
 template < typename T >
@@ -201,23 +205,10 @@ inline unsigned int MemoryTape<T>::PointerPosition()  const
 	return pointer - mem;
 }
 
-//Mówi, czy aktualna komórka pamiêci jest wyzerowana, czy nie.
 template < typename T >
-inline bool MemoryTape<T>::NullCell()
+inline T* const MemoryTape<T>::GetPointer() const
 {
-	return *pointer == 0;
-}
-
-//Ustawia pamiêæ dla sforkowanego w¹tku
-//Add = true- dodaje, false ustawia 1
-template < typename T >
-void MemoryTape<T>::AfterFork(MemoryTape<T>* child_mem)
-{
-	*pointer = 0;
-	*(child_mem)->pointer = 0;
-
-	child_mem->MoveRight();
-	*(child_mem)->pointer = 1;
+	return pointer;
 }
 
 template < typename T > //pokazuje n niezerowych komórek

@@ -36,7 +36,7 @@ void __cdecl  run_bt_thread(void * arg)
 	}
 	
 	delete proc;
-	proc = NULL;
+	proc = nullptr;
 	_endthread();
 }
 
@@ -44,11 +44,14 @@ template < typename T >
 BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, /*res_context r_ctx,*/ MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
 {
 	 memory = nullptr;
+	 functions = nullptr;
 
 	 process_monitor = monitor;
 	 code = c;
 	// resource_context = rctx;
 	 memory = new MemoryTape<T>(mem_size, eo, mo);
+	 functions = new FunctionHeap<T>();
+
 	 this->shared_heap = shared_heap;
 	 
 	 code_pointer = 0;
@@ -63,8 +66,9 @@ BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentPro
 //	resource_context = parentProcess.resource_context;
 	code = parentProcess.code;
 	memory = new MemoryTape<T>(*parentProcess.memory);
+
 	shared_heap = parentProcess.shared_heap;
-	functions = parentProcess.functions;
+	functions = new FunctionHeap<T>(*parentProcess.functions);
 
 	code_pointer = parentProcess.code_pointer;
 }
@@ -74,6 +78,9 @@ BrainThreadProcess<T>::~BrainThreadProcess(void)
 {
 	if(memory)	
 		delete memory;
+
+	if(functions)	
+		delete functions;
 }
 
 template < typename T >
@@ -102,23 +109,34 @@ void BrainThreadProcess<T>::Run(void)
 			case CodeTape::btoMoveRight: 
 				memory->MoveRight(); 
 				break;
-			case CodeTape::btoStdWrite: 
+			case CodeTape::btoAsciiWrite: 
 				memory->Write(); 
 				break;
-			case CodeTape::btoStdRead: 
+			case CodeTape::btoAsciiRead: 
 				memory->Read(); 
 				break;
 			case CodeTape::btoBeginLoop: 
-				if(memory->NullCell())
+				if(*(this->memory->GetPointer()) == 0)
 				{
 					code_pointer = current_instruction.jump;
 				}
 				break;
 			case CodeTape::btoEndLoop: 
-				if(memory->NullCell() == false)
+				if(*(this->memory->GetPointer()) != 0)
 				{
 					code_pointer = current_instruction.jump;
 				}
+				break;
+            case CodeTape::btoBeginFunction: 
+				this->functions->Add(*(this->memory->GetPointer()), code_pointer);
+				code_pointer = current_instruction.jump;
+				break;
+			case CodeTape::btoEndFunction: 
+				this->functions->Return(&code_pointer);
+				break;
+			case CodeTape::btoCallFunction: 
+				this->functions->Call(*(this->memory->GetPointer()), &code_pointer);
+				--code_pointer; //bo na koñcu pêtli jest ++
 				break;
 			case CodeTape::btoFork: 
 				this->Fork();
@@ -126,6 +144,8 @@ void BrainThreadProcess<T>::Run(void)
 			case CodeTape::btoWait: 
 				this->Join();
 				break;
+            case CodeTape::btoTerminate: 
+				return; // :)
 			default:
 				 
 				//memory->SimpleMemoryDump();
@@ -146,7 +166,11 @@ void BrainThreadProcess<T>::Fork()
 	HANDLE hThread;
 	BrainThreadProcess<T> * child = new BrainThreadProcess<T>(*this);
 
-	this->memory->AfterFork(child->memory);
+	*(this->memory->GetPointer()) = 0;
+	*(child->memory->GetPointer()) = 0;
+
+	child->memory->MoveRight();
+	*(child->memory->GetPointer()) = 1;
 	++child->code_pointer;
 	
     hThread = (HANDLE) _beginthread( run_bt_thread<T>, 0, child );

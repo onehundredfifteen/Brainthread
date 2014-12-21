@@ -10,7 +10,7 @@ extern CRITICAL_SECTION add_thr_critical_section;
 template < typename T >
 BrainThread<T>::BrainThread()
 {
-	 main_process = NULL;
+	 main_process = nullptr;
 }
 
 template < typename T >

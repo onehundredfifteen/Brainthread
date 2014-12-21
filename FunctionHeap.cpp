@@ -10,6 +10,15 @@ FunctionHeap<T>::FunctionHeap(void)
 }
 
 template < typename T >
+FunctionHeap<T>::FunctionHeap(const FunctionHeap<T> &fun)
+{
+	callingFunction = 0;
+	functions = fun.functions;
+	//nie przepisujemy nic innego
+}
+
+
+template < typename T >
 FunctionHeap<T>::~FunctionHeap(void)
 {
 }
@@ -22,7 +31,7 @@ void FunctionHeap<T>::Add(T const& index, unsigned int const& code_ptr)
 		throw BFExistantFunctionException(index);  //funkcja istnieje
 	else if( call_stack.size() > stack_limit) 
 		throw BFFunctionStackOverflowException(); //stack overflow
-
+		
     functions[index] = code_ptr + 1;
 }
 
@@ -41,12 +50,22 @@ void FunctionHeap<T>::Call(T const& index, unsigned int * code_ptr)
 
 //zakoñcz wywo³anie - zrzuæ ze stosu i powróc do dawnej pozycji w kodzie
 template < typename T >
-void FunctionHeap<T>::EndCall(unsigned int * code_ptr)
+void FunctionHeap<T>::Return(unsigned int * code_ptr)
 {
-	*code_ptr = call_stack.top().first;
-    call_stack.pop();
+	if(call_stack.empty() == false)
+	{
+		*code_ptr = call_stack.top().first;
+		call_stack.pop();
 
-	--callingFunction;
+		--callingFunction;
+	}
+}
+
+//ile juz na stosie
+template < typename T >
+unsigned FunctionHeap<T>::Calls()
+{
+	return callingFunction;
 }
 
 //staktrace

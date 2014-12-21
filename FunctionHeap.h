@@ -8,11 +8,14 @@ class FunctionHeap
 {
 	public:
 		FunctionHeap(void);
+		FunctionHeap(const FunctionHeap<T> &fun);
 		~FunctionHeap(void);
 
 		void Add(T const& index, unsigned int const& code_ptr);
 		void Call(T const& index, unsigned int *code_ptr);
-		void EndCall(unsigned int *code_ptr);
+		void Return(unsigned int *code_ptr);
+
+		unsigned Calls(void);
 
 		void PrintStackTrace();
 

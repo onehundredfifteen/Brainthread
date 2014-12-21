@@ -79,7 +79,7 @@ void Parser::Parse(std::vector<char> &source)
 			{
 				precode[ func_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
 				precode.push_back(CodeTape::bt_instruction(curr_op, func_call_stack.top()));
-				loop_call_stack.pop();
+				func_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego (
 			{
@@ -206,7 +206,7 @@ bool Parser::isValidOperator(char &c)
 	static const char *valid_bt_ops = "<>+-.,[]()#{}'\"%/\\@:;";
 	static const char *valid_bf_ops = "<>+-.,[]";
 	static const char *valid_pb_ops = "<>+-.,[]():";
-	static const char *valid_bo_ops = "<>+-.,[]Yy";
+	static const char *valid_bo_ops = "<>+-.,[]Y";
 	
 	switch(language)
 	{
@@ -233,12 +233,16 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case '>': return CodeTape::btoMoveRight;
 				case '+': return CodeTape::btoIncrement;
 				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoStdWrite;
-				case ',': return CodeTape::btoStdRead;
+				case '.': return CodeTape::btoAsciiWrite;
+				case ',': return CodeTape::btoAsciiRead;
 				case '[': return CodeTape::btoBeginLoop;
 				case ']': return CodeTape::btoEndLoop;
 			    case '{': return CodeTape::btoFork;
 				case '}': return CodeTape::btoWait;
+				case '!': return CodeTape::btoTerminate;
+				case '(': return CodeTape::btoBeginFunction;
+				case ')': return CodeTape::btoEndFunction;
+				case ':': return CodeTape::btoCallFunction;
 			}
 		}
 		break;
@@ -250,8 +254,8 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case '>': return CodeTape::btoMoveRight;
 				case '+': return CodeTape::btoIncrement;
 				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoStdWrite;
-				case ',': return CodeTape::btoStdRead;
+				case '.': return CodeTape::btoAsciiWrite;
+				case ',': return CodeTape::btoAsciiRead;
 				case '[': return CodeTape::btoBeginLoop;
 				case ']': return CodeTape::btoEndLoop;
 			}
@@ -265,12 +269,11 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case '>': return CodeTape::btoMoveRight;
 				case '+': return CodeTape::btoIncrement;
 				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoStdWrite;
-				case ',': return CodeTape::btoStdRead;
+				case '.': return CodeTape::btoAsciiWrite;
+				case ',': return CodeTape::btoAsciiRead;
 				case '[': return CodeTape::btoBeginLoop;
 				case ']': return CodeTape::btoEndLoop;
-			    case 'Y':
-				case 'y': return CodeTape::btoFork;
+			    case 'Y': return CodeTape::btoFork;
 			}
 		}
 		break;

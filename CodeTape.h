@@ -12,8 +12,8 @@ class CodeTape
 			btoIncrement,
 			btoMoveLeft,
 			btoMoveRight,
-			btoStdRead,
-			btoStdWrite,
+			btoAsciiRead,
+			btoAsciiWrite,
 			btoBeginLoop,
 			btoEndLoop,
 			//functions - pbrain
@@ -32,8 +32,8 @@ class CodeTape
 			btoSharedPush,
 			btoSharedSwap,
 			//other
-			btoNatRead,
-			btoNatWrite,
+			btoDecimalRead,
+			btoDecimalWrite,
 
 			btoInvalid,
 			btoUnkown
