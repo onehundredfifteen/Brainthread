@@ -4,11 +4,16 @@
 #include <cstring>
 #include <stack>
 
-#include <iostream>
+/*
+ * Klasa Parsera
+ * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
+ * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
+*/
 
-Parser::Parser(void)
+Parser::Parser(bool debug_instructions_on)
 {
 	language = clBrainThread;
+	debug_instructions_mode = debug_instructions_on;
 }
 
 Parser::~Parser(void)
@@ -39,13 +44,17 @@ void Parser::Parse(std::vector<char> &source)
 
   unsigned int line_counter = 1;
 
+  if(source.empty())
+  {
+	  errors.AddMessage(ParseErrors::ecEmptyCode, 0);
+	  return;
+  }
 
-
-  precode.reserve(source.size());
+  precode.reserve(source.size()/2);
   
   for(std::vector<char>::iterator it = source.begin(); it < source.end(); ++it)
   {
-	if(isValidOperator(*it))
+	if(isValidOperator(*it) || (debug_instructions_mode && isValidDebugOperator(*it)) )
 	{
 		curr_op = MapCharToOperator(*it);
 		
@@ -203,7 +212,7 @@ unsigned int Parser::FindMatchingLeftPair(CodeTape::bt_operation op, unsigned in
 
 bool Parser::isValidOperator(char &c)
 {
-	static const char *valid_bt_ops = "<>+-.,[]()#{}'\"%/\\@:;";
+	static const char *valid_bt_ops = "<>+-.,[]()&{}!#$%/\\@;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
 	static const char *valid_pb_ops = "<>+-.,[]():";
 	static const char *valid_bo_ops = "<>+-.,[]Y";
@@ -219,6 +228,16 @@ bool Parser::isValidOperator(char &c)
 	}
 
 	return false;
+}
+
+bool Parser::isValidDebugOperator(char &c)
+{
+	static const char *valid_db_ops = "MTFSD";
+	
+	if(language == clBrainFuck && c == '#')
+		return true;
+
+	return strchr(valid_db_ops,c) != 0;
 }
 
 CodeTape::bt_operation Parser::MapCharToOperator(char &c)
@@ -237,12 +256,24 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case ',': return CodeTape::btoAsciiRead;
 				case '[': return CodeTape::btoBeginLoop;
 				case ']': return CodeTape::btoEndLoop;
+
 			    case '{': return CodeTape::btoFork;
 				case '}': return CodeTape::btoWait;
 				case '!': return CodeTape::btoTerminate;
+
 				case '(': return CodeTape::btoBeginFunction;
 				case ')': return CodeTape::btoEndFunction;
-				case ':': return CodeTape::btoCallFunction;
+				case '&': return CodeTape::btoCallFunction;
+
+				case '#': return CodeTape::btoPush;
+				case '$': return CodeTape::btoPop;
+				case '%': return CodeTape::btoSwap;
+				case '/': return CodeTape::btoSharedPush;
+				case '\\':return CodeTape::btoSharedPop;
+				case '@': return CodeTape::btoSharedSwap;
+
+				case ':': return CodeTape::btoDecimalWrite;
+				case ';': return CodeTape::btoDecimalRead;
 			}
 		}
 		break;
@@ -258,6 +289,24 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case ',': return CodeTape::btoAsciiRead;
 				case '[': return CodeTape::btoBeginLoop;
 				case ']': return CodeTape::btoEndLoop;
+			}
+		}
+		break;
+		case clPBrain:
+		{
+			switch(c)
+			{
+				case '<': return CodeTape::btoMoveLeft;
+				case '>': return CodeTape::btoMoveRight;
+				case '+': return CodeTape::btoIncrement;
+				case '-': return CodeTape::btoDecrement;
+				case '.': return CodeTape::btoAsciiWrite;
+				case ',': return CodeTape::btoAsciiRead;
+				case '[': return CodeTape::btoBeginLoop;
+				case ']': return CodeTape::btoEndLoop;
+				case '(': return CodeTape::btoBeginFunction;
+				case ')': return CodeTape::btoEndFunction;
+				case ':': return CodeTape::btoCallFunction;
 			}
 		}
 		break;
@@ -278,12 +327,31 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 		}
 		break;
 	}
-	return CodeTape::btoUnkown;
+
+	if(debug_instructions_mode)
+	{
+		if(language == clBrainFuck)	
+		{
+			return CodeTape::btoDEBUG_SimpleMemoryDump;
+		}
+		else
+		{
+			switch(c)
+			{
+				case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
+				case 'D': return CodeTape::btoDEBUG_MemoryDump;
+				case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
+				case 'S': return CodeTape::btoDEBUG_StackDump;
+				case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+			}
+		}
+	}
+
+	return CodeTape::btoInvalid;
 }
 
 unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int not_valid_pos)
 {
-	
 	//if(pos - begin - not_valid_pos) < 0
 		return pos - begin - not_valid_pos;
 }

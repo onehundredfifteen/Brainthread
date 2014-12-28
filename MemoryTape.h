@@ -1,22 +1,23 @@
 #pragma once
 
 #include <stack>
+//#include <iostream>
 
 template < typename T >
 class MemoryTape
 {
-	public:
+    public:
 		typedef enum 
 		{
 			moLimited,
 			moDynamic,
-			moTape
+			moContinuousTape
 		} mem_option;
 
 		typedef enum
 		{
 			eoZero,
-			eoEOF,
+			eoMinusOne,
 			eoUnchanged
 		} eof_option;
 
@@ -32,11 +33,14 @@ class MemoryTape
 
 		void Read(void);
 		void Write(void);
+		void DecimalRead(void);
+		void DecimalWrite(void);
 
 		unsigned int PointerPosition() const;
 		T* const GetPointer() const;
 
-		void SimpleMemoryDump(unsigned n_nonzero_cells = 100);
+		void SimpleMemoryDump(unsigned near_cells = 5);
+		//void MemoryDump(const ostream &o, unsigned n_nonzero_cells = 100);
 
 	protected:
 		T * pointer; //piórko

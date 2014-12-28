@@ -5,7 +5,7 @@
 #include <iostream>
 
 extern CRITICAL_SECTION add_thr_critical_section;
-
+extern CRITICAL_SECTION cout_critical_section;
 
 template < typename T >
 BrainThread<T>::BrainThread()
@@ -28,24 +28,33 @@ void BrainThread<T>::Run(CodeTape * c)
 		main_process = new BrainThreadProcess<T>(&process_monitor, c, &shared_heap, mem_size, mem_behavior, eof_behavior);
 		main_process->Run();
 	}
-	catch(BrainThreadRuntimeException &re)
+	catch(const BrainThreadRuntimeException &re)
 	{
-		std::cout << "ThreadId: main> "<< re.what() << std::endl;
+		EnterCriticalSection(&cout_critical_section);
+		std::cout << "<main> "<< re.what() << std::endl;
+		LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(std::exception &e)
 	{
-		std::cout << "ThreadId: main> "<< e.what() << std::endl;
+		EnterCriticalSection(&cout_critical_section);
+		std::cout << "<main> "<< e.what() << std::endl;
+		LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(...)
 	{
-		std::cout << "ThreadId: main> FATAL ERROR" << std::endl;
+		EnterCriticalSection(&cout_critical_section);
+		std::cout << "<main> FATAL ERROR" << std::endl;
+		LeaveCriticalSection(&cout_critical_section);
 	}
+	delete main_process;
+	main_process = nullptr;
 }
 
 template < typename T >
 void BrainThread<T>::WaitForPendingThreads(void)
 {
 	process_monitor.WaitForWorkingProcesses();
+	//todo GetThreadTimes 
 }
 
 // Explicit template instantiation

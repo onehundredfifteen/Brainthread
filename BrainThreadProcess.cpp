@@ -3,8 +3,9 @@
 #include "BrainThreadRuntimeException.h"
 
 
-extern CRITICAL_SECTION critical_section;
+extern CRITICAL_SECTION code_critical_section;
 extern CRITICAL_SECTION cout_critical_section;
+extern CRITICAL_SECTION heap_critical_section;
 
 #include <iostream>
 
@@ -19,19 +20,19 @@ void __cdecl  run_bt_thread(void * arg)
 	catch(BrainThreadRuntimeException &re)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "ThreadId:" <<  GetCurrentThreadId() << "> "<< re.what() << std::endl;
+		std::cout << "<t" <<  GetCurrentThreadId() << "> "<< re.what() << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(std::exception &e)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "ThreadId:" <<  GetCurrentThreadId() << "> "<< e.what() << std::endl;
+		std::cout << "<t" <<  GetCurrentThreadId() << "> "<< e.what() << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(...)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "ThreadId:" <<  GetCurrentThreadId() << "> FATAL ERROR" << std::endl;
+		std::cout << "<t" <<  GetCurrentThreadId() << "> FATAL ERROR" << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	
@@ -45,32 +46,40 @@ BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c
 {
 	 memory = nullptr;
 	 functions = nullptr;
+	 heap = nullptr;
 
 	 process_monitor = monitor;
 	 code = c;
 	// resource_context = rctx;
 	 memory = new MemoryTape<T>(mem_size, eo, mo);
 	 functions = new FunctionHeap<T>();
+	 heap = new MemoryHeap<T>;
 
 	 this->shared_heap = shared_heap;
 	 
 	 code_pointer = 0;
+	 child_threads.reserve(4);
 }
 
 template < typename T >
 BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentProcess)
 {
 	memory = nullptr;
+	functions = nullptr;
+	heap = nullptr;
 	
 	process_monitor = parentProcess.process_monitor;
 //	resource_context = parentProcess.resource_context;
 	code = parentProcess.code;
 	memory = new MemoryTape<T>(*parentProcess.memory);
 
-	shared_heap = parentProcess.shared_heap;
 	functions = new FunctionHeap<T>(*parentProcess.functions);
+	heap = new MemoryHeap<T>;
+
+	shared_heap = parentProcess.shared_heap;
 
 	code_pointer = parentProcess.code_pointer;
+	child_threads.reserve(4);
 }
 
 template < typename T >
@@ -81,6 +90,9 @@ BrainThreadProcess<T>::~BrainThreadProcess(void)
 
 	if(functions)	
 		delete functions;
+
+	if(heap)	
+		delete heap;
 }
 
 template < typename T >
@@ -89,11 +101,9 @@ void BrainThreadProcess<T>::Run(void)
 	///std::cout << "run " << code_pointer << std::endl;
 	while(true)
 	{
-		EnterCriticalSection(&critical_section);
+		EnterCriticalSection(&code_critical_section);
 		current_instruction = code->ToExecute(this->code_pointer);
-		LeaveCriticalSection(&critical_section);
-
-		//std::cout <<this->code_pointer <<std::endl;
+		LeaveCriticalSection(&code_critical_section);
 
 		switch(current_instruction.operation)
 		{
@@ -115,6 +125,12 @@ void BrainThreadProcess<T>::Run(void)
 			case CodeTape::btoAsciiRead: 
 				memory->Read(); 
 				break;
+			case CodeTape::btoDecimalWrite: 
+				memory->DecimalWrite(); 
+				break;
+			case CodeTape::btoDecimalRead: 
+				memory->DecimalRead(); 
+				break;
 			case CodeTape::btoBeginLoop: 
 				if(*(this->memory->GetPointer()) == 0)
 				{
@@ -128,6 +144,7 @@ void BrainThreadProcess<T>::Run(void)
 				}
 				break;
             case CodeTape::btoBeginFunction: 
+
 				this->functions->Add(*(this->memory->GetPointer()), code_pointer);
 				code_pointer = current_instruction.jump;
 				break;
@@ -135,6 +152,7 @@ void BrainThreadProcess<T>::Run(void)
 				this->functions->Return(&code_pointer);
 				break;
 			case CodeTape::btoCallFunction: 
+
 				this->functions->Call(*(this->memory->GetPointer()), &code_pointer);
 				--code_pointer; //bo na koñcu pêtli jest ++
 				break;
@@ -144,8 +162,40 @@ void BrainThreadProcess<T>::Run(void)
 			case CodeTape::btoWait: 
 				this->Join();
 				break;
-            case CodeTape::btoTerminate: 
+            case CodeTape::btoTerminate:
 				return; // :)
+			case CodeTape::btoPush: 
+				this->heap->Push( *(this->memory->GetPointer()) );
+				break;
+			case CodeTape::btoPop: 
+				*(this->memory->GetPointer()) = this->heap->Pop();
+				break;
+            case CodeTape::btoSwap: 
+				this->heap->Swap();
+				break;
+			case CodeTape::btoSharedPush: 
+
+				EnterCriticalSection(&heap_critical_section);
+				this->shared_heap->Push( *(this->memory->GetPointer()) );
+				LeaveCriticalSection(&heap_critical_section);
+				break;
+			case CodeTape::btoSharedPop: 
+
+				EnterCriticalSection(&heap_critical_section);
+				*(this->memory->GetPointer()) = this->shared_heap->Pop();
+				LeaveCriticalSection(&heap_critical_section);
+				break;
+            case CodeTape::btoSharedSwap: 
+
+				EnterCriticalSection(&heap_critical_section);
+				this->shared_heap->Swap();
+				LeaveCriticalSection(&heap_critical_section);
+				break;
+
+			//debug
+			case CodeTape::btoDEBUG_SimpleMemoryDump: 
+				this->memory->SimpleMemoryDump();
+				break;
 			default:
 				 
 				//memory->SimpleMemoryDump();
@@ -201,6 +251,8 @@ void BrainThreadProcess<T>::Join(void)
 
 		if(result == WAIT_FAILED)
 			throw BFJoinThreadException(::GetLastError());
+
+		child_threads.erase(child_threads.begin(),child_threads.end());
 	}
 }
 

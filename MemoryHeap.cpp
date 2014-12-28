@@ -1,21 +1,23 @@
 #include "MemoryHeap.h"
+#include "BrainThreadRuntimeException.h"
 
-template <typename T>
-MemoryHeap<T>::MemoryHeap(void)
-{
-}
+/*
+ * Klasa Stosu Pamiêci.
+ * Pe³ni rolê pomocnicz¹ dla taœmy pamiêci. Dotatkowo pozwala zamieniaæ
+ * ze sob¹ dwie ostatnie wartoœci. Wielkoœc stosu ogranicza zmienna 'stack_limit'.
+*/
 
-template <typename T>
-MemoryHeap<T>::~MemoryHeap(void)
-{
-}
-
+//Funkcja odk³ada wartoœæ na stos. Limit = stack_limit
 template <typename T>
 void MemoryHeap<T>::Push(T const& n)
 {
+	if(Stack.size() > stack_limit)
+		throw BFMemoryStackOverflowException();
+
 	Stack.push(n);
 }
 
+//Funkcja zdejmuje i zwraca wartoœæ ze stosu. Gdy stos jest pusty, zwraca zero
 template <typename T>
 T MemoryHeap<T>::Pop(void)
 {
@@ -27,9 +29,14 @@ T MemoryHeap<T>::Pop(void)
 	return tmp;
 }
 
+//Funkcja zamienia szczytowe dwie waroœci ze sob¹. 
+//Gdy stos ma mniej ni¿ 2 elementy, nic siê nie dzieje.
 template <typename T>
 void MemoryHeap<T>::Swap(void)
 {
+	if(Stack.size() < 2)
+		return;
+	
 	tmp = Stack.top();
 	Stack.pop();
 
@@ -45,3 +52,5 @@ template class MemoryHeap<char>;
 template class MemoryHeap<unsigned char>;
 template class MemoryHeap<unsigned short>;
 template class MemoryHeap<unsigned int>;
+template class MemoryHeap<short>;
+template class MemoryHeap<int>;

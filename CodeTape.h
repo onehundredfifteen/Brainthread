@@ -8,7 +8,7 @@ class CodeTape
 	public:
 		typedef enum
 		{
-			btoDecrement,
+			btoDecrement = 1,
 			btoIncrement,
 			btoMoveLeft,
 			btoMoveRight,
@@ -35,8 +35,20 @@ class CodeTape
 			btoDecimalRead,
 			btoDecimalWrite,
 
+			//inverse loops - brainlove
+			btoBeginLoop2,
+			btoEndLoop2,
+			btoBreak,
+
+			//debug instructions
+			btoDEBUG_SimpleMemoryDump = 100,
+			btoDEBUG_MemoryDump,
+			btoDEBUG_StackDump,
+			btoDEBUG_FunctionsStackDump,
+			btoDEBUG_ThreadInfoDump,
+
 			btoInvalid,
-			btoUnkown
+			btoUnkown = 0
 		} bt_operation;
 
 		

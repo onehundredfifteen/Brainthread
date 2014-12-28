@@ -23,5 +23,5 @@ protected:
 
 	bool RemoveTerminatedProcesses(void);
 
-	static const unsigned wait_time = 1000;
+	static const unsigned wait_time = 500;
 };

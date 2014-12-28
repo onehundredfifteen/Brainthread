@@ -4,6 +4,12 @@
 #include "ParseErrors.h"
 #include <fstream>
 
+/*
+ * Klasa Parsera
+ * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
+ * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
+*/
+
 class Parser
 {
 	public:
@@ -17,7 +23,7 @@ class Parser
 			clDefault
 		} code_lang;
 
-		Parser(void);
+		Parser(bool debug_instructions_on = false);
 		~Parser(void);
 		
 
@@ -36,12 +42,15 @@ class Parser
 	protected:
 		code_lang language;
 		//code_lang RecognizeLang(void);
+		bool debug_instructions_mode;
+
 		ParseErrors errors;
 		std::vector<CodeTape::bt_instruction> precode;
 
 		void Parse(std::vector<char> &source);
 	
 		bool isValidOperator(char &c);
+		bool isValidDebugOperator(char &c);
 	    CodeTape::bt_operation MapCharToOperator(char &c);
 
 		unsigned int FindMatchingRightPair(CodeTape::bt_operation op, unsigned int from_pos);

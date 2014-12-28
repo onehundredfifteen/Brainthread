@@ -13,6 +13,7 @@ class ParseErrors
 			ecUnmatchedFunEnd,
 
 			ecFatalError = 190,
+			ecEmptyCode,
 			ecUnkownError = 199,
 
 			//warningi

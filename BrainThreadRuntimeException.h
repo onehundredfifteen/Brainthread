@@ -3,6 +3,13 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#include <string>
+
+/*
+ * Klasy Wyj¹tków.
+ * Definiuja rózne wyj¹tki, które interpreter rzuca podczas wykonywnaia kodu. 
+ * (nie s¹ to b³êdy, które mozna wykryæ na etapie kompilacji)
+*/
 
 class BrainThreadRuntimeException: public std::runtime_error {
 public:
@@ -13,13 +20,13 @@ public:
 
   virtual const char* what() const throw()
   {
-    cnvt.str( "" );
-    cnvt << "BrainThread RuntimeException ";
-    return cnvt.str().c_str();
+	s = "Runtime Exception: ";
+    return s.c_str();
   }
 
 protected:
     static std::ostringstream cnvt;
+	static std::string s;
 };
 
 class BFAllocException: public BrainThreadRuntimeException {
@@ -33,7 +40,8 @@ public:
   {
     cnvt.str( "" );
     cnvt << BrainThreadRuntimeException::what() << "Cannot allocate " << ma << " cells of memory (" << so_mc * ma << " bytes).";
-    return cnvt.str().c_str();
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
@@ -44,7 +52,7 @@ protected:
 class BFRangeException: public BrainThreadRuntimeException {
 public:
 
-  BFRangeException(unsigned int pointer_pos)
+  BFRangeException(__int64 pointer_pos)
     : BrainThreadRuntimeException(), ppos(pointer_pos)
     {}
 
@@ -52,11 +60,12 @@ public:
   {
     cnvt.str( "" );
     cnvt << BrainThreadRuntimeException::what() << "The pointer tried to reach a cell out of memory range. Pointer position: " << ppos << ".";
-    return cnvt.str().c_str();
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
-    unsigned ppos;
+    __int64 ppos;
 };
 
 class BFUndefinedFunctionException: public BrainThreadRuntimeException {
@@ -69,8 +78,9 @@ public:
   virtual const char* what() const throw()
   {
     cnvt.str( "" );
-	cnvt << BrainThreadRuntimeException::what() << "Call to undefined function #" << fname << ".";
-    return cnvt.str().c_str();
+	cnvt << "Call to undefined function '" << fname << "'.";
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
@@ -87,8 +97,9 @@ public:
   virtual const char* what() const throw()
   {
     cnvt.str( "" );
-	cnvt << BrainThreadRuntimeException::what() << "Function #" << fname << " already exists.";
-    return cnvt.str().c_str();
+	cnvt << BrainThreadRuntimeException::what() << "Function '" << fname << "' already exists.";
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
@@ -105,8 +116,25 @@ public:
   virtual const char* what() const throw()
   {
     cnvt.str( "" );
-	cnvt << BrainThreadRuntimeException::what() << "Functions stack overflow.";
-    return cnvt.str().c_str();
+	cnvt << BrainThreadRuntimeException::what() << "Function's stack overflow.";
+    s = cnvt.str();
+    return s.c_str();
+  }
+};
+
+class BFMemoryStackOverflowException: public BrainThreadRuntimeException {
+public:
+
+  BFMemoryStackOverflowException()
+    : BrainThreadRuntimeException()
+    {}
+
+  virtual const char* what() const throw()
+  {
+    cnvt.str( "" );
+	cnvt << BrainThreadRuntimeException::what() << "Memory stack overflow.";
+    s = cnvt.str();
+    return s.c_str();
   }
 };
 
@@ -134,7 +162,8 @@ public:
 			cnvt << "unknown (errno=" << err_no << ")";
 	}
 
-    return cnvt.str().c_str();
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
@@ -161,11 +190,28 @@ public:
 			cnvt << "wait failed (system error code=" << err_no << ")";
 	}
 
-    return cnvt.str().c_str();
+    s = cnvt.str();
+    return s.c_str();
   }
 
 protected:
     unsigned err_no;
+};
+
+class BFInvalidInputStreamException: public BrainThreadRuntimeException {
+public:
+
+  BFInvalidInputStreamException()
+    : BrainThreadRuntimeException()
+    {}
+
+  virtual const char* what() const throw()
+  {
+    cnvt.str( "" );
+	cnvt << BrainThreadRuntimeException::what() << "Invalid input stream.";
+    s = cnvt.str();
+    return s.c_str();
+  }
 };
 
 class BFUnkownException: public BrainThreadRuntimeException {
@@ -179,7 +225,8 @@ public:
   {
     cnvt.str( "" );
     cnvt << BrainThreadRuntimeException::what() << "An unkown exception occured.";
-    return cnvt.str().c_str();
+    s = cnvt.str();
+    return s.c_str();
   }
 };
 

@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <new>
 #include <iostream>
+#include <limits>
 
 #include "MemoryTape.h"
 #include "BrainThreadRuntimeException.h"
@@ -88,9 +89,9 @@ void MemoryTape<T>::MoveRight(void)
 	{
 		switch(mem_behavior)
 		{
-			case MemoryTape::moTape:
+			case MemoryTape::moContinuousTape:
 				pointer = mem; //na poczatek
-				break;
+				return;
 			case MemoryTape::moDynamic:
 				{
 					try
@@ -118,13 +119,13 @@ void MemoryTape<T>::MoveLeft(void)
 	{
 		switch(mem_behavior)
 		{
-			case MemoryTape::moTape:
+			case MemoryTape::moContinuousTape:
 				pointer = max_mem; //na koniec
-				break;
+				return;
 			case MemoryTape::moDynamic:
 			case MemoryTape::moLimited:
 			default:
-				throw BFRangeException(PointerPosition()-1);
+				throw BFRangeException(-1);
 		}
 	}
 	--pointer;
@@ -138,7 +139,7 @@ void MemoryTape<T>::Read(void)
 	if(std::cin.peek() == std::char_traits<char>::eof())
 	{
 		 if(eof_behavior == MemoryTape<T>::eoZero)*pointer = 0;
-		 else if(eof_behavior == MemoryTape<T>::eoEOF)*pointer = -1;
+		 else if(eof_behavior == MemoryTape<T>::eoMinusOne)*pointer = -1;
 		 else //eoUnchanged
 			 *pointer = std::cin.get();
 
@@ -147,12 +148,56 @@ void MemoryTape<T>::Read(void)
 
 	LeaveCriticalSection(&cout_critical_section);
 }
-
+/*
+funkcja ma dwie specjalizacje - ascii sa od 0 do 127
+Resztê trzeba konwertowac na char
+}*/
+template <>
+void MemoryTape<char>::Write(void)
+{
+	EnterCriticalSection(&cout_critical_section);
+	std::cout << *pointer << std::flush;
+	LeaveCriticalSection(&cout_critical_section);
+}
 template < typename T >
 void MemoryTape<T>::Write(void)
 {
 	EnterCriticalSection(&cout_critical_section);
-	std::cout << *pointer << std::flush;
+	std::cout << static_cast<char>(*pointer) << std::flush;
+	LeaveCriticalSection(&cout_critical_section);
+}
+
+template < typename T >
+void MemoryTape<T>::DecimalRead(void)
+{
+	unsigned int i; //niewa¿ne, czy signed czy unsigned
+
+	EnterCriticalSection(&cout_critical_section);
+	std::cin >> i;
+
+	if (std::cin.fail())
+	{
+		std::cin.clear();
+		std::cin.ignore(UINT_MAX, '\n');
+		LeaveCriticalSection(&cout_critical_section); //opuœæ sekcjê przed throw, aby nie zakleszczyæ w¹tków
+
+		throw BFInvalidInputStreamException();
+	}
+	*pointer = static_cast<T>(i);
+
+	LeaveCriticalSection(&cout_critical_section);
+}
+
+template< typename T>  
+void MemoryTape<T>::DecimalWrite(void)
+{
+	EnterCriticalSection(&cout_critical_section);
+
+	if(std::is_signed<T>::value)
+		std::cout << static_cast<int>(*pointer) << std::flush;
+	else
+		std::cout << static_cast<unsigned int>(*pointer) << std::flush;
+
 	LeaveCriticalSection(&cout_critical_section);
 }
 
@@ -185,8 +230,10 @@ void MemoryTape<T>::Realloc()
 	  throw BFUnkownException();
   }
 
-  //wszystko ok - to kopiujemy
-  memcpy( new_mem, mem, sizeof(mem) );
+  //wszystko ok - to kopiujemy, now¹ pamiêæ zerujemy
+  ZeroMemory( new_mem+len, new_mem_size-len );
+  memcpy( new_mem, mem, len );
+  
 
   //star¹ kasujemy
   delete [] mem;
@@ -211,8 +258,33 @@ inline T* const MemoryTape<T>::GetPointer() const
 	return pointer;
 }
 
+template < typename T > //pokazuje n komórek w lewo i w prawo ze wskaŸnikiem mozliwie poœrodku
+void MemoryTape<T>::SimpleMemoryDump(/*const ostream &o,*/ unsigned near_cells)
+{
+	unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);
+
+	for(unsigned int i = start; i < len && i < near_cells*2+start; ++i)
+	{
+		if(sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255) ) 
+		{
+			if(std::is_signed<T>::value)
+				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<char>(mem[i]) << ',' << static_cast<signed>(mem[i]) << ' ';
+			else 
+				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<char>(mem[i]) << ',' << static_cast<unsigned>(mem[i]) << ' ';
+		}
+		else
+		{
+			if(std::is_signed<T>::value)
+				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<int>(mem[i]) << ' ';
+			else 
+				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<unsigned int>(mem[i]) << ' ';
+		}
+    }
+	std::cout << std::endl;
+}
+/*
 template < typename T > //pokazuje n niezerowych komórek
-void MemoryTape<T>::SimpleMemoryDump(unsigned n_nonzero_cells)
+void MemoryTape<T>::MemoryDump(const ostream &o, unsigned n_nonzero_cells)
 {
 	for(unsigned int i = 0; i < len && i < n_nonzero_cells; ++i)
 	{
@@ -220,7 +292,7 @@ void MemoryTape<T>::SimpleMemoryDump(unsigned n_nonzero_cells)
 		std::cout << '('<< i <<')'<< mem [i] << ' ';
     }
 	std::cout << std::endl;
-}
+}*/
 
 
 // Explicit template instantiation
@@ -228,3 +300,4 @@ template class MemoryTape<char>;
 template class MemoryTape<unsigned char>;
 template class MemoryTape<unsigned short>;
 template class MemoryTape<unsigned int>;
+
