@@ -17,7 +17,28 @@ class ParseErrors
 			ecUnkownError = 199,
 
 			//warningi
-			ecInfiniteLoop = 200
+			ecInfiniteLoop = 200,
+			ecEmptyLoop,
+			ecBLOutOfFunctionScope,
+			ecELOutOfFunctionScope,
+
+			ecEmptyFunction,
+			ecFunctionRedefinition,
+			ecFunctionRedefinition2,
+			ecFunctionLimitExceed,
+			ecFunctionExistsButNoCall,
+
+			ecJoinButNoFork,
+			ecTerminateRepeat,
+			ecJoinRepeat,
+			ecJoinBeforeFork,
+
+			ecRedundantArithmetic,
+			ecRedundantLoopArithmetic,
+			ecRedundantNearLoopArithmetic,
+			ecSlowLoop,
+
+			ecRedundantMoves
 		};
 
 		struct Error
@@ -39,6 +60,7 @@ class ParseErrors
 		
 		unsigned ErrorsCount(void);
 		unsigned WarningsCount(void);
+		unsigned MessagesCount(void);
 		void GetMessages(void);
 
 	protected:

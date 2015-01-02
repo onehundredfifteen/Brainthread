@@ -83,6 +83,7 @@
     <ClInclude Include="BrainThreadProcess.h" />
     <ClInclude Include="BrainThreadRuntimeException.h" />
     <ClInclude Include="CodeTape.h" />
+    <ClInclude Include="Debuger.h" />
     <ClInclude Include="FunctionHeap.h" />
     <ClInclude Include="MemoryHeap.h" />
     <ClInclude Include="MemoryTape.h" />
@@ -93,6 +94,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BrainThread.cpp" />
+    <ClCompile Include="Debuger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BrainThreadProcess.cpp" />
     <ClCompile Include="BrainThreadRuntimeException.cpp" />

@@ -8,6 +8,16 @@ class CodeTape
 	public:
 		typedef enum
 		{
+			clBrainThread,
+			clBrainFuck,
+			clPBrain,
+			clBrainFork,
+			clAuto, 
+			clDefault
+		} code_lang;
+
+		typedef enum
+		{
 			btoDecrement = 1,
 			btoIncrement,
 			btoMoveLeft,
@@ -22,7 +32,7 @@ class CodeTape
 			btoCallFunction,
 			//threads - extended brainfork
 			btoFork,
-			btoWait,
+			btoJoin,
 			btoTerminate,
 			//heap
 			btoPush,

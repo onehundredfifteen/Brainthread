@@ -7,44 +7,30 @@
 /*
  * Klasa Parsera
  * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
- * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
+ * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
 */
 
 class Parser
 {
 	public:
-		typedef enum
-		{
-			clBrainThread,
-			clBrainFuck,
-			clPBrain,
-			clBrainFork,
-			clAuto, 
-			clDefault
-		} code_lang;
-
-		Parser(bool debug_instructions_on = false);
+		Parser(ParseErrors *messages, bool debug_instructions_on = false);
 		~Parser(void);
-		
 
 		void Parse(char * data);
 		void Parse(std::ifstream &in);
 		
-		void Debug();
-		void Optimize();
 
 		void GetCode(CodeTape &c); 
+		std::vector<CodeTape::bt_instruction> * GetCode(); 
 
 		bool isCodeValid(void);
-		void GetMessages(void);
-		unsigned MessageCount(void);
 
-	protected:
-		code_lang language;
+	private:
+		CodeTape::code_lang language;
 		//code_lang RecognizeLang(void);
 		bool debug_instructions_mode;
 
-		ParseErrors errors;
+		ParseErrors *errors;
 		std::vector<CodeTape::bt_instruction> precode;
 
 		void Parse(std::vector<char> &source);

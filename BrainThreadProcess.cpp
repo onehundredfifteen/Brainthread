@@ -159,7 +159,7 @@ void BrainThreadProcess<T>::Run(void)
 			case CodeTape::btoFork: 
 				this->Fork();
 				break;
-			case CodeTape::btoWait: 
+			case CodeTape::btoJoin: 
 				this->Join();
 				break;
             case CodeTape::btoTerminate:

@@ -1,5 +1,4 @@
 #include "Parser.h"
-#include "BrainThreadRuntimeException.h"
 
 #include <cstring>
 #include <stack>
@@ -10,9 +9,15 @@
  * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
 */
 
-Parser::Parser(bool debug_instructions_on)
+Parser::Parser(ParseErrors *messages, bool debug_instructions_on)
 {
-	language = clBrainThread;
+	language = CodeTape::clBrainThread;
+	
+	if(messages == nullptr)
+		errors = new ParseErrors;
+	else
+		errors = messages;
+
 	debug_instructions_mode = debug_instructions_on;
 }
 
@@ -46,7 +51,7 @@ void Parser::Parse(std::vector<char> &source)
 
   if(source.empty())
   {
-	  errors.AddMessage(ParseErrors::ecEmptyCode, 0);
+	  errors->AddMessage(ParseErrors::ecEmptyCode, 0);
 	  return;
   }
 
@@ -73,16 +78,16 @@ void Parser::Parse(std::vector<char> &source)
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego [
 			{
-				errors.AddMessage(ParseErrors::ecLoopUnmatchedR, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(ParseErrors::ecLoopUnmatchedR, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}
 					
 		}
-		else if(curr_op == CodeTape::btoBeginFunction && (language == clBrainThread || language == clPBrain)) 
+		else if(curr_op == CodeTape::btoBeginFunction && (language == CodeTape::clBrainThread || language == CodeTape::clPBrain)) 
 		{
 			func_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
 			precode.push_back(CodeTape::bt_instruction(curr_op));
 		}
-		else if(curr_op == CodeTape::btoEndFunction && (language == clBrainThread || language == clPBrain))
+		else if(curr_op == CodeTape::btoEndFunction && (language == CodeTape::clBrainThread || language == CodeTape::clPBrain))
 		{
 			if(func_call_stack.empty() == false) 
 			{
@@ -92,7 +97,7 @@ void Parser::Parse(std::vector<char> &source)
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego (
 			{
-				errors.AddMessage(ParseErrors::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(ParseErrors::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}
 					
 		}
@@ -112,7 +117,7 @@ void Parser::Parse(std::vector<char> &source)
   {	
 	 while(loop_call_stack.empty() == false)
 	 {
-		errors.AddMessage(ParseErrors::ecLoopUnmatchedL, loop_call_stack.top());
+		errors->AddMessage(ParseErrors::ecLoopUnmatchedL, loop_call_stack.top());
 		loop_call_stack.pop();
 	 }
   }
@@ -121,7 +126,7 @@ void Parser::Parse(std::vector<char> &source)
   {	
 	 while(func_call_stack.empty() == false)
 	 {
-		errors.AddMessage(ParseErrors::ecUnmatchedFunEnd, func_call_stack.top());
+		errors->AddMessage(ParseErrors::ecUnmatchedFunEnd, func_call_stack.top());
 		func_call_stack.pop();
 	 }
   }
@@ -135,79 +140,14 @@ void Parser::GetCode(CodeTape &c)
 	c.Copy(precode.begin(), precode.end());
 }
 
+std::vector<CodeTape::bt_instruction> * Parser::GetCode()
+{
+	return &precode;
+}
 
 bool Parser::isCodeValid(void)
 {
-	return errors.ErrorsCount() == 0;
-}
-void Parser::GetMessages(void)
-{
-	errors.GetMessages();
-}
-unsigned Parser::MessageCount(void)
-{
-	return errors.ErrorsCount() + errors.WarningsCount();
-}
-		 
-			
-
-
-//ponizsze funkcje szukaj¹ prawej instrukcji "], ) lub }" pocz¹wszy od from_pos.
-unsigned int Parser::FindMatchingRightPair(CodeTape::bt_operation op, unsigned int from_pos) 
-{
-  /* int lcnt = 1;
-   unsigned int cp = from_pos+1;
-   CodeTape::bt_operation to_find, z; 
-
-   if(op != CodeTape::btoBeginLoop || op != CodeTape::btoBeginFunction || op != CodeTape::btoFork)
-   {
-	   //throw wyj¹tek
-   }
-
-   to_find = (op == CodeTape::btoBeginLoop ? CodeTape::btoEndLoop : (op == CodeTape::btoBeginFunction ? CodeTape::btoEndFunction : CodeTape::btoWait));
-   //pêtle do try catcgh bo wyjdzie i posze wyjatek
-   while(true)
-   {
-	 z = instructions[ cp ].operation;
-
-	 if( z == op) ++lcnt;
-	 else if( z == to_find)  --lcnt;
-
-	 if(lcnt == 0)
-		 return cp;
-
-	 ++cp;
-   }*/
-	return 0;
-}
-
-//ponizsze funkcje szukaj¹ lewej instrukcji "[, ( lub {" pocz¹wszy od from_pos.
-unsigned int Parser::FindMatchingLeftPair(CodeTape::bt_operation op, unsigned int from_pos) 
-{
-   /*int lcnt = 1;
-   unsigned int cp = from_pos-1;
-   CodeTape::bt_operation to_find, z; 
-
-   if(op != CodeTape::btoEndLoop || op != CodeTape::btoEndFunction || op != CodeTape::btoWait)
-   {
-	   //throw wyj¹tek
-   }
-
-   to_find = (op == CodeTape::btoEndLoop ? CodeTape::btoBeginLoop : (op == CodeTape::btoEndFunction ? CodeTape::btoBeginFunction : CodeTape::btoFork));
-
-   while(true)
-   {
-	 z = instructions[ cp ].operation;
-
-	 if( z == op) ++lcnt;
-	 else if( z == to_find)  --lcnt;
-
-	 if(lcnt == 0)
-		 return cp;
-
-	 --cp;
-   }*/
-	return 0;
+	return errors->ErrorsCount() == 0;
 }
 
 bool Parser::isValidOperator(char &c)
@@ -219,10 +159,10 @@ bool Parser::isValidOperator(char &c)
 	
 	switch(language)
 	{
-		case clBrainThread: return strchr(valid_bt_ops,c) != 0; 
-		case clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
-		case clPBrain:      return strchr(valid_pb_ops,c) != 0;
-		case clBrainFork:   return strchr(valid_bo_ops,c) != 0;
+		case CodeTape::clBrainThread: return strchr(valid_bt_ops,c) != 0; 
+		case CodeTape::clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
+		case CodeTape::clPBrain:      return strchr(valid_pb_ops,c) != 0;
+		case CodeTape::clBrainFork:   return strchr(valid_bo_ops,c) != 0;
 		default:
 			 return strchr(valid_bt_ops,c) != 0;
 	}
@@ -234,7 +174,7 @@ bool Parser::isValidDebugOperator(char &c)
 {
 	static const char *valid_db_ops = "MTFSD";
 	
-	if(language == clBrainFuck && c == '#')
+	if(language == CodeTape::clBrainFuck && c == '#')
 		return true;
 
 	return strchr(valid_db_ops,c) != 0;
@@ -244,7 +184,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 {
 	switch(language)	
 	{
-		case clBrainThread:
+		case CodeTape::clBrainThread:
 		{
 			switch(c)
 			{
@@ -258,7 +198,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case ']': return CodeTape::btoEndLoop;
 
 			    case '{': return CodeTape::btoFork;
-				case '}': return CodeTape::btoWait;
+				case '}': return CodeTape::btoJoin;
 				case '!': return CodeTape::btoTerminate;
 
 				case '(': return CodeTape::btoBeginFunction;
@@ -277,7 +217,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case clBrainFuck:
+		case CodeTape::clBrainFuck:
 		{
 			switch(c)
 			{
@@ -292,7 +232,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case clPBrain:
+		case CodeTape::clPBrain:
 		{
 			switch(c)
 			{
@@ -310,7 +250,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case clBrainFork:
+		case CodeTape::clBrainFork:
 		{
 			switch(c)
 			{
@@ -330,7 +270,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 
 	if(debug_instructions_mode)
 	{
-		if(language == clBrainFuck)	
+		if(language == CodeTape::clBrainFuck)	
 		{
 			return CodeTape::btoDEBUG_SimpleMemoryDump;
 		}

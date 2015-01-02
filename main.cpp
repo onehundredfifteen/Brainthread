@@ -2,6 +2,7 @@
 //
 #include "BrainThread.h"
 #include "Parser.h"
+#include "Debuger.h"
 
 #include <windows.h>
 #include <process.h>
@@ -24,12 +25,15 @@ int main(int argc, char* argv[])
 	InitializeCriticalSection(&pm_critical_section);
 	InitializeCriticalSection(&heap_critical_section);
 
-	Parser pa, pa2(true);
+	
+	ParseErrors messages;
+	Parser pa(&messages), pa2(&messages);
+
 	//pa.Parse("+++++++++++++++++++++++++++++++++.\0");
 	try
 	{
 		
-		pa2.Parse(">++++++++[<+++++++++>-]<.>>+>+>++>[-]+<[>[->+<<++++>]<<]>.+++++++..+++.>>+++++++.<<<[[-]<[-]>]<+++++++++++++++.>>.+++.------.--------.>>+.>++++.M");
+		pa2.Parse("![!+]");
 		//pa2.Parse(",[#,]$[.$]\0");
 		//pa2.Parse("{[->-[-]<<+/>M!]}\\+++++++++++++++++++++++++.");
 		//pa2.Parse(";[:[-]++++++++++.;]");
@@ -44,10 +48,16 @@ int main(int argc, char* argv[])
 
 	if(pa2.isCodeValid() == false)
 	{
-		pa2.GetMessages();
-		
+		messages.GetMessages();
 	}
-	
+
+	Debuger d(&messages, pa2.GetCode(), false);
+	d.Debug();
+
+	if(d.isCodeValid() == false)
+	{
+		messages.GetMessages();
+	}
 	
 	CodeTape c, c2;
 #define TYPEMOI unsigned short
