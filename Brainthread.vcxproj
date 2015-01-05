@@ -87,7 +87,7 @@
     <ClInclude Include="FunctionHeap.h" />
     <ClInclude Include="MemoryHeap.h" />
     <ClInclude Include="MemoryTape.h" />
-    <ClInclude Include="ParseErrors.h" />
+    <ClInclude Include="MessageLog.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="ProcessMonitor.h" />
     <ClInclude Include="targetver.h" />
@@ -102,7 +102,7 @@
     <ClCompile Include="FunctionHeap.cpp" />
     <ClCompile Include="MemoryHeap.cpp" />
     <ClCompile Include="MemoryTape.cpp" />
-    <ClCompile Include="ParseErrors.cpp" />
+    <ClCompile Include="MessageLog.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="ProcessMonitor.cpp" />
   </ItemGroup>

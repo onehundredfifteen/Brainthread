@@ -26,14 +26,16 @@ int main(int argc, char* argv[])
 	InitializeCriticalSection(&heap_critical_section);
 
 	
-	ParseErrors messages;
+	MessageLog messages(false);
 	Parser pa(&messages), pa2(&messages);
+
+	 messages.AddMessage(MessageLog::ecMessage,"Parging start");
 
 	//pa.Parse("+++++++++++++++++++++++++++++++++.\0");
 	try
 	{
 		
-		pa2.Parse("![!+]");
+		pa2.Parse("([ )]");
 		//pa2.Parse(",[#,]$[.$]\0");
 		//pa2.Parse("{[->-[-]<<+/>M!]}\\+++++++++++++++++++++++++.");
 		//pa2.Parse(";[:[-]++++++++++.;]");
@@ -45,19 +47,19 @@ int main(int argc, char* argv[])
 		std::cerr << e.what() << std::endl;
 	}
 
+	messages.AddMessage(MessageLog::ecMessage,"Parse end");
 
-	if(pa2.isCodeValid() == false)
-	{
-		messages.GetMessages();
-	}
 
-	Debuger d(&messages, pa2.GetCode(), false);
+	
+    messages.AddMessage(MessageLog::ecMessage,"Debug start");
+
+	Debuger d(&messages, pa2.GetCode(), sizeof(char), true);
 	d.Debug();
 
-	if(d.isCodeValid() == false)
-	{
-		messages.GetMessages();
-	}
+	messages.AddMessage(MessageLog::ecMessage,"Debug end");
+	
+	
+	
 	
 	CodeTape c, c2;
 #define TYPEMOI unsigned short
@@ -74,6 +76,8 @@ int main(int argc, char* argv[])
 	p.Run(&c);
 	p.WaitForPendingThreads();
 	
+	messages.AddMessage(MessageLog::ecMessage,"Execution end");
+	messages.GetMessages();
 	
 	system("pause");
 	DeleteCriticalSection(&code_critical_section);

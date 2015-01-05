@@ -1,23 +1,25 @@
 #include "Debuger.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
-Debuger::Debuger(ParseErrors *messages, std::vector<CodeTape::bt_instruction> *precode, bool repair)
+Debuger::Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair)
 {
 	language = CodeTape::clBrainThread;
 	
 	if(messages == nullptr)
-		this->messages = new ParseErrors;
+		throw std::invalid_argument("Debuger::Debuger: MessageLog * = null");
 	else
 		this->messages = messages;
 
 	this->precode = precode;
 	this->repair = repair;
+	this->typesize = typesize;
 
 	repaired_issues = 0;
 
-	function_limit = 3;
+	function_limit = static_cast<unsigned int>(std::pow(2.0,typesize*8));
 }
 
 Debuger::~Debuger(void)
@@ -67,7 +69,15 @@ bool Debuger::IsMoveSafeInstruction(const CodeTape::bt_instruction &op)
      return (IsMoveInstruction(op) ||
 		    IsChangingInstruction(op) == false) &&
 		    (op.operation != CodeTape::btoAsciiWrite && op.operation != CodeTape::btoDecimalWrite &&
-			 op.operation != CodeTape::btoSharedPush && op.operation == CodeTape::btoPush);
+			 op.operation != CodeTape::btoSharedPush && op.operation != CodeTape::btoPush);
+}
+
+bool Debuger::IsLinkedInstruction(const CodeTape::bt_instruction &op)
+{
+	return (op.operation == CodeTape::btoBeginLoop ||
+		   op.operation == CodeTape::btoEndLoop ||
+		   op.operation == CodeTape::btoBeginFunction ||
+		   op.operation == CodeTape::btoEndFunction); 
 }
 
 
@@ -87,10 +97,6 @@ void Debuger::Debug(void)
 		c_size = precode->size();
 		//std::cout << "xxx " << precode->size() << " ccc ";
 		TestForInfiniteLoops(it);
-		if(c_size != precode->size())
-			continue;
-
-		TestForLoopsOutOfScope(it);
 		if(c_size != precode->size())
 			continue;
 
@@ -125,10 +131,10 @@ void Debuger::Debug(void)
 		else if(it->operation == CodeTape::btoCallFunction) ++function_calls;
 
 		if(TestForRepetition(it, CodeTape::btoJoin))
-			messages->AddMessage(ParseErrors::ecJoinRepeat, it - precode->begin());
+			messages->AddMessage(MessageLog::ecJoinRepeat, it - precode->begin());
 
 		if(TestForRepetition(it, CodeTape::btoTerminate))
-			messages->AddMessage(ParseErrors::ecTerminateRepeat, it - precode->begin());
+			messages->AddMessage(MessageLog::ecTerminateRepeat, it - precode->begin());
 
 		
 		if(IsArithmeticSafeInstruction(*it) == false && ignore_arithmetic_for_error == true) 
@@ -142,27 +148,35 @@ void Debuger::Debug(void)
 
 	if( forks == 0 && joins > 0)
 	{
-		messages->AddMessage(ParseErrors::ecJoinButNoFork, 1);
+		messages->AddMessage(MessageLog::ecJoinButNoFork, 1);
 	}
 
 	if( function_def > function_limit)
 	{
-		messages->AddMessage(ParseErrors::ecFunctionLimitExceed, 1);
+		messages->AddMessage(MessageLog::ecFunctionLimitExceed, 1);
 	}
 
 	if( function_def > 0 && function_calls == 0)
 	{
-		messages->AddMessage(ParseErrors::ecFunctionExistsButNoCall, 1);
+		messages->AddMessage(MessageLog::ecFunctionExistsButNoCall, 1);
 	}
 
 	std::cout << std::endl;
+	int q=0;
 	for(std::vector<CodeTape::bt_instruction>::iterator it = precode->begin(); it < precode->end(); ++it)
 	{
-		std::cout << it->operation << ' ';
+		std::cout << q++ << ": " << it->operation << ": " << (it->NullJump() ? 115 : it->jump) << "\n";
 	}
 	std::cout << std::endl;
 }
 
+//Modelowa funkcja testuj¹ca - je¿eli analizowana komenda jest pocz¹tek pêtli, funkcja
+//zacznie swoje zadanie - wykona dwa testy, doda ewentualny b³ad i spróbuje naprawiæ.
+//W wypadku bledu funkcja koñczy sie natychmiatowo, aby pêtla, z której by³a wywo³ana
+//nie pchnê³a iteratora do przodu.
+//Funkcja przyjmuje referencjê iteratora, bo ma nad nim pe³n¹ kontrolê, w przypadku próby
+//naprawy iterator bêdzie mia³ to, co zwróci funkcja erase - czyli nastepny element w kolejce,
+//który nale¿y przeanalizowaæ. Po naprawie nalezy ponownie powi¹zac komendy (RelinkCommands)
 void Debuger::TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
 	if(it->operation == CodeTape::btoBeginLoop)
@@ -170,63 +184,29 @@ void Debuger::TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterat
 		//pusta pêtla []
 		if( (it + 1)->operation == CodeTape::btoEndLoop)
 		{ 
-			messages->AddMessage(ParseErrors::ecInfiniteLoop, it - precode->begin());	
+			messages->AddMessage(MessageLog::ecInfiniteLoop, it - precode->begin());	
 			if(repair)
 			{
 				it = precode->erase(it, it+2);
+				this->RelinkCommands(it, 2);
 				++repaired_issues;
 				return;
 			}
 		}
 		//pusta pêtla [[x[x]xx]]
-		else if( (it + 1)->operation ==  CodeTape::btoBeginLoop && (precode->begin() + (it->jump) - 1)->operation == CodeTape::btoEndLoop)
+		else if( (it + 1)->operation == CodeTape::btoBeginLoop && (precode->begin() + (it->jump) - 1)->operation == CodeTape::btoEndLoop)
 		{
-			messages->AddMessage(ParseErrors::ecEmptyLoop, it - precode->begin());
+			messages->AddMessage(MessageLog::ecEmptyLoop, it - precode->begin());
 			if(repair)
 			{
 				precode->erase(precode->begin() + (it->jump));
 				it = precode->erase(it);
+				this->RelinkCommands(it, precode->begin() + (it->jump), 1); //œwiadomie uzywam starej pozycji
+				this->RelinkCommands(precode->begin() + (it->jump)+1, 2); //od koñca usuniêtej pêtli juz po dwa
 				++repaired_issues;
 				return;
 			}
 		}	 
-	}
-}
-
-void Debuger::TestForLoopsOutOfScope(std::vector<CodeTape::bt_instruction>::iterator &it)
-{
-	std::vector<CodeTape::bt_instruction>::iterator n, l;
-
-	if(it->operation == CodeTape::btoBeginLoop)
-	{
-		l = precode->begin() + it->jump;
-		n = std::find_if(it, l,[](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoEndFunction; });
-			
-		if(n != l) //koniec pêtli poza funkcj¹ ( [ ) ]
-		{
-			messages->AddMessage(ParseErrors::ecELOutOfFunctionScope, it - precode->begin());	
-			if(repair) //usuwamy pêtlê
-			{
-				precode->erase(l);
-				it = precode->erase(it);
-				++repaired_issues;
-				return;
-			}
-		}
-			
-		n = std::find_if(it, l,[](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
-			
-		if(n != l) //pocz¹tek pêtli poza funkcj¹ [ ( ] )
-		{
-			messages->AddMessage(ParseErrors::ecELOutOfFunctionScope, it - precode->begin());	
-			if(repair) //usuwamy pêtlê
-			{
-				precode->erase(l);
-				it = precode->erase(it);
-				++repaired_issues;
-				return;
-			}
-		} 
 	}
 }
 
@@ -243,7 +223,7 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 		{	
 			if(n != std::find_if_not(it, n, IsChangingInstruction) || it+1 == n) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami
 			{
-				messages->AddMessage(ParseErrors::ecFunctionRedefinition, it - precode->begin());
+				messages->AddMessage(MessageLog::ecFunctionRedefinition, it - precode->begin());
 			}
 		}
 	}
@@ -253,11 +233,12 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 
 		if(n - it == 1) //funkcja jest pusta? ()
 		{
-			messages->AddMessage(ParseErrors::ecEmptyFunction, it - precode->begin());	
+			messages->AddMessage(MessageLog::ecEmptyFunction, it - precode->begin());	
 			if(repair) //usuwamy funkcjê
 			{
 				precode->erase(n);
 				it = precode->erase(it);
+				this->RelinkCommands(it, 2);
 				++repaired_issues;
 				return;
 			}
@@ -270,7 +251,7 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 				++function_limit;
 				if( m != std::find_if_not(it, m, IsChangingInstruction) || it+1 == m) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami (xx(
 				{
-					messages->AddMessage(ParseErrors::ecFunctionRedefinition2, it + 1 - precode->begin());
+					messages->AddMessage(MessageLog::ecFunctionRedefinition2, it + 1 - precode->begin());
 				}
 			}
 		}
@@ -289,6 +270,7 @@ bool Debuger::TestForRepetition(std::vector<CodeTape::bt_instruction>::iterator 
 		n = std::find_if_not(it+1, precode->end(),[&op](const CodeTape::bt_instruction &o){ return o.operation == op; });
 		if(repair) //usuwamy wszsytkie bez pierwszego
 		{
+			this->RelinkCommands(it, (n-it-1));
 			it = precode->erase(it+1, n);
 			++repaired_issues;
 		}
@@ -309,10 +291,11 @@ void Debuger::TestForJoinBeforeFork(std::vector<CodeTape::bt_instruction>::itera
 
 		if(m == it && forks == 0) //join poza funkcj¹ [mo¿e byc call do póŸniejszej funkcji z fork, ale to juz za trudne]
 		{
-			messages->AddMessage(ParseErrors::ecJoinBeforeFork, it - precode->begin());	
+			messages->AddMessage(MessageLog::ecJoinBeforeFork, it - precode->begin());	
 			if(repair) //usuwamy join
 			{
 				it = precode->erase(it);
+				this->RelinkCommands(it, (n-it-1));
 				++repaired_issues;
 			}
 		}
@@ -323,6 +306,8 @@ void Debuger::TestForJoinBeforeFork(std::vector<CodeTape::bt_instruction>::itera
 void Debuger::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
 	std::vector<CodeTape::bt_instruction>::iterator n;
+	int sum, k, ops;
+
 	if(IsArithmeticInstruction(*it))
 	{
 		ignore_arithmetic_for_error = true;
@@ -330,14 +315,27 @@ void Debuger::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &i
 		//mamy ci¹g + - i instrukcji pomijalnych
 		//std::cout <<"fakty " <<(n - it) <<"fakty " <<abs(Calcule(it,n)) <<"fakty " << count_if(it, n, IsArithmeticInstruction) <<"fakty " << Calcule(it,n)<<"$\n ";
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc sosi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla ++ [ops=2] a nie +-+-++ [ops=5]
-		if((n - it) > 1 && abs(Calcule(it,n)) != std::count_if(it, n, IsArithmeticInstruction))
+		sum = Calcule(it, n);
+		ops = std::count_if(it, n, IsArithmeticInstruction);
+
+		if((n - it) > 1 && abs(sum) != ops)
 		{
-			messages->AddMessage(ParseErrors::ecRedundantArithmetic, it - precode->begin());	
+			messages->AddMessage(MessageLog::ecRedundantArithmetic, it - precode->begin());	
 			if(repair)
 			{
-				//it = precode->erase(it, it+2);
-				//++repaired_issues;
-				//return;
+					k = (ops-abs(sum))/2;
+					for(int i = 0; i < k; ++i)
+					{
+						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoDecrement; })->operation = CodeTape::btoUnkown;
+						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoIncrement; })->operation = CodeTape::btoUnkown;
+					}
+
+					
+						/*it = precode->erase(
+								std::remove_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
+							precode->end()),
+						this->RelinkCommands(it, (ops-sum));*/
+					++repaired_issues;
 			}
 		}
 	}
@@ -379,29 +377,18 @@ void Debuger::TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterat
 
 		if(abs(sum) != ops)
 		{
-			messages->AddMessage(ParseErrors::ecRedundantLoopArithmetic, it - precode->begin());	
-			if(repair)
-			{
-				//it = precode->erase(it, it+2);
-				//++repaired_issues;
-				//return;
-			}
+			messages->AddMessage(MessageLog::ecRedundantLoopArithmetic, it - precode->begin());	
 		}
 		
-		if(sum > 1)
+		if(sum > 1 && typesize > 1)//wolna pêtla dla typów wiêkszych ni¿ 1 bajt
 		{
-			messages->AddMessage(ParseErrors::ecSlowLoop, it - precode->begin());	
-			if(repair)
-			{
-				//it = precode->erase(it, it+2);
-				//++repaired_issues;
-				//return;
-			}
+			messages->AddMessage(MessageLog::ecSlowLoop, it - precode->begin());	
+			//nienaprawialny
 		}
 
 		if(ARSearchTool(it))
 		{
-			messages->AddMessage(ParseErrors::ecRedundantNearLoopArithmetic, it - precode->begin());
+			messages->AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - precode->begin());
 		}
 
 		ignore_arithmetic_for_error = true;
@@ -411,27 +398,42 @@ void Debuger::TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterat
 void Debuger::TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
 	std::vector<CodeTape::bt_instruction>::iterator n;
+	int sum, k, ops;
+
 	if(IsMoveInstruction(*it))
 	{
 		ignore_moves_for_error = true;
 		n = std::find_if_not(it, precode->end(), IsMoveSafeInstruction);
 		//mamy ci¹g < >
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla >> [ops=2] a nie <><>> [ops=5]
-		if((n - it) > 1 && abs(CalculeMoves(it,n)) != std::count_if(it, n, IsMoveInstruction))
+		std::cout <<"fakty " <<(n - it) <<"fakty " <<abs(CalculeMoves(it,n)) <<"fakty " << count_if(it, n, IsMoveInstruction) <<"fakty " << CalculeMoves(it,n)<<"$\n ";
+		sum = CalculeMoves(it, n);
+		ops = std::count_if(it, n, IsMoveInstruction);
+		
+		if((n - it) > 1 && abs(sum) != ops)
 		{
-			messages->AddMessage(ParseErrors::ecRedundantMoves, it - precode->begin());	
+			messages->AddMessage(MessageLog::ecRedundantMoves, it - precode->begin());	
 			if(repair)
 			{
-				//it = precode->erase(it, it+2);
-				//++repaired_issues;
-				//return;
+					k = (ops-abs(sum))/2;
+					for(int i = 0; i < k; ++i)
+					{
+						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveLeft; })->operation = CodeTape::btoUnkown;
+						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveRight; })->operation = CodeTape::btoUnkown;
+					}
+
+					it = precode->erase(
+								std::remove_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
+							precode->end()),
+						this->RelinkCommands(it, (ops-sum));
+					++repaired_issues;
 			}
 		}
 	}
 }
 
 
-int Debuger::Calcule(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end)
+int Debuger::Calcule(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
 {
 	int sum = 0;
 	for(std::vector<CodeTape::bt_instruction>::iterator it = begin; it < end; ++it)
@@ -446,7 +448,7 @@ int Debuger::Calcule(std::vector<CodeTape::bt_instruction>::iterator &begin, std
 	return sum;
 }
 
-int Debuger::CalculeMoves(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end)
+int Debuger::CalculeMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
 {
 	int sum = 0;
 	for(std::vector<CodeTape::bt_instruction>::iterator it = begin; it < end; ++it)
@@ -462,10 +464,11 @@ int Debuger::CalculeMoves(std::vector<CodeTape::bt_instruction>::iterator &begin
 }
 
 
+
 //szuka w ty³ wzorca A(?) pocz¹wszy od pocz¹tku pêtli [ np "++}-["
-bool Debuger::ARSearchTool(std::vector<CodeTape::bt_instruction>::iterator &begin) 
+bool Debuger::ARSearchTool(const std::vector<CodeTape::bt_instruction>::iterator &begin) 
 {
-   if(begin - precode->begin() < 2 )
+   if(begin == precode->begin())
 	   return false;
 
    for(std::vector<CodeTape::bt_instruction>::iterator it = begin - 1; it >= precode->begin(); --it)
@@ -480,19 +483,24 @@ bool Debuger::ARSearchTool(std::vector<CodeTape::bt_instruction>::iterator &begi
    return false;
 }
 
-
 bool Debuger::isCodeValid(void)
 {
 	return messages->WarningsCount() == 0;
 }
 
-void Debuger::RelinkCommands(std::vector<CodeTape::bt_instruction>::iterator &start, unsigned n)
+
+void Debuger::RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, short n)
 {
-	for(std::vector<CodeTape::bt_instruction>::iterator it = start; it < precode->end(); ++it)
+	RelinkCommands(start, precode->end(), n);
+}
+void Debuger::RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, const std::vector<CodeTape::bt_instruction>::iterator &end, short n)
+{
+	for(std::vector<CodeTape::bt_instruction>::iterator it = start; it < end; ++it)
 	{
-		if(it->NullJump() == false)
+		if(IsLinkedInstruction(*it) || it->NullJump() == false)
 		{
 			it->jump -= n;
 		}
 	}
 }
+

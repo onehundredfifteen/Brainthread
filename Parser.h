@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CodeTape.h"
-#include "ParseErrors.h"
+#include "MessageLog.h"
 #include <fstream>
 
 /*
@@ -13,7 +13,7 @@
 class Parser
 {
 	public:
-		Parser(ParseErrors *messages, bool debug_instructions_on = false);
+		Parser(MessageLog *messages, bool debug_instructions_on = false);
 		~Parser(void);
 
 		void Parse(char * data);
@@ -30,7 +30,7 @@ class Parser
 		//code_lang RecognizeLang(void);
 		bool debug_instructions_mode;
 
-		ParseErrors *errors;
+		MessageLog *errors;
 		std::vector<CodeTape::bt_instruction> precode;
 
 		void Parse(std::vector<char> &source);

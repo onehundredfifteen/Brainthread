@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CodeTape.h"
-#include "ParseErrors.h"
+#include "MessageLog.h"
 
 #include <vector>
 
@@ -13,7 +13,7 @@
 class Debuger
 {
 	public:
-		Debuger(ParseErrors *messages, std::vector<CodeTape::bt_instruction> *precode, bool repair = false);
+		Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair = false);
 		~Debuger(void);
 
 		void Debug();
@@ -24,12 +24,12 @@ class Debuger
 		CodeTape::code_lang language;
 		std::vector<CodeTape::bt_instruction> *precode;
 
-		ParseErrors *messages;
+		MessageLog *messages;
+		short typesize;
 		bool repair;
 		unsigned repaired_issues;
 
 		void TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterator &it);
-		void TestForLoopsOutOfScope(std::vector<CodeTape::bt_instruction>::iterator &it);
 		void TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iterator &it);
 		bool TestForRepetition(std::vector<CodeTape::bt_instruction>::iterator &it, const CodeTape::bt_operation &op);
 		void TestForJoinBeforeFork(std::vector<CodeTape::bt_instruction>::iterator &it);
@@ -38,13 +38,14 @@ class Debuger
 		void TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterator &it);
 		void TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator &it);
 
-		int Calcule(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end);
-		int CalculeMoves(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end);
+		int Calcule(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
+		int CalculeMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
 		
-		void RelinkCommands(std::vector<CodeTape::bt_instruction>::iterator &start, unsigned n = 1);
+		void RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, short n = 1);
+		void RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, const std::vector<CodeTape::bt_instruction>::iterator &end, short n = 1);
 
-		bool ARSearchTool(std::vector<CodeTape::bt_instruction>::iterator &begin);
-
+		bool ARSearchTool(const std::vector<CodeTape::bt_instruction>::iterator &begin);
+		
 		unsigned int function_calls;
 		unsigned int function_limit;
 		unsigned int function_def;
@@ -59,4 +60,5 @@ class Debuger
 		static bool IsArithmeticSafeInstruction(const CodeTape::bt_instruction &op);
 		static bool IsMoveInstruction(const CodeTape::bt_instruction &op);
 		static bool IsMoveSafeInstruction(const CodeTape::bt_instruction &op);
+		static bool IsLinkedInstruction(const CodeTape::bt_instruction &op);
 };
