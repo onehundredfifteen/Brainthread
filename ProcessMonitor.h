@@ -17,6 +17,7 @@ public:
 
 	void AddProcess(HANDLE h);
 	void WaitForWorkingProcesses(void);
+	bool IsMainThread(HANDLE h);
 
 protected:
 	std::list<HANDLE> handles; 

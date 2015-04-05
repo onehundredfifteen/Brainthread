@@ -37,6 +37,7 @@ class Debuger
 		void TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &it);
 		void TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterator &it);
 		void TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator &it);
+		void TestOpsBeforeFork(std::vector<CodeTape::bt_instruction>::iterator &it);
 
 		int Calcule(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
 		int CalculeMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
@@ -61,4 +62,5 @@ class Debuger
 		static bool IsMoveInstruction(const CodeTape::bt_instruction &op);
 		static bool IsMoveSafeInstruction(const CodeTape::bt_instruction &op);
 		static bool IsLinkedInstruction(const CodeTape::bt_instruction &op);
+		static bool IsChangingCellInstruction(const CodeTape::bt_instruction &op);
 };

@@ -155,9 +155,11 @@ public:
 		case 11:
 			cnvt << "too many threads"; break;
 		case 13:
-			cnvt << "not enough memory"; break;
+			cnvt << "not enough system memory"; break;
 		case 22:
 			cnvt << "invalid argument"; break;
+		case 115:
+			cnvt << "not enough memory"; break;
 		default:
 			cnvt << "unknown (errno=" << err_no << ")";
 	}
@@ -187,7 +189,7 @@ public:
 		case 0:
 			cnvt << "too many threads to wait for"; break;
 		default:
-			cnvt << "wait failed (system error code=" << err_no << ")";
+			cnvt << "wait failed. System error code: " << err_no;
 	}
 
     s = cnvt.str();

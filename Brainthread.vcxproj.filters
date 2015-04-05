@@ -54,6 +54,9 @@
     <ClInclude Include="MessageLog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LogStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BrainThreadProcess.cpp">
@@ -90,6 +93,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MessageLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

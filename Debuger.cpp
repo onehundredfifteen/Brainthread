@@ -8,11 +8,10 @@ Debuger::Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *pr
 {
 	language = CodeTape::clBrainThread;
 	
-	if(messages == nullptr)
-		throw std::invalid_argument("Debuger::Debuger: MessageLog * = null");
-	else
-		this->messages = messages;
+	if(messages == nullptr || precode == nullptr)
+		throw std::invalid_argument("Debuger::Debuger: invalid argument");
 
+	this->messages = messages;
 	this->precode = precode;
 	this->repair = repair;
 	this->typesize = typesize;
@@ -34,6 +33,8 @@ bool Debuger::IsChangingInstruction(const CodeTape::bt_instruction &op)
 		   op.operation == CodeTape::btoJoin ||
 		   op.operation == CodeTape::btoPush ||
 		   op.operation == CodeTape::btoSharedPush ||
+		   op.operation == CodeTape::btoSwap ||
+		   op.operation == CodeTape::btoSharedSwap ||
 		   op.operation == CodeTape::btoTerminate ||
 		   
 		   op.operation == CodeTape::btoDEBUG_FunctionsStackDump ||
@@ -55,7 +56,8 @@ bool Debuger::IsArithmeticSafeInstruction(const CodeTape::bt_instruction &op)
 {
 	return (IsArithmeticInstruction(op) ||
 		    IsChangingInstruction(op) == false) &&
-		    (op.operation != CodeTape::btoAsciiWrite && op.operation != CodeTape::btoDecimalWrite);
+		    (op.operation != CodeTape::btoAsciiWrite && op.operation != CodeTape::btoDecimalWrite &&
+			 op.operation != CodeTape::btoFork);
 }
 
 bool Debuger::IsMoveInstruction(const CodeTape::bt_instruction &op)
@@ -78,6 +80,13 @@ bool Debuger::IsLinkedInstruction(const CodeTape::bt_instruction &op)
 		   op.operation == CodeTape::btoEndLoop ||
 		   op.operation == CodeTape::btoBeginFunction ||
 		   op.operation == CodeTape::btoEndFunction); 
+}
+
+bool Debuger::IsChangingCellInstruction(const CodeTape::bt_instruction &op)
+{
+	return (IsArithmeticInstruction(op) ||
+		    op.operation == CodeTape::btoPop || op.operation == CodeTape::btoSharedPop ||
+			op.operation == CodeTape::btoAsciiRead || op.operation == CodeTape::btoDecimalRead);
 }
 
 
@@ -105,6 +114,10 @@ void Debuger::Debug(void)
 			continue;
 
 		TestForJoinBeforeFork(it);
+		if(c_size != precode->size())
+			continue;
+
+		TestOpsBeforeFork(it);
 		if(c_size != precode->size())
 			continue;
 
@@ -298,47 +311,83 @@ void Debuger::TestForJoinBeforeFork(std::vector<CodeTape::bt_instruction>::itera
 				this->RelinkCommands(it, (n-it-1));
 				++repaired_issues;
 			}
-		}
-		
+		}	
 	}
 }
 
 void Debuger::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
-	std::vector<CodeTape::bt_instruction>::iterator n;
+	std::vector<CodeTape::bt_instruction>::iterator m, n;
 	int sum, k, ops;
 
 	if(IsArithmeticInstruction(*it))
 	{
 		ignore_arithmetic_for_error = true;
-		n = std::find_if_not(it, precode->end(),IsArithmeticSafeInstruction);
+		n = std::find_if_not(it, precode->end(), IsArithmeticSafeInstruction);
 		//mamy ci¹g + - i instrukcji pomijalnych
-		//std::cout <<"fakty " <<(n - it) <<"fakty " <<abs(Calcule(it,n)) <<"fakty " << count_if(it, n, IsArithmeticInstruction) <<"fakty " << Calcule(it,n)<<"$\n ";
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc sosi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla ++ [ops=2] a nie +-+-++ [ops=5]
-		sum = Calcule(it, n);
-		ops = std::count_if(it, n, IsArithmeticInstruction);
 
-		if((n - it) > 1 && abs(sum) != ops)
+		if((n - it) > 1 && abs(Calcule(it, n)) != std::count_if(it, n, IsArithmeticInstruction))
 		{
 			messages->AddMessage(MessageLog::ecRedundantArithmetic, it - precode->begin());	
 			if(repair)
 			{
-					k = (ops-abs(sum))/2;
-					for(int i = 0; i < k; ++i)
-					{
-						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoDecrement; })->operation = CodeTape::btoUnkown;
-						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoIncrement; })->operation = CodeTape::btoUnkown;
-					}
+				sum = Calcule(it, n);
+		        ops = std::count_if(it, n, IsArithmeticInstruction);	
+				k = (ops-abs(sum))/2;
+
+				for(int i = 0; i < k; ++i)
+				{
+					std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoDecrement; })->operation = CodeTape::btoUnkown;
+					std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoIncrement; })->operation = CodeTape::btoUnkown;
+				}
 
 					
-						/*it = precode->erase(
-								std::remove_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
-							precode->end()),
-						this->RelinkCommands(it, (ops-sum));*/
-					++repaired_issues;
+				precode->erase(
+						std::remove_if(it, precode->end(), [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
+				precode->end()),
+				this->RelinkCommands(it, (ops-sum));
+						
+				++repaired_issues;
+			}
+		}
+		else if( n != precode->end() && n->operation == CodeTape::btoBeginFunction)
+		{
+			//specjalny przypadek - musimy jeszcze wyci¹c funkcjê, bo np +++(-)--- to jest bezsensowna operacja i zamienic na +++---
+			sum = Calcule(it, n);
+		    ops = std::count_if(it, n, IsArithmeticInstruction);
+
+			while(true)
+			{ 
+				//przeskocz za funkcjê
+				m = precode->begin() + n->jump;
+				
+				//znajdŸ nastêpn¹
+				n = std::find_if(m, precode->end(), [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+
+				//myk z funkcjami w funkcjach
+				if(m+1 != precode->end() && n > std::find_if(m+1, precode->end(), [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoEndFunction; }))
+					break;
+
+				//zlicz
+				sum += Calcule(m, n);
+				ops += std::count_if(m, n, IsArithmeticInstruction);
+
+				//nie ma, przerwij
+				if(n == precode->end())
+					break;
+			
+			}
+
+			if(abs(sum) != ops)
+			{
+				messages->AddMessage(MessageLog::ecRedundantArithmetic2, it - precode->begin());	
 			}
 		}
 	}
+	
+
+	
 }
 
 void Debuger::TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterator &it)
@@ -373,8 +422,6 @@ void Debuger::TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterat
 		//mamy sume i liczbe opów
 		//wyci¹gnijmy wnioski
 
-
-
 		if(abs(sum) != ops)
 		{
 			messages->AddMessage(MessageLog::ecRedundantLoopArithmetic, it - precode->begin());	
@@ -406,7 +453,7 @@ void Debuger::TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator
 		n = std::find_if_not(it, precode->end(), IsMoveSafeInstruction);
 		//mamy ci¹g < >
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla >> [ops=2] a nie <><>> [ops=5]
-		std::cout <<"fakty " <<(n - it) <<"fakty " <<abs(CalculeMoves(it,n)) <<"fakty " << count_if(it, n, IsMoveInstruction) <<"fakty " << CalculeMoves(it,n)<<"$\n ";
+		//std::cout <<"fakty " <<(n - it) <<"fakty " <<abs(CalculeMoves(it,n)) <<"fakty " << count_if(it, n, IsMoveInstruction) <<"fakty " << CalculeMoves(it,n)<<"$\n ";
 		sum = CalculeMoves(it, n);
 		ops = std::count_if(it, n, IsMoveInstruction);
 		
@@ -415,19 +462,32 @@ void Debuger::TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator
 			messages->AddMessage(MessageLog::ecRedundantMoves, it - precode->begin());	
 			if(repair)
 			{
-					k = (ops-abs(sum))/2;
-					for(int i = 0; i < k; ++i)
-					{
-						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveLeft; })->operation = CodeTape::btoUnkown;
-						std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveRight; })->operation = CodeTape::btoUnkown;
-					}
+				k = (ops-abs(sum))/2;
+				for(int i = 0; i < k; ++i)
+				{
+					std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveLeft; })->operation = CodeTape::btoUnkown;
+					std::find_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoMoveRight; })->operation = CodeTape::btoUnkown;
+				}
 
-					it = precode->erase(
-								std::remove_if(it, n, [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
+				precode->erase(
+							std::remove_if(it, precode->end(), [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoUnkown; }),
 							precode->end()),
-						this->RelinkCommands(it, (ops-sum));
-					++repaired_issues;
+				this->RelinkCommands(it, (ops-sum));
+				++repaired_issues;
 			}
+		}
+	}
+}
+
+void Debuger::TestOpsBeforeFork(std::vector<CodeTape::bt_instruction>::iterator &it)
+{
+	std::vector<CodeTape::bt_instruction>::reverse_iterator r;
+	if(it->operation == CodeTape::btoFork && it > precode->begin()) 
+	{
+        r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
+		if(r != std::find_if_not(r,precode->rend(),IsChangingCellInstruction))
+		{
+			messages->AddMessage(MessageLog::ecRedundantOpBeforeFork, (r+1).base() - precode->begin());	
 		}
 	}
 }

@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <stack>
+#include <algorithm>
 
 /*
  * Klasa Parsera
@@ -63,12 +64,12 @@ void Parser::Parse(std::vector<char> &source)
 	{
 		curr_op = MapCharToOperator(*it);
 		
-		if(curr_op == CodeTape::btoBeginLoop) //slepe wi¹zanie
+		if(curr_op == CodeTape::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
 		{
 			loop_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
 			precode.push_back(CodeTape::bt_instruction(curr_op));
 		}
-		else if(curr_op == CodeTape::btoEndLoop)
+		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
 		{
 			if(loop_call_stack.empty() == false) 
 			{
@@ -85,16 +86,16 @@ void Parser::Parse(std::vector<char> &source)
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego [
 			{
-				errors->AddMessage(MessageLog::ecLoopUnmatchedR, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}
 					
 		}
-		else if(curr_op == CodeTape::btoBeginFunction && (language == CodeTape::clBrainThread || language == CodeTape::clPBrain)) 
+		else if(curr_op == CodeTape::btoBeginFunction) 
 		{
 			func_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
 			precode.push_back(CodeTape::bt_instruction(curr_op));
 		}
-		else if(curr_op == CodeTape::btoEndFunction && (language == CodeTape::clBrainThread || language == CodeTape::clPBrain))
+		else if(curr_op == CodeTape::btoEndFunction)
 		{
 			if(func_call_stack.empty() == false) 
 			{
@@ -115,6 +116,18 @@ void Parser::Parse(std::vector<char> &source)
 			}
 					
 		}
+		/*else if(curr_op == CodeTape::btoBreak)//break w brainlove
+		{
+			std::vector<char>::iterator br_it = std::find(it, source.end(), ']');
+			if(it != source.end()) 
+			{
+				precode.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
+			}
+			else 
+			{
+				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+			}		
+		}*/
 		else precode.push_back(CodeTape::bt_instruction(curr_op));
 	}
 	else
@@ -131,7 +144,7 @@ void Parser::Parse(std::vector<char> &source)
   {	
 	 while(loop_call_stack.empty() == false)
 	 {
-		errors->AddMessage(MessageLog::ecLoopUnmatchedL, loop_call_stack.top());
+		errors->AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
 		loop_call_stack.pop();
 	 }
   }
@@ -284,21 +297,57 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 
 	if(debug_instructions_mode)
 	{
-		if(language == CodeTape::clBrainFuck)	
+		switch(language)	
 		{
-			return CodeTape::btoDEBUG_SimpleMemoryDump;
-		}
-		else
-		{
-			switch(c)
+			case CodeTape::clBrainThread:
 			{
-				case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
-				case 'D': return CodeTape::btoDEBUG_MemoryDump;
-				case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
-				case 'S': return CodeTape::btoDEBUG_StackDump;
-				case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+				switch(c)
+				{
+					case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
+					case 'D': return CodeTape::btoDEBUG_MemoryDump;
+					case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
+					case 'E': return CodeTape::btoDEBUG_FunctionsDefsDump;
+					case 'S': return CodeTape::btoDEBUG_StackDump;
+					case 'H': return CodeTape::btoDEBUG_SharedStackDump;
+					case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+				}
 			}
+			break;
+			case CodeTape::clBrainFuck:
+			{
+				switch(c)
+				{
+					case '#':
+					case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
+					case 'D': return CodeTape::btoDEBUG_MemoryDump;
+				}
+			}
+			break;
+			case CodeTape::clPBrain:
+			{
+				switch(c)
+				{
+					case '#':
+				    case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
+					case 'D': return CodeTape::btoDEBUG_MemoryDump;
+					case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
+					case 'E': return CodeTape::btoDEBUG_FunctionsDefsDump;
+				}
+			}
+			break;
+			case CodeTape::clBrainFork:
+			{
+				switch(c)
+				{
+					case '#':
+				    case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
+					case 'D': return CodeTape::btoDEBUG_MemoryDump;
+					case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+				}
+			}
+			break;
 		}
+
 	}
 
 	return CodeTape::btoInvalid;
@@ -306,6 +355,5 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 
 unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int not_valid_pos)
 {
-	//if(pos - begin - not_valid_pos) < 0
-		return pos - begin - not_valid_pos;
+	return pos - begin - not_valid_pos;
 }

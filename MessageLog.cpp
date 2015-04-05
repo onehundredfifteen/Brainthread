@@ -69,9 +69,13 @@ void MessageLog::GetMessages(void)
 			else 
 				std::cerr <<". Command: " << it->col << std::endl;
 		}
-		else //if(important_messages_only == true || it->error_code == ecMessage)
+		else if(it->error_code == ecMessage)
 		{
 			std::cerr << "Message " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
+		}
+		else if(important_messages_only == false && it->error_code == ecInformation)
+		{
+			std::cerr << "Info " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
 		}
 	}
 }
@@ -80,13 +84,15 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
 {
 	switch(ec)
 	{
-		case ecLoopUnmatchedR: return "Mismatched loop begin - bracket sign [";
-        case ecLoopUnmatchedL: return "Mismatched loop end - bracket sign ]";
+		case ecUnmatchedLoopBegin: return "Mismatched loop begin - bracket sign [";
+        case ecUnmatchedLoopEnd: return "Mismatched loop end - bracket sign ]";
 		case ecUnmatchedFunBegin: return "Mismatched function begin - parenthesis sign (";
         case ecUnmatchedFunEnd: return "Mismatched function end - parenthesis sign )";
         
 		case ecELOutOfFunctionScope: return "Loop end out of function scope - ( [ ) ]";
         case ecBLOutOfFunctionScope: return "Loop begin out of function scope - [ ( ] )";
+        case ecUnmatchedBreak: return "Mismatched break";
+
 		case ecInfiniteLoop: return "Detected an infinite loop like []";
         case ecEmptyLoop: return "Detected an empty loop like [[xx]]";
 		
@@ -103,11 +109,13 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
         case ecJoinBeforeFork: return "Join before fork";
 			
 		case ecRedundantArithmetic: return "Redundant arithmetics";
+		case ecRedundantArithmetic2: return "Redundant arithmetics + function";
 		case ecRedundantLoopArithmetic: return "Redundant arithmetics in loop - possibly infinite";
 		case ecRedundantNearLoopArithmetic: return "Redundant arithmetics near loop like -[-]";
         case ecSlowLoop: return "Very slow loop like [+]";	
 
-		case ecRedundantMoves: return "Redundat pointer moves like ><><";	
+		case ecRedundantMoves: return "Redundant pointer moves like ><><";	
+		case ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
 		
 	}
 	return "";

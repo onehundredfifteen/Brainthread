@@ -28,7 +28,7 @@ MemoryTape<T>::MemoryTape(unsigned int mem_size, eof_option eof_behavior, mem_op
   pointer = mem;
   max_mem = (T*) &mem[  len - 1 ];
   
-  ZeroMemory( mem, len );   //inicjujemy zerami
+  ZeroMemory( mem, sizeof(T) * len);   //inicjujemy zerami
 
   this->eof_behavior = eof_behavior;
   this->mem_behavior = mem_behavior;
@@ -55,7 +55,7 @@ MemoryTape<T>::MemoryTape(const MemoryTape<T> &memory)
 
   max_mem = (T*) &mem[ len - 1 ];
   
-  memcpy (mem, memory.mem, len);
+  memcpy (mem, memory.mem, sizeof(T) * len);
 
   eof_behavior = memory.eof_behavior;
   mem_behavior = memory.mem_behavior;
@@ -231,7 +231,7 @@ void MemoryTape<T>::Realloc()
   }
 
   //wszystko ok - to kopiujemy, now¹ pamiêæ zerujemy
-  ZeroMemory( new_mem+len, new_mem_size-len );
+  ZeroMemory( new_mem+len, sizeof(T) * (new_mem_size-len) );
   memcpy( new_mem, mem, len );
   
 
@@ -259,40 +259,88 @@ inline T* const MemoryTape<T>::GetPointer() const
 }
 
 template < typename T > //pokazuje n komórek w lewo i w prawo ze wskaŸnikiem mozliwie poœrodku
-void MemoryTape<T>::SimpleMemoryDump(/*const ostream &o,*/ unsigned near_cells)
+std::ostream& MemoryTape<T>::SimpleMemoryDump(std::ostream &s, unsigned near_cells)
 {
 	unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);
 
+	s << "\n>Memory Dump (near " << near_cells <<" cells)";
 	for(unsigned int i = start; i < len && i < near_cells*2+start; ++i)
 	{
 		if(sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255) ) 
 		{
 			if(std::is_signed<T>::value)
-				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<char>(mem[i]) << ',' << static_cast<signed>(mem[i]) << ' ';
+				s << (PointerPosition() == i? "<" : "[") << i << (PointerPosition() == i? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
 			else 
-				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<char>(mem[i]) << ',' << static_cast<unsigned>(mem[i]) << ' ';
+				s << (PointerPosition() == i? "<" : "[") << i << (PointerPosition() == i? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
 		}
 		else
 		{
 			if(std::is_signed<T>::value)
-				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<int>(mem[i]) << ' ';
+				s << (PointerPosition() == i? "<" : "[") << i << (PointerPosition() == i? ">" : "]") << static_cast<int>(mem[i]) << " ";
 			else 
-				std::cout << (PointerPosition() == i? '<' : '[') << i << (PointerPosition() == i? '>' : ']') << static_cast<unsigned int>(mem[i]) << ' ';
+				s << (PointerPosition() == i? "<" : "[") << i << (PointerPosition() == i? ">" : "]") << static_cast<unsigned int>(mem[i]) << " ";
 		}
     }
-	std::cout << std::endl;
+	s << std::endl;
+
+	return s;
 }
-/*
-template < typename T > //pokazuje n niezerowych komórek
-void MemoryTape<T>::MemoryDump(const ostream &o, unsigned n_nonzero_cells)
+
+template < typename T > 
+std::ostream& MemoryTape<T>::MemoryDump(std::ostream &o)
 {
-	for(unsigned int i = 0; i < len && i < n_nonzero_cells; ++i)
+	unsigned int nz_cells = 0, last_nz = 0;
+	
+	o << "BRAINTHREAD MEMORY DUMP (shows only nonzero cells)\n"
+	  << "Pointer at:" << PointerPosition() <<"\n"
+	  << "Memory length [cells]: "<< len <<"\n"
+	  << "Memory cell size [bytes]: "<< sizeof(T) << "\n"
+	  << "Total memory used [bytes]: "<< sizeof(T) * len << "\n"
+	  << "Memory tape mode: ";
+
+	switch(mem_behavior)
 	{
-	  if(mem[i])
-		std::cout << '('<< i <<')'<< mem [i] << ' ';
+		case moContinuousTape: o << "continuous"; break;
+		case moDynamic: o << "dynamic"; break;
+		case moLimited:
+		default: o << "limited"; 
+	}
+
+	o << "\n***" << std::endl;
+	
+	for(unsigned int i = 0; i < len; ++i)
+	{
+		if(mem[i] && (sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255)) ) 
+		{
+			if(std::is_signed<T>::value)
+				o << "[" << i <<  "]" << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
+			else 
+				o << "[" << i <<  "]" << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
+
+			++nz_cells;
+			last_nz = i;
+		}
+		else if(mem[i])
+		{
+			if(std::is_signed<T>::value)
+				o << "[" << i <<  "]" << static_cast<int>(mem[i]) << " ";
+			else 
+				o << "[" << i <<  "]" << static_cast<unsigned int>(mem[i]) << " ";
+
+			++nz_cells;
+			last_nz = i;
+			
+		}	
+
+		if(nz_cells%5 == 0) o << "\n";
     }
-	std::cout << std::endl;
-}*/
+
+	o << "\nLast nonzero cell at: " << last_nz 
+	  << "\nNonzero cells: " << nz_cells << "/"<< len;
+	o << std::endl;
+
+	return o;
+}
 
 
 // Explicit template instantiation
@@ -300,4 +348,6 @@ template class MemoryTape<char>;
 template class MemoryTape<unsigned char>;
 template class MemoryTape<unsigned short>;
 template class MemoryTape<unsigned int>;
+template class MemoryTape<short>;
+template class MemoryTape<int>;
 

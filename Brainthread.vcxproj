@@ -38,7 +38,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -85,6 +85,7 @@
     <ClInclude Include="CodeTape.h" />
     <ClInclude Include="Debuger.h" />
     <ClInclude Include="FunctionHeap.h" />
+    <ClInclude Include="LogStream.h" />
     <ClInclude Include="MemoryHeap.h" />
     <ClInclude Include="MemoryTape.h" />
     <ClInclude Include="MessageLog.h" />
@@ -95,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="BrainThread.cpp" />
     <ClCompile Include="Debuger.cpp" />
+    <ClCompile Include="LogStream.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BrainThreadProcess.cpp" />
     <ClCompile Include="BrainThreadRuntimeException.cpp" />

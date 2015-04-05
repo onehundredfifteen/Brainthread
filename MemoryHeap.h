@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stack>
+#include <ostream>
 
 /*
  * Klasa Stosu Pamiêci.
@@ -19,8 +20,10 @@ class MemoryHeap
 		T Pop(void);
 		void Swap(void);
 
+		std::ostream& PrintStack(std::ostream &s);
+
 	protected:
-		std::stack<T> Stack;
+		std::stack<T> mem_stack;
 		T tmp;
 
 		static const unsigned int stack_limit = 65536;

@@ -11,21 +11,21 @@
 template <typename T>
 void MemoryHeap<T>::Push(T const& n)
 {
-	if(Stack.size() > stack_limit)
+	if(mem_stack.size() > stack_limit)
 		throw BFMemoryStackOverflowException();
 
-	Stack.push(n);
+	mem_stack.push(n);
 }
 
 //Funkcja zdejmuje i zwraca wartoœæ ze stosu. Gdy stos jest pusty, zwraca zero
 template <typename T>
 T MemoryHeap<T>::Pop(void)
 {
-	if(Stack.empty())
+	if(mem_stack.empty())
 		return 0;
 	
-	tmp = Stack.top();
-	Stack.pop();
+	tmp = mem_stack.top();
+	mem_stack.pop();
 	return tmp;
 }
 
@@ -34,17 +34,45 @@ T MemoryHeap<T>::Pop(void)
 template <typename T>
 void MemoryHeap<T>::Swap(void)
 {
-	if(Stack.size() < 2)
+	if(mem_stack.size() < 2)
 		return;
 	
-	tmp = Stack.top();
-	Stack.pop();
+	tmp = mem_stack.top();
+	mem_stack.pop();
 
-	T tmp2 = Stack.top();
-	Stack.pop();
+	T tmp2 = mem_stack.top();
+	mem_stack.pop();
 
-	Stack.push(tmp);
-	Stack.push(tmp2);
+	mem_stack.push(tmp);
+	mem_stack.push(tmp2);
+}
+
+template < typename T >
+std::ostream& MemoryHeap<T>::PrintStack(std::ostream &s)
+{
+	std::stack<T> st = mem_stack; //wyœwietlenie go niszczy
+
+	s << "\n>Memory stack ("<< st.size() <<")\n";
+	while(true)
+	{
+		if(std::is_signed<T>::value)
+		   s << static_cast<int>(st.top());
+		else
+		   s << static_cast<unsigned int>(st.top());
+
+		if(st.empty() == false)
+		{
+		   s << ", ";
+		   st.pop();
+		}
+		else
+		{
+		   s << ";";
+		   break;
+		}
+	}
+
+	return s;
 }
 
 // Explicit template instantiation

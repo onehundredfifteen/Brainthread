@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "MemoryTape.h"
 #include "MemoryHeap.h"
 #include "FunctionHeap.h"
@@ -26,6 +25,8 @@ public:
 	} res_context;
 
 	void Run(void);
+
+	std::ostream& PrintProcessInfo(std::ostream &s);
 
 protected:
 	MemoryTape<T> *memory;

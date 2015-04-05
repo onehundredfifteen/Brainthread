@@ -2,6 +2,7 @@
 
 #include <stack>
 #include <map>
+#include <ostream>
 
 template < typename T >
 class FunctionHeap
@@ -17,7 +18,8 @@ class FunctionHeap
 
 		unsigned Calls(void);
 
-		void PrintStackTrace();
+		std::ostream& PrintStackTrace(std::ostream &s);
+		std::ostream& PrintDeclaredFunctions(std::ostream &s);
 
 	protected:
 		std::map< T, unsigned int > functions;

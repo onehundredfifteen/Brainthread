@@ -62,3 +62,5 @@ template class BrainThread<char>;
 template class BrainThread<unsigned char>;
 template class BrainThread<unsigned short>;
 template class BrainThread<unsigned int>;
+template class BrainThread<short>;
+template class BrainThread<int>;

@@ -1,5 +1,7 @@
 #include "ProcessMonitor.h"
 
+#include <algorithm>
+
 extern CRITICAL_SECTION pm_critical_section;
 
 /*
@@ -55,3 +57,9 @@ void ProcessMonitor::WaitForWorkingProcesses(void)
 			Sleep(wait_time);
 	}
 }
+
+bool ProcessMonitor::IsMainThread(HANDLE h)
+{
+	return std::find(handles.begin(), handles.end(), h) == handles.end();
+}
+	

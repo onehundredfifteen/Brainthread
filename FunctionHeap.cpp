@@ -1,5 +1,3 @@
-//#include <iostream>
-
 #include "FunctionHeap.h"
 #include "BrainThreadRuntimeException.h"
 
@@ -70,24 +68,43 @@ unsigned FunctionHeap<T>::Calls()
 
 //staktrace
 template < typename T >
-void FunctionHeap<T>::PrintStackTrace()
+std::ostream& FunctionHeap<T>::PrintStackTrace(std::ostream &s)
 {
-  std::ostringstream ss_text;
   std::stack< std::pair< unsigned int, T > > call_stack_trace = call_stack; //wyœwietlenie go niszczy
 
-  ss_text.str( "" );
   if( callingFunction )
   {
-	  ss_text << "\n> Stack trace ("<<callingFunction<<" "<< ((callingFunction > 1)? "calls" : "call") <<"):\n";
+	  s << "\n>Stack trace (" << callingFunction << " " << ((callingFunction > 1)? "calls" : "call") << "):\n";
 	  while(call_stack_trace.size() > 1)
 	  {
-		  ss_text << ">\tat function #" << call_stack_trace.top().second << " (call from cell "<< call_stack_trace.top().first<< ")\n";
+		  s << ">\tat function #" << call_stack_trace.top().second << " (call from cell " << call_stack_trace.top().first << ")\n";
 
 		  call_stack_trace.pop();
 	  }
-	  ss_text << ">\tat function #" << call_stack_trace.top().second << " (call from cell "<< call_stack_trace.top().first<< ")";
+	  s << ">\tat function #" << call_stack_trace.top().second << " (call from cell " << call_stack_trace.top().first << ")";
   }
-  else ss_text << "Stack trace: empty;\n";
+  else s << "\n>Stack trace: empty;\n";
+
+  return s;
+}
+
+template < typename T >
+std::ostream& FunctionHeap<T>::PrintDeclaredFunctions(std::ostream &s)
+{
+	std::map< T, unsigned int >::iterator mit;
+
+	s << "\n>List of already defined functions ("<< functions.size() <<")";
+	for(mit = functions.begin(); mit != functions.end(); ++mit)
+	{
+		if(std::is_signed<T>::value)
+		   s << "\n>Id: " << static_cast<int>(mit->first);
+		else
+		   s << "\n>Id: " << static_cast<unsigned int>(mit->first);
+
+		s << " Start point: " << mit->second;
+	}
+
+	return s;
 }
 
 // Explicit template instantiation
@@ -95,3 +112,5 @@ template class FunctionHeap<char>;
 template class FunctionHeap<unsigned char>;
 template class FunctionHeap<unsigned short>;
 template class FunctionHeap<unsigned int>;
+template class FunctionHeap<short>;
+template class FunctionHeap<int>;

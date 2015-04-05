@@ -8,15 +8,16 @@ class MessageLog
 	public:
 		enum ErrCode
 		{
-			ecLoopUnmatchedR = 100,
-			ecLoopUnmatchedL,
+			ecUnmatchedLoopBegin = 100,
+			ecUnmatchedLoopEnd,
 			ecUnmatchedFunBegin,
 			ecUnmatchedFunEnd,
 			ecBLOutOfFunctionScope,
 			ecELOutOfFunctionScope,
+			ecUnmatchedBreak,
 
-			ecFatalError = 190,
 			ecEmptyCode,
+			ecFatalError = 190,
 			ecUnkownError = 199,
 
 			//warningi
@@ -34,11 +35,13 @@ class MessageLog
 
 			ecJoinBeforeFork,
 			ecRedundantArithmetic,
+			ecRedundantArithmetic2,
 			ecRedundantLoopArithmetic,
 			ecRedundantNearLoopArithmetic,
-			ecSlowLoop,
 
+			ecSlowLoop,
 			ecRedundantMoves,
+			ecRedundantOpBeforeFork,
 
 			ecMessage = 600,
 			ecInformation //taka wiadomoœæ bêdzie pomijana

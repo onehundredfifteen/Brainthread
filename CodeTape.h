@@ -12,6 +12,7 @@ class CodeTape
 			clBrainFuck,
 			clPBrain,
 			clBrainFork,
+			clBrainLove,
 			clAuto, 
 			clDefault
 		} code_lang;
@@ -45,16 +46,18 @@ class CodeTape
 			btoDecimalRead,
 			btoDecimalWrite,
 
-			//inverse loops - brainlove
-			btoBeginLoop2,
-			btoEndLoop2,
+			//inverse loops - brainlove /TODO
+			btoInvBeginLoop,
+			btoInvEndLoop,
 			btoBreak,
 
 			//debug instructions
 			btoDEBUG_SimpleMemoryDump = 100,
 			btoDEBUG_MemoryDump,
 			btoDEBUG_StackDump,
+			btoDEBUG_SharedStackDump,
 			btoDEBUG_FunctionsStackDump,
+			btoDEBUG_FunctionsDefsDump,
 			btoDEBUG_ThreadInfoDump,
 
 			btoInvalid,
