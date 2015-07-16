@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CodeTape.h"
+#include "Parser.h"
 #include "MessageLog.h"
 
 #include <vector>
@@ -21,7 +21,7 @@ class Debuger
 		bool isCodeValid(void);
 
 	private:
-		CodeTape::code_lang language;
+		Parser::code_lang language;
 		std::vector<CodeTape::bt_instruction> *precode;
 
 		MessageLog *messages;

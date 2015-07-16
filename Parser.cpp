@@ -3,6 +3,7 @@
 #include <cstring>
 #include <stack>
 #include <algorithm>
+#include <iterator>
 
 /*
  * Klasa Parsera
@@ -10,9 +11,9 @@
  * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
 */
 
-Parser::Parser(MessageLog *messages, bool debug_instructions_on)
+Parser::Parser(code_lang lang, MessageLog *messages, bool debug_instructions_on)
 {
-	language = CodeTape::clBrainThread;
+	language = lang;
 	
 	if(messages == nullptr)
 		throw std::invalid_argument("Parser::Parser: MessageLog * = null");
@@ -27,7 +28,7 @@ Parser::~Parser(void)
 }
 
 
-void Parser::Parse(char * data)
+void Parser::Parse(const char * data)
 {
 	std::vector<char> buffer (data, data + strlen(data));
 	Parse(buffer);
@@ -35,8 +36,13 @@ void Parser::Parse(char * data)
 
 void Parser::Parse(std::ifstream &in)
 {
-	//std::vector<char> buffer (data, data + strlen(data));
-	//Parse(buffer);
+	std::istream_iterator<char> start(in), end;
+	std::vector<char> buffer (start, end);
+
+	if(in.fail())
+		throw std::ios_base::failure("Parser::Parse: File read error");
+
+	Parse(buffer);
 }
 
 
@@ -56,7 +62,7 @@ void Parser::Parse(std::vector<char> &source)
 	  return;
   }
 
-  precode.reserve(source.size()/2);
+  precode.reserve(source.size() / 2);
   
   for(std::vector<char>::iterator it = source.begin(); it < source.end(); ++it)
   {
@@ -157,9 +163,7 @@ void Parser::Parse(std::vector<char> &source)
 		func_call_stack.pop();
 	 }
   }
-  
-
-  
+  //koniec
 }
 
 void Parser::GetCode(CodeTape &c)
@@ -186,10 +190,10 @@ bool Parser::isValidOperator(char &c)
 	
 	switch(language)
 	{
-		case CodeTape::clBrainThread: return strchr(valid_bt_ops,c) != 0; 
-		case CodeTape::clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
-		case CodeTape::clPBrain:      return strchr(valid_pb_ops,c) != 0;
-		case CodeTape::clBrainFork:   return strchr(valid_bo_ops,c) != 0;
+		case Parser::clBrainThread: return strchr(valid_bt_ops,c) != 0; 
+		case Parser::clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
+		case Parser::clPBrain:      return strchr(valid_pb_ops,c) != 0;
+		case Parser::clBrainFork:   return strchr(valid_bo_ops,c) != 0;
 		default:
 			 return strchr(valid_bt_ops,c) != 0;
 	}
@@ -201,7 +205,7 @@ bool Parser::isValidDebugOperator(char &c)
 {
 	static const char *valid_db_ops = "MTFSD";
 	
-	if(language == CodeTape::clBrainFuck && c == '#')
+	if(language == Parser::clBrainFuck && c == '#')
 		return true;
 
 	return strchr(valid_db_ops,c) != 0;
@@ -211,7 +215,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 {
 	switch(language)	
 	{
-		case CodeTape::clBrainThread:
+		case Parser::clBrainThread:
 		{
 			switch(c)
 			{
@@ -244,7 +248,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case CodeTape::clBrainFuck:
+		case Parser::clBrainFuck:
 		{
 			switch(c)
 			{
@@ -259,7 +263,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case CodeTape::clPBrain:
+		case Parser::clPBrain:
 		{
 			switch(c)
 			{
@@ -277,7 +281,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			}
 		}
 		break;
-		case CodeTape::clBrainFork:
+		case Parser::clBrainFork:
 		{
 			switch(c)
 			{
@@ -299,7 +303,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 	{
 		switch(language)	
 		{
-			case CodeTape::clBrainThread:
+			case Parser::clBrainThread:
 			{
 				switch(c)
 				{
@@ -313,7 +317,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				}
 			}
 			break;
-			case CodeTape::clBrainFuck:
+			case Parser::clBrainFuck:
 			{
 				switch(c)
 				{
@@ -323,7 +327,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				}
 			}
 			break;
-			case CodeTape::clPBrain:
+			case Parser::clPBrain:
 			{
 				switch(c)
 				{
@@ -335,7 +339,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				}
 			}
 			break;
-			case CodeTape::clBrainFork:
+			case Parser::clBrainFork:
 			{
 				switch(c)
 				{

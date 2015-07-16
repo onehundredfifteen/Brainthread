@@ -198,39 +198,39 @@ void BrainThreadProcess<T>::Run(void)
 			debug instructions
 			************************/
 			case CodeTape::btoDEBUG_SimpleMemoryDump: 
-				  EnterCriticalSection(&cout_critical_section);
-				  this->memory->SimpleMemoryDump(log_stream->GetStreamSession());
-				  LeaveCriticalSection(&cout_critical_section);
+					  EnterCriticalSection(&cout_critical_section);
+					  this->memory->SimpleMemoryDump(log_stream->GetStreamSession());
+					  LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_MemoryDump: 
-				  EnterCriticalSection(&cout_critical_section);
-				  this->memory->MemoryDump(log_stream->GetStreamSession());
-				  LeaveCriticalSection(&cout_critical_section);
+					  EnterCriticalSection(&cout_critical_section);
+					  this->memory->MemoryDump(log_stream->GetStreamSession());
+					  LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_StackDump: 
-				EnterCriticalSection(&cout_critical_section);
-				this->heap->PrintStack(log_stream->GetStreamSession());
-				LeaveCriticalSection(&cout_critical_section);
+					EnterCriticalSection(&cout_critical_section);
+					this->heap->PrintStack(log_stream->GetStreamSession());
+					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_SharedStackDump: 
-				EnterCriticalSection(&cout_critical_section);
-				this->shared_heap->PrintStack(log_stream->GetStreamSession());
-				LeaveCriticalSection(&cout_critical_section);
+					EnterCriticalSection(&cout_critical_section);
+					this->shared_heap->PrintStack(log_stream->GetStreamSession());
+					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsStackDump: 
-				EnterCriticalSection(&cout_critical_section);
-				this->functions->PrintStackTrace(log_stream->GetStreamSession());
-				LeaveCriticalSection(&cout_critical_section);
+					EnterCriticalSection(&cout_critical_section);
+					this->functions->PrintStackTrace(log_stream->GetStreamSession());
+					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsDefsDump: 
-				EnterCriticalSection(&cout_critical_section);
-				this->functions->PrintDeclaredFunctions(log_stream->GetStreamSession());
-				LeaveCriticalSection(&cout_critical_section);
+					EnterCriticalSection(&cout_critical_section);
+					this->functions->PrintDeclaredFunctions(log_stream->GetStreamSession());
+					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_ThreadInfoDump: 
-				EnterCriticalSection(&cout_critical_section);
-				this->PrintProcessInfo(log_stream->GetStreamSession());
-				LeaveCriticalSection(&cout_critical_section);
+					EnterCriticalSection(&cout_critical_section);
+					this->PrintProcessInfo(log_stream->GetStreamSession());
+					LeaveCriticalSection(&cout_critical_section);
 				break;
 			/***********************
 			end debug instructions
@@ -273,7 +273,7 @@ void BrainThreadProcess<T>::Fork()
 		throw BFUnkownException();
 	}
 	
-    hThread = (HANDLE) _beginthread( run_bt_thread<T>, 0, child );//mozna dac najmniej 64kb 64*1024
+    hThread = (HANDLE) _beginthread( run_bt_thread<T>, 0, child);//mozna dac najmniej 64kb 64*1024
 
 	if(hThread <= (HANDLE)0L)
 	{
@@ -324,6 +324,7 @@ std::ostream& BrainThreadProcess<T>::PrintProcessInfo(std::ostream &s)
 	for(it = child_threads.begin(); it < child_threads.end(); ++it)
 	{
 		s << (++i) << ". ID: " << GetThreadId(*it) << " State: " << (WaitForSingleObject(*it, 0) == WAIT_FAILED ? "Error" : "Running") << "\n";
+		//WaitForSingleObject z zerem w 2gim parametrze s³u¿y odczytaniu stanu - nie czeka
 	}
 
 	return s;

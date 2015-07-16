@@ -6,14 +6,9 @@
 #include "CodeTape.h"
 #include "ProcessMonitor.h"
 
-//template < typename T >
-//class BrainThread;
-
 template < typename T >
 class BrainThreadProcess
 {
-//template<typename T> friend class BrainThread;
-
 public:
 	BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, /*res_context r_ctx,*/ MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
 	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);

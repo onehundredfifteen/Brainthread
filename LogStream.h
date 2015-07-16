@@ -10,7 +10,8 @@ class LogStream
 		typedef enum
 		{
 			lsFile,
-			lsConsole
+			lsConsole,
+			lsNone
 		} stream_type;
 
 		LogStream(stream_type st) : StreamType(st){}

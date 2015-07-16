@@ -6,7 +6,7 @@
 
 Debuger::Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair)
 {
-	language = CodeTape::clBrainThread;
+	language = Parser::clBrainThread;
 	
 	if(messages == nullptr || precode == nullptr)
 		throw std::invalid_argument("Debuger::Debuger: invalid argument");
@@ -18,7 +18,7 @@ Debuger::Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *pr
 
 	repaired_issues = 0;
 
-	function_limit = static_cast<unsigned int>(std::pow(2.0,typesize*8));
+	function_limit = static_cast<unsigned int>(std::pow(2.0, typesize*8));
 }
 
 Debuger::~Debuger(void)

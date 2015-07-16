@@ -8,17 +8,6 @@ class CodeTape
 	public:
 		typedef enum
 		{
-			clBrainThread,
-			clBrainFuck,
-			clPBrain,
-			clBrainFork,
-			clBrainLove,
-			clAuto, 
-			clDefault
-		} code_lang;
-
-		typedef enum
-		{
 			btoDecrement = 1,
 			btoIncrement,
 			btoMoveLeft,

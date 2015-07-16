@@ -22,7 +22,7 @@ std::ostream& LogStream::GetStream()
 			stream.open(LogPath, std::ios::app);	
 			if(stream.good() == false)
 			{
-				std::cout << "\n>Thread ID: unkown. LogStream error\n";
+				std::cout << "\n>Thread ID: unknown. LogStream error\n";
 				return std::cout;
 			}
 		}

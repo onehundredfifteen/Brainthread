@@ -2,12 +2,12 @@
 
 #include <iostream>
 
-MessageLog::MessageLog(bool iom)
+MessageLog::MessageLog(MessageLevel ml)
 {
 	error_count = 0;
 	warning_count = 0;
 
-	important_messages_only = iom;
+	message_level = ml;
 }
 
 MessageLog::~MessageLog(void)
@@ -33,6 +33,16 @@ void MessageLog::AddMessage(ErrCode e_code, std::string t)
 	messages.push_back(e);
 }
 
+void MessageLog::AddMessage(std::string t)
+{
+	AddMessage(MessageLog::ecMessage, t);
+}
+
+void MessageLog::AddInfo(std::string t)
+{
+	AddMessage(MessageLog::ecInformation, t);
+}
+
 unsigned MessageLog::ErrorsCount(void)
 {
 	return error_count;
@@ -48,6 +58,9 @@ unsigned MessageLog::MessagesCount(void)
 
 void MessageLog::GetMessages(void)
 {
+	if(message_level == MessageLog::mlNone)
+		return;//¿adnych wiadomoœci
+	
 	std::cerr << ErrorsCount() << ((ErrorsCount() != 1)? " errors, " : " error, ") << WarningsCount() << ((WarningsCount() != 1)? " warnings." : " warning.") << std::endl;
 	unsigned mcnt = 0;
 
@@ -73,7 +86,7 @@ void MessageLog::GetMessages(void)
 		{
 			std::cerr << "Message " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
 		}
-		else if(important_messages_only == false && it->error_code == ecInformation)
+		else if(message_level == MessageLog::mlAll && it->error_code == ecInformation)
 		{
 			std::cerr << "Info " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
 		}

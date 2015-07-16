@@ -46,6 +46,12 @@ class MessageLog
 			ecMessage = 600,
 			ecInformation //taka wiadomoœæ bêdzie pomijana
 		};
+		enum MessageLevel
+		{
+			mlAll,
+			mlImportant,
+			mlNone
+		};
 
 		struct Error
 		{
@@ -64,11 +70,13 @@ class MessageLog
 			bool IsMessage(){ return (int)error_code >= 600;}
 		};
 
-		MessageLog(bool iom);
+		MessageLog(MessageLevel message_level);
 	    ~MessageLog(void);
 
 		void AddMessage(ErrCode e_code, unsigned int pos, unsigned int line = 1);
 		void AddMessage(ErrCode e_code, std::string t);
+		void AddMessage(std::string t);
+		void AddInfo(std::string t);
 		
 		unsigned ErrorsCount(void);
 		unsigned WarningsCount(void);
@@ -79,7 +87,7 @@ class MessageLog
 		std::vector<Error> messages;
 		unsigned error_count;
 		unsigned warning_count;
-		bool important_messages_only;
+		MessageLevel message_level;
 
 		const char * MapMessages(ErrCode &ec) const;
 };

@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BrainThread.h" />
+    <ClInclude Include="BrainThreadExceptions.h" />
     <ClInclude Include="BrainThreadProcess.h" />
     <ClInclude Include="BrainThreadRuntimeException.h" />
     <ClInclude Include="CodeTape.h" />
@@ -95,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BrainThread.cpp" />
+    <ClCompile Include="BrainThreadExceptions.cpp" />
     <ClCompile Include="Debuger.cpp" />
     <ClCompile Include="LogStream.cpp" />
     <ClCompile Include="main.cpp" />

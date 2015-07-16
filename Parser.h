@@ -13,10 +13,21 @@
 class Parser
 {
 	public:
-		Parser(MessageLog *messages, bool debug_instructions_on = false);
+		typedef enum
+		{
+			clBrainThread,
+			clBrainFuck,
+			clPBrain,
+			clBrainFork,
+			clBrainLove,
+			clAuto, 
+			clDefault
+		} code_lang;
+
+		Parser(code_lang lang, MessageLog *messages, bool debug_instructions_on = false);
 		~Parser(void);
 
-		void Parse(char * data);
+		void Parse(const char * data);
 		void Parse(std::ifstream &in);
 		
 
@@ -26,7 +37,7 @@ class Parser
 		bool isCodeValid(void);
 
 	private:
-		CodeTape::code_lang language;
+		code_lang language;
 		//code_lang RecognizeLang(void);
 		bool debug_instructions_mode;
 
