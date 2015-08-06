@@ -25,16 +25,16 @@ void BrainThread<T>::Run(CodeTape * c)
 {
 	try
 	{
-		main_process = new BrainThreadProcess<T>(&process_monitor, c, &shared_heap, mem_size, mem_behavior, eof_behavior);
+		main_process = new BrainThreadProcess<T>(&process_monitor, c, resource_context, &shared_heap, mem_size, mem_behavior, eof_behavior);
 		main_process->Run();
 	}
-	catch(const BrainThreadRuntimeException &re)
+	catch(const BrainThreadRuntimeException re)
 	{
 		EnterCriticalSection(&cout_critical_section);
 		std::cout << "<main> "<< re.what() << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
-	catch(std::exception &e)
+	catch(std::exception e)
 	{
 		EnterCriticalSection(&cout_critical_section);
 		std::cout << "<main> "<< e.what() << std::endl;

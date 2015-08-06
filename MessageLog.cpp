@@ -2,16 +2,25 @@
 
 #include <iostream>
 
-MessageLog::MessageLog(MessageLevel ml)
+MessageLog::MessageLog()
 {
 	error_count = 0;
 	warning_count = 0;
-
-	message_level = ml;
 }
 
 MessageLog::~MessageLog(void)
 {
+}
+
+MessageLog& MessageLog::GetInstance()
+{
+	static MessageLog instance;
+    return instance;
+}
+
+void MessageLog::SetMessageLevel(MessageLevel message_level)
+{
+	this->message_level = message_level;
 }
 
 void MessageLog::AddMessage(ErrCode e_code, unsigned int pos, unsigned int line)

@@ -1,7 +1,5 @@
 // Brainthread.cpp : Defines the entry point for the console application.
 //
-#define BT_VERSION "0.5a"
-
 #include <windows.h>
 #include <process.h>
 #include "getoptpp/getopt_pp_standalone.h"
@@ -12,15 +10,13 @@
 #include "LogStream.h"
 #include "BrainThreadExceptions.h"
 
+#include "BrainHelp.h"
+
 //sekcje krytyczne
 CRITICAL_SECTION code_critical_section;
 CRITICAL_SECTION cout_critical_section;
 CRITICAL_SECTION pm_critical_section;
 CRITICAL_SECTION heap_critical_section;
-
-//obiekty logów
-LogStream *log_stream;
-MessageLog *messages;
 
 //flagi
 bool OP_debug, OP_repair, OP_execute, OP_nopause;
@@ -54,11 +50,6 @@ void InitArguments(GetOpt::GetOpt_pp &ops);
 //Czy program zosta³ uruchomiony z cmd.exe?
 bool RanFromConsole();
 
-//Pisacze
-void PrintBrainThreadInfo();
-void PrintBrainThreadInfoEx();
-void ShowHelp();
-
 //£atwe wrappery
 bool RunParseArguments(GetOpt::GetOpt_pp &ops);
 bool RunParserAndDebug(CodeTape &codetape);
@@ -82,17 +73,27 @@ int main(int argc, char* argv[])
 	GetOpt::GetOpt_pp ops(argc, argv);
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
 
-	if(RunParseArguments(ops) == true)
+	if (ops >> GetOpt::OptionPresent('h',"help"))
+	{
+		std::string help_opt;
+		ops >>  GetOpt::Option('h',"help", help_opt);
+		ShowHelp(help_opt);
+	}
+	else if(argc > 1 && RunParseArguments(ops) == true)
 	{
 		if(RunParserAndDebug(codetape) == true && OP_execute == true)
 		{
 			RunProgram(codetape);
 		}
+
+		MessageLog::GetInstance().GetMessages();
+	}
+	else
+	{
+		//ShowUsage();
+		ShowHelp("e");
 	}
 	
-	messages->GetMessages();
-	//todo compiler info _line_ date
-
 	//pa2.Parse(",[#,]$[.$]\0");
 		//pa2.Parse("{[->-[-]<<+/>M!]}\\+++++++++++++++++++++++++.");
 		//pa2.Parse(";[:[-]++++++++++.;]");
@@ -109,9 +110,6 @@ int main(int argc, char* argv[])
 	DeleteCriticalSection(&pm_critical_section);
 	DeleteCriticalSection(&heap_critical_section);
 
-	delete log_stream;
-	delete messages;
-
 	return 0;
 }
 
@@ -125,27 +123,27 @@ bool RunParseArguments(GetOpt::GetOpt_pp &ops)
 	}
 	catch(GetOpt::TooManyArgumentsEx ex)
 	{
-		messages->AddMessage("Argument Init Error: Too many arguments");
+		MessageLog::GetInstance().AddMessage("Argument Init Error: Too many arguments");
 		ok = false;
 	}
 	catch(GetOpt::GetOptEx ex)
     {
-        messages->AddMessage("Argument Init Error: Error in arguments: " + std::string(ex.what()));
+        MessageLog::GetInstance().AddMessage("Argument Init Error: Error in arguments: " + std::string(ex.what()));
 		ok = false;
     }
 	catch(BrainThreadInvalidOptionException ex)
 	{
-		messages->AddMessage("Argument Init Error: Error in arguments: " + std::string(ex.what()));
+		MessageLog::GetInstance().AddMessage("Argument Init Error: Invalid argument: " + std::string(ex.what()));
 		ok = false;
 	}
 	catch(...)
 	{
-		messages->AddMessage("Argument Init Error: General error");
+		MessageLog::GetInstance().AddMessage("Argument Init Error: General error");
 		ok = false;
 	}
 
 	if(ok == true)
-		messages->AddInfo("Argument Init Ok");
+		MessageLog::GetInstance().AddInfo("Argument Init Ok");
 
 	return ok;
 }
@@ -155,7 +153,7 @@ bool RunParserAndDebug(CodeTape &codetape)
 	bool ok = true;
 	try
 	{
-		Parser parser(OP_language, messages, OP_debug);
+		Parser parser(OP_language, &MessageLog::GetInstance(), OP_debug);
 
 		if(OP_sourcetype == stInput)
 		{
@@ -171,29 +169,29 @@ bool RunParserAndDebug(CodeTape &codetape)
 
 		if(parser.isCodeValid()) //kod wygl¹da w porz¹dku
 		{
-			messages->AddInfo("Parse ends succesfully");
+			MessageLog::GetInstance().AddInfo("Parse ends succesfully");
 		
 			if(OP_debug)
 			{
-				Debuger debuger(messages, parser.GetCode(), sizeof(TYPEMOI), OP_repair);
+				Debuger debuger(parser.GetCode(), sizeof(TYPEMOI), OP_repair);
 				debuger.Debug();
 
 				if(debuger.isCodeValid())
 				{
-					messages->AddInfo("Debug ends succesfully");
+					MessageLog::GetInstance().AddInfo("Debug ends succesfully");
 					if(OP_repair == true)
-						messages->AddInfo("Repair ends succesfully");
+						MessageLog::GetInstance().AddInfo("Repair ends succesfully");
 				}
 				else
 				{
-					messages->AddMessage("Debug fails");
+					MessageLog::GetInstance().AddMessage("Debug fails");
 					ok = false;
 				}
 			}		
 		}
 		else
 		{
-			messages->AddMessage("Parse Error: There are errors in your code");
+			MessageLog::GetInstance().AddMessage("Parse Error: There are errors in your code");
 			ok = false;
 		}
 
@@ -202,7 +200,7 @@ bool RunParserAndDebug(CodeTape &codetape)
 	}
 	catch(std::exception e)
 	{
-		messages->AddMessage("Parse&Debug Error:");
+		MessageLog::GetInstance().AddMessage("Parse&Debug Error:");
 		ok = false;
 	}
 
@@ -269,7 +267,7 @@ void RunProgram(BrainThread<T> &brain_main_thread, CodeTape &codetape)
 	brain_main_thread.Run(&codetape);
 	brain_main_thread.WaitForPendingThreads();
 
-	messages->AddInfo("Execution end");
+	MessageLog::GetInstance().AddInfo("Execution end");
 }
 
 
@@ -293,7 +291,7 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 			throw BrainThreadInvalidOptionException("EOF", op_arg);
 	}
 	else OP_eof_behavior = MemoryTape<char>::eoZero;
-
+	
 	// -c --cellsize [8|16|32|u8|u16|u32]
 	if (ops >> GetOpt::OptionPresent('c',"cellsize"))
 	{
@@ -328,13 +326,13 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	}
 	else OP_mem_size = def_mem_size;
 
-	// -b --behavior [constant|tape|dynamic]
+	// -b --memorybehavior [constant|tapeloop|dynamic]
 	if (ops >> GetOpt::OptionPresent('b',"memorybehavior"))
 	{
         ops >>  GetOpt::Option('b', "memorybehavior", op_arg);
 		if(op_arg == "constant")
 			OP_mem_behavior = MemoryTape<char>::moLimited;
-		else if(op_arg == "tape")
+		else if(op_arg == "tapeloop")
 			OP_mem_behavior = MemoryTape<char>::moContinuousTape;
 		else if(op_arg == "dynamic")
 			OP_mem_behavior = MemoryTape<char>::moDynamic;
@@ -342,7 +340,7 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 			throw BrainThreadInvalidOptionException("MEMORYBEHAVIOR", op_arg);
 	}
 	else OP_mem_behavior = MemoryTape<char>::moLimited;
-
+	
 	// -l --language [bt|b|bf|pb|brainthread|brainfuck|brainfork|pbrain|auto]
 	if (ops >> GetOpt::OptionPresent('l',"language"))
 	{
@@ -375,13 +373,13 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	OP_debug = (ops >> GetOpt::OptionPresent('d', "debug"));
 	OP_repair = (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia³
 	OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamia³
-
+	
 	if(OP_repair)//aby by³ repair, musi byc debug
 		OP_debug = true;
 	if(!OP_debug)//nie debugujesz? musi byc execute
 		OP_execute = true;
 
-	//--message[all|important|silent]
+	//--message[all|important|none]
 	//--wall
 	//--silent
 	if (ops >> GetOpt::OptionPresent("messages") || ops >> GetOpt::OptionPresent("wall") || ops >> GetOpt::OptionPresent("silent"))
@@ -393,7 +391,7 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 				OP_message = MessageLog::mlAll;
 			else if(op_arg == "important")
 				OP_message = MessageLog::mlImportant;
-			else if(op_arg == "silent")
+			else if(op_arg == "none")
 				OP_message = MessageLog::mlNone;
 			else 
 				throw BrainThreadInvalidOptionException("MESSAGES", op_arg);
@@ -406,8 +404,8 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 			OP_message = MessageLog::mlNone;
 	}
 	OP_message = MessageLog::mlImportant;
-	messages = new MessageLog(OP_message);
-
+	MessageLog::GetInstance().SetMessageLevel(OP_message);
+	
 	// --log [none|console|filename]
 	if (ops >> GetOpt::OptionPresent("log"))
 	{
@@ -422,21 +420,19 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 		else 
 			throw BrainThreadInvalidOptionException("LANGUAGE", op_arg);
 
-		log_stream = new LogStream(OP_log);
-
-		if(OP_log == LogStream::lsFile)
-				log_stream->SetLogPath(op_arg);
+		LogStream::GetInstance().OpenStream(OP_log, op_arg);
 	}
 	else
 	{
-		log_stream = new LogStream(LogStream::lsFile);
-		log_stream->SetLogPath("bt_log.txt");
+		LogStream::GetInstance().OpenStream(OP_log,"bt_log.txt");
 	}
 
-	//--s -sourcefile [filename]
+	//-s --sourcefile [filename]
+	//-i --input [code]
+	//--sourcecode [code]
 	if (ops >> GetOpt::OptionPresent('s',"sourcefile"))
 	{
-		ops >>  GetOpt::Option("log", op_arg);
+		ops >>  GetOpt::Option('s',"sourcefile", op_arg);
 
 		if(op_arg.find(".") != std::string::npos) //rozpoznajemy ¿e wpisano plik
 		{
@@ -491,23 +487,25 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	else OP_nopause = true;
 
 	//reszta opcji, w³aœciwie spodziewany sie jednej tylko
-	ops >> GetOpt::GlobalOption(op_args);
-	ops.end_of_options();
-
-	if(op_args.size() > 1)
-			throw GetOpt::TooManyArgumentsEx();
-	else
+	if(ops.options_remain())
 	{
-		if(op_args[0].find_first_of(",[]<>+-()") == std::string::npos &&
-		   op_args[0].find(".") != std::string::npos	) //rozpoznajemy ¿e wpisano plik
+		ops >> GetOpt::GlobalOption(op_args);
+
+		if(op_args.size() != 1)
+				throw GetOpt::TooManyArgumentsEx();
+		else 
 		{
-			OP_sourcetype = stFile;
-			OP_source = op_arg;
-		}
-		else
-		{
-			OP_sourcetype = stInput;
-			OP_source = op_arg;
+			if(op_args[0].find_first_of(",[]<>+-()") == std::string::npos &&
+			   op_args[0].find(".") != std::string::npos ) //rozpoznajemy ¿e wpisano plik
+			{
+				OP_sourcetype = stFile;
+				OP_source = op_arg;
+			}
+			else
+			{
+				OP_sourcetype = stInput;
+				OP_source = op_arg;
+			}
 		}
 	}
 }
@@ -521,20 +519,3 @@ bool RanFromConsole()
     return ( !(GetCurrentProcessId() == dwProcessId ));
 }
 
-void PrintBrainThreadInfo()
-{
-	std::cout << "BrainThread Interpreter " << BT_VERSION << "(" << __DATE__ << ")\n"
-				 "(c) by SSStudios 2014-2015" << std::endl;
-}
-
-void PrintBrainThreadInfoEx()
-{
-	std::cout << "BrainThread Interpreter " << BT_VERSION << "(" << __DATE__ << ")\n"
-				 "(c) by SilverShadeStudios 2014-2015 - https://github.com/onehundredfifteen/Brainthread \n"
-				 "Supports: BrainThread, BrainFuck, pBrain and BrainFork" << std::endl;
-}
-
-void ShowHelp()
-{
-	PrintBrainThreadInfoEx();
-}

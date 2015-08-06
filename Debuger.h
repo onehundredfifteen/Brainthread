@@ -13,7 +13,7 @@
 class Debuger
 {
 	public:
-		Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair = false);
+		Debuger(std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair = false);
 		~Debuger(void);
 
 		void Debug();
@@ -24,7 +24,6 @@ class Debuger
 		Parser::code_lang language;
 		std::vector<CodeTape::bt_instruction> *precode;
 
-		MessageLog *messages;
 		short typesize;
 		bool repair;
 		unsigned repaired_issues;

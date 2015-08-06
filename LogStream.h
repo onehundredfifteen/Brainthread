@@ -14,20 +14,26 @@ class LogStream
 			lsNone
 		} stream_type;
 
-		LogStream(stream_type st) : StreamType(st){}
-		~LogStream();
+	private: //singleton
+		LogStream();
+		LogStream(const LogStream &);
+		LogStream& operator=(const LogStream&);
+	    ~LogStream(void);
 
-		void SetLogPath(std::string lp);
+	public:
+		static LogStream& GetInstance();
+		void OpenStream(stream_type st, std::string lp);
 
 		std::ostream& GetStream();
-		std::ostream& GetStreamSession();
 
 	private:
-		const stream_type StreamType;
+		stream_type StreamType;
+
 		std::string LogPath;
 		std::ofstream stream;
 
 		char  time_buf[40];
 
+		std::ostream& Stream();
 		std::string GetTime();
 };

@@ -7,8 +7,6 @@
 extern CRITICAL_SECTION code_critical_section;
 extern CRITICAL_SECTION cout_critical_section;
 extern CRITICAL_SECTION heap_critical_section;
-extern LogStream *log_stream;
-
 
 template < typename T >
 void __cdecl  run_bt_thread(void * arg) 
@@ -43,7 +41,7 @@ void __cdecl  run_bt_thread(void * arg)
 }
 
 template < typename T >
-BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, /*res_context r_ctx,*/ MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
+BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, res_context r_ctx, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
 {
 	 memory = nullptr;
 	 functions = nullptr;
@@ -51,7 +49,8 @@ BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c
 
 	 process_monitor = monitor;
 	 code = c;
-	// resource_context = rctx;
+	 resource_context = r_ctx;
+
 	 memory = new MemoryTape<T>(mem_size, eo, mo);
 	 functions = new FunctionHeap<T>();
 	 heap = new MemoryHeap<T>;
@@ -199,37 +198,37 @@ void BrainThreadProcess<T>::Run(void)
 			************************/
 			case CodeTape::btoDEBUG_SimpleMemoryDump: 
 					  EnterCriticalSection(&cout_critical_section);
-					  this->memory->SimpleMemoryDump(log_stream->GetStreamSession());
+					  this->memory->SimpleMemoryDump(LogStream::GetInstance().GetStream());
 					  LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_MemoryDump: 
 					  EnterCriticalSection(&cout_critical_section);
-					  this->memory->MemoryDump(log_stream->GetStreamSession());
+					  this->memory->MemoryDump(LogStream::GetInstance().GetStream());
 					  LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_StackDump: 
 					EnterCriticalSection(&cout_critical_section);
-					this->heap->PrintStack(log_stream->GetStreamSession());
+					this->heap->PrintStack(LogStream::GetInstance().GetStream());
 					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_SharedStackDump: 
 					EnterCriticalSection(&cout_critical_section);
-					this->shared_heap->PrintStack(log_stream->GetStreamSession());
+					this->shared_heap->PrintStack(LogStream::GetInstance().GetStream());
 					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsStackDump: 
 					EnterCriticalSection(&cout_critical_section);
-					this->functions->PrintStackTrace(log_stream->GetStreamSession());
+					this->functions->PrintStackTrace(LogStream::GetInstance().GetStream());
 					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsDefsDump: 
 					EnterCriticalSection(&cout_critical_section);
-					this->functions->PrintDeclaredFunctions(log_stream->GetStreamSession());
+					this->functions->PrintDeclaredFunctions(LogStream::GetInstance().GetStream());
 					LeaveCriticalSection(&cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_ThreadInfoDump: 
 					EnterCriticalSection(&cout_critical_section);
-					this->PrintProcessInfo(log_stream->GetStreamSession());
+					this->PrintProcessInfo(LogStream::GetInstance().GetStream());
 					LeaveCriticalSection(&cout_critical_section);
 				break;
 			/***********************
@@ -262,7 +261,7 @@ void BrainThreadProcess<T>::Fork()
 		*(child->memory->GetPointer()) = 1;
 		++child->code_pointer;
 	}
-	catch(const BFRangeException &re)
+	catch(const BFRangeException re)
 	{
 		delete child;
 		throw BFForkThreadException(115);

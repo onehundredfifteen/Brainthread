@@ -86,6 +86,7 @@
     <ClInclude Include="CodeTape.h" />
     <ClInclude Include="Debuger.h" />
     <ClInclude Include="FunctionHeap.h" />
+    <ClInclude Include="BrainHelp.h" />
     <ClInclude Include="LogStream.h" />
     <ClInclude Include="MemoryHeap.h" />
     <ClInclude Include="MemoryTape.h" />
@@ -98,6 +99,7 @@
     <ClCompile Include="BrainThread.cpp" />
     <ClCompile Include="BrainThreadExceptions.cpp" />
     <ClCompile Include="Debuger.cpp" />
+    <ClCompile Include="BrainHelp.cpp" />
     <ClCompile Include="LogStream.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BrainThreadProcess.cpp" />

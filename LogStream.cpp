@@ -2,18 +2,31 @@
 
 #include <ctime>
 
+LogStream::LogStream()
+{
+	StreamType = lsNone;
+}
 LogStream::~LogStream()
 {
 	if(StreamType == LogStream::lsFile && stream.is_open())
 		stream.close();
 }
 
-void LogStream::SetLogPath(std::string lp)
+LogStream& LogStream::GetInstance()
 {
-	this->LogPath = lp;
+	static LogStream instance;
+    return instance;
 }
 
-std::ostream& LogStream::GetStream() 
+void LogStream::OpenStream(stream_type st, std::string lp)
+{
+	StreamType = st;
+
+	if(StreamType == LogStream::lsFile)
+		LogPath = lp;
+}
+
+std::ostream& LogStream::Stream() 
 {
 	if(StreamType == LogStream::lsFile)
 	{
@@ -31,13 +44,13 @@ std::ostream& LogStream::GetStream()
 	else return std::cout;
 }
 
-std::ostream& LogStream::GetStreamSession() 
+std::ostream& LogStream::GetStream() 
 {
 	if(StreamType == LogStream::lsFile)
 	{
-		GetStream() << "\n++ Debug Log " << GetTime() << " ++\n";
+		Stream() << "\n++ Debug Log " << GetTime() << " ++\n";
 	}
-	return GetStream();
+	return Stream();
 }
 
 std::string LogStream::GetTime()

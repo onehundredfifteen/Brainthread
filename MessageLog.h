@@ -70,8 +70,16 @@ class MessageLog
 			bool IsMessage(){ return (int)error_code >= 600;}
 		};
 
-		MessageLog(MessageLevel message_level);
+	private: //singleton
+		MessageLog();
+		MessageLog(const MessageLog &);
+		MessageLog& operator=(const MessageLog&);
 	    ~MessageLog(void);
+
+	public:
+		static MessageLog& GetInstance();
+
+		void SetMessageLevel(MessageLevel message_level);
 
 		void AddMessage(ErrCode e_code, unsigned int pos, unsigned int line = 1);
 		void AddMessage(ErrCode e_code, std::string t);

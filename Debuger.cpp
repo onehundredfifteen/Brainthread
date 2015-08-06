@@ -4,14 +4,13 @@
 #include <cmath>
 #include <iostream>
 
-Debuger::Debuger(MessageLog *messages, std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair)
+Debuger::Debuger(std::vector<CodeTape::bt_instruction> *precode, short typesize, bool repair)
 {
 	language = Parser::clBrainThread;
 	
-	if(messages == nullptr || precode == nullptr)
+	if(precode == nullptr)
 		throw std::invalid_argument("Debuger::Debuger: invalid argument");
 
-	this->messages = messages;
 	this->precode = precode;
 	this->repair = repair;
 	this->typesize = typesize;
@@ -144,10 +143,10 @@ void Debuger::Debug(void)
 		else if(it->operation == CodeTape::btoCallFunction) ++function_calls;
 
 		if(TestForRepetition(it, CodeTape::btoJoin))
-			messages->AddMessage(MessageLog::ecJoinRepeat, it - precode->begin());
+			MessageLog::GetInstance().AddMessage(MessageLog::ecJoinRepeat, it - precode->begin());
 
 		if(TestForRepetition(it, CodeTape::btoTerminate))
-			messages->AddMessage(MessageLog::ecTerminateRepeat, it - precode->begin());
+			MessageLog::GetInstance().AddMessage(MessageLog::ecTerminateRepeat, it - precode->begin());
 
 		
 		if(IsArithmeticSafeInstruction(*it) == false && ignore_arithmetic_for_error == true) 
@@ -161,17 +160,17 @@ void Debuger::Debug(void)
 
 	if( forks == 0 && joins > 0)
 	{
-		messages->AddMessage(MessageLog::ecJoinButNoFork, 1);
+		MessageLog::GetInstance().AddMessage(MessageLog::ecJoinButNoFork, 1);
 	}
 
 	if( function_def > function_limit)
 	{
-		messages->AddMessage(MessageLog::ecFunctionLimitExceed, 1);
+		MessageLog::GetInstance().AddMessage(MessageLog::ecFunctionLimitExceed, 1);
 	}
 
 	if( function_def > 0 && function_calls == 0)
 	{
-		messages->AddMessage(MessageLog::ecFunctionExistsButNoCall, 1);
+		MessageLog::GetInstance().AddMessage(MessageLog::ecFunctionExistsButNoCall, 1);
 	}
 
 	std::cout << std::endl;
@@ -197,7 +196,7 @@ void Debuger::TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterat
 		//pusta pêtla []
 		if( (it + 1)->operation == CodeTape::btoEndLoop)
 		{ 
-			messages->AddMessage(MessageLog::ecInfiniteLoop, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecInfiniteLoop, it - precode->begin());	
 			if(repair)
 			{
 				it = precode->erase(it, it+2);
@@ -209,7 +208,7 @@ void Debuger::TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterat
 		//pusta pêtla [[x[x]xx]]
 		else if( (it + 1)->operation == CodeTape::btoBeginLoop && (precode->begin() + (it->jump) - 1)->operation == CodeTape::btoEndLoop)
 		{
-			messages->AddMessage(MessageLog::ecEmptyLoop, it - precode->begin());
+			MessageLog::GetInstance().AddMessage(MessageLog::ecEmptyLoop, it - precode->begin());
 			if(repair)
 			{
 				precode->erase(precode->begin() + (it->jump));
@@ -236,7 +235,7 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 		{	
 			if(n != std::find_if_not(it, n, IsChangingInstruction) || it+1 == n) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami
 			{
-				messages->AddMessage(MessageLog::ecFunctionRedefinition, it - precode->begin());
+				MessageLog::GetInstance().AddMessage(MessageLog::ecFunctionRedefinition, it - precode->begin());
 			}
 		}
 	}
@@ -246,7 +245,7 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 
 		if(n - it == 1) //funkcja jest pusta? ()
 		{
-			messages->AddMessage(MessageLog::ecEmptyFunction, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecEmptyFunction, it - precode->begin());	
 			if(repair) //usuwamy funkcjê
 			{
 				precode->erase(n);
@@ -264,7 +263,7 @@ void Debuger::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iter
 				++function_limit;
 				if( m != std::find_if_not(it, m, IsChangingInstruction) || it+1 == m) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami (xx(
 				{
-					messages->AddMessage(MessageLog::ecFunctionRedefinition2, it + 1 - precode->begin());
+					MessageLog::GetInstance().AddMessage(MessageLog::ecFunctionRedefinition2, it + 1 - precode->begin());
 				}
 			}
 		}
@@ -304,7 +303,7 @@ void Debuger::TestForJoinBeforeFork(std::vector<CodeTape::bt_instruction>::itera
 
 		if(m == it && forks == 0) //join poza funkcj¹ [mo¿e byc call do póŸniejszej funkcji z fork, ale to juz za trudne]
 		{
-			messages->AddMessage(MessageLog::ecJoinBeforeFork, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecJoinBeforeFork, it - precode->begin());	
 			if(repair) //usuwamy join
 			{
 				it = precode->erase(it);
@@ -329,7 +328,7 @@ void Debuger::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &i
 
 		if((n - it) > 1 && abs(Calcule(it, n)) != std::count_if(it, n, IsArithmeticInstruction))
 		{
-			messages->AddMessage(MessageLog::ecRedundantArithmetic, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantArithmetic, it - precode->begin());	
 			if(repair)
 			{
 				sum = Calcule(it, n);
@@ -381,7 +380,7 @@ void Debuger::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &i
 
 			if(abs(sum) != ops)
 			{
-				messages->AddMessage(MessageLog::ecRedundantArithmetic2, it - precode->begin());	
+				MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantArithmetic2, it - precode->begin());	
 			}
 		}
 	}
@@ -424,18 +423,18 @@ void Debuger::TestArithmeticsLoops(std::vector<CodeTape::bt_instruction>::iterat
 
 		if(abs(sum) != ops)
 		{
-			messages->AddMessage(MessageLog::ecRedundantLoopArithmetic, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantLoopArithmetic, it - precode->begin());	
 		}
 		
 		if(sum > 1 && typesize > 1)//wolna pêtla dla typów wiêkszych ni¿ 1 bajt
 		{
-			messages->AddMessage(MessageLog::ecSlowLoop, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecSlowLoop, it - precode->begin());	
 			//nienaprawialny
 		}
 
 		if(ARSearchTool(it))
 		{
-			messages->AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - precode->begin());
+			MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - precode->begin());
 		}
 
 		ignore_arithmetic_for_error = true;
@@ -459,7 +458,7 @@ void Debuger::TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator
 		
 		if((n - it) > 1 && abs(sum) != ops)
 		{
-			messages->AddMessage(MessageLog::ecRedundantMoves, it - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantMoves, it - precode->begin());	
 			if(repair)
 			{
 				k = (ops-abs(sum))/2;
@@ -487,7 +486,7 @@ void Debuger::TestOpsBeforeFork(std::vector<CodeTape::bt_instruction>::iterator 
         r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
 		if(r != std::find_if_not(r,precode->rend(),IsChangingCellInstruction))
 		{
-			messages->AddMessage(MessageLog::ecRedundantOpBeforeFork, (r+1).base() - precode->begin());	
+			MessageLog::GetInstance().AddMessage(MessageLog::ecRedundantOpBeforeFork, (r+1).base() - precode->begin());	
 		}
 	}
 }
@@ -545,7 +544,7 @@ bool Debuger::ARSearchTool(const std::vector<CodeTape::bt_instruction>::iterator
 
 bool Debuger::isCodeValid(void)
 {
-	return messages->WarningsCount() == 0;
+	return MessageLog::GetInstance().WarningsCount() == 0;
 }
 
 

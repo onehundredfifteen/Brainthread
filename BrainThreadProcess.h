@@ -10,14 +10,15 @@ template < typename T >
 class BrainThreadProcess
 {
 public:
-	BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, /*res_context r_ctx,*/ MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
-	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);
-	~BrainThreadProcess(void);
 
 	typedef enum {
 		rcIndependent,
 		rcShared
 	} res_context;
+
+	BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, res_context r_ctx, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
+	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);
+	~BrainThreadProcess(void);
 
 	void Run(void);
 
