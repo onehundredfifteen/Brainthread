@@ -10,13 +10,7 @@ template < typename T >
 class BrainThreadProcess
 {
 public:
-
-	typedef enum {
-		rcIndependent,
-		rcShared
-	} res_context;
-
-	BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, res_context r_ctx, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
+	BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
 	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);
 	~BrainThreadProcess(void);
 
@@ -32,14 +26,11 @@ protected:
 	FunctionHeap<T> *functions;
 
 	CodeTape * code;
-	std::stack<CodeTape::bt_instruction> jump_stack;
-	CodeTape::bt_instruction current_instruction;
-
 	unsigned int code_pointer;
-
+	
+	std::stack<CodeTape::bt_instruction> jump_stack;
 	std::vector< HANDLE > child_threads;
 	ProcessMonitor * process_monitor;
-	res_context resource_context;
 
 	void Fork(void);
 	void Join(void);

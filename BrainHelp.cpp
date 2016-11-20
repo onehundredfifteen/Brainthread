@@ -11,7 +11,7 @@ void PrintBrainThreadInfoEx()
 {
 	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
 				 "(c) by SilverShadeStudios 2014-2015\n"
-				 "https://github.com/onehundredfifteen/Brainthread \n"
+				 "https://github.com/onehundredfifteen/Brainthread\n"
 				 "Supports BrainThread, BrainFuck, pBrain and BrainFork\n" << std::endl;
 }
 
@@ -21,6 +21,7 @@ void ShowUsage()
 	std::cout << "++ USAGE ++\n"
 			  << "\tbt.exe [options]\n"
 			  << "\tbt.exe [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
+			  << "\tbt.exe --help\n"
 			  << "\n"
 			  << "++ BASIC OPTIONS ++\n"
 			  << "-l --language [brainthread|brainfuck|brainfork|pbrain] Default: brainthread\n"
@@ -102,7 +103,7 @@ void ShowHelp(std::string help_opt)
 				<< "read/write values bigger than 255. When a --strict flag is present, this option "
 				<< "will be set by default to 'u8' regardless of your choice.";
 	}
-	else if(help_opt == "sharedmemory")
+	/*else if(help_opt == "sharedmemory")
 	{
 	  std::cout << "OPTION: SHARED MEMORY\n"
 		        << "\n"
@@ -113,7 +114,7 @@ void ShowHelp(std::string help_opt)
 				<< "When this flag is set, each thread shares its local heap with other threads. "
 				<< "Thus, there is two heaps (local and common) for all processes. When a --strict flag is present, this option "
 				<< "will be not set by default, regardless of your choice.";
-	}
+	}*/
 	else if(help_opt == "strict")
 	{
 	  std::cout << "OPTION: STRICT\n"
@@ -185,16 +186,16 @@ void ShowHelp(std::string help_opt)
 				<< "completely silent execution. When interpreter is running from console, this message won't be shown, "
 				<< "regardless of --nopause flag state.";
 	}
-	else if(help_opt == "message" || help_opt == "wall" || help_opt == "silent")
+	else if(help_opt == "message" || help_opt == "silent")
 	{
 	  std::cout << "OPTION: MESSAGE LEVEL\n"
 		        << "\n"
-			    << "Syntax: --message [all|important|none], --wall, --silent\n"
-				<< "Default value: important, wall\n"
+			    << "Syntax: --message [all|important|none] | --silent\n"
+				<< "Default value: important\n"
 				<< "\n"
 				<< "This option defines which type of messages will be shown. \"all\": all messages will be shown including flow informations like 'Execution end'. "
 				<< "\"important\": only warnings, debugger messages and interpreter's logo will be shown. \"none\": complete silent, transparent execution with "
-				<< "no message except program's output. Flag '--wall' is equal to '--message important' and '--silent' is equal to '--message none'";
+				<< "no message except program's output. Flag '--silent' is equal to '--message none'";
 	}
 	else if(help_opt == "log")
 	{
@@ -228,7 +229,6 @@ void ShowHelp(std::string help_opt)
 				<< "-m --memorysize <1,2^32> Default: 30000\n"
 				<< "-b --memorybehavior [constant|tapeloop|dynamic] Default: constant\n"
 				<< "-c --cellsize [8|16|32|u8|u16|u32] Default: 8\n"
-				<< "--sharedmemory\tDefault: flag is not set\n"
 				<< "--strict      \tDefault: flag is not set\n"
 				<< "\n"
 				<< "\t++ ENVIROMENT OPTIONS ++\n"
@@ -238,7 +238,7 @@ void ShowHelp(std::string help_opt)
 				<< "-s --sourcefile [\"filename\"] Default: not used\n"
 				<< "-i --input [code], --sourcecode [code] Default: not used\n"
 				<< "--nopause     \tDefault: flag is not set\n"
-				<< "--message [all|important|none], --wall, --silent Default: important, wall\n"
+				<< "--message [all|important|none], --silent Default: important, wall\n"
 				<< "--log [none|console|\"filename\"] Default: filename=\"bt_log.txt\"\n";
 	}
 	std::cout << std::endl;

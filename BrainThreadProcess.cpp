@@ -11,10 +11,10 @@ extern CRITICAL_SECTION heap_critical_section;
 template < typename T >
 void __cdecl  run_bt_thread(void * arg) 
 {
-	BrainThreadProcess<T>* proc = reinterpret_cast< BrainThreadProcess<T>* >(arg) ;
+	BrainThreadProcess<T>* process = reinterpret_cast< BrainThreadProcess<T>* >(arg) ;
 	try
 	{
-		proc->Run();
+		process->Run();
 	}
 	catch(BrainThreadRuntimeException &re)
 	{
@@ -35,13 +35,13 @@ void __cdecl  run_bt_thread(void * arg)
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	
-	delete proc;
-	proc = nullptr;
+	delete process;
+	process = nullptr;
 	_endthread();
 }
 
 template < typename T >
-BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, res_context r_ctx, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
+BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
 {
 	 memory = nullptr;
 	 functions = nullptr;
@@ -49,7 +49,6 @@ BrainThreadProcess<T>::BrainThreadProcess(ProcessMonitor * monitor, CodeTape * c
 
 	 process_monitor = monitor;
 	 code = c;
-	 resource_context = r_ctx;
 
 	 memory = new MemoryTape<T>(mem_size, eo, mo);
 	 functions = new FunctionHeap<T>();
@@ -69,7 +68,6 @@ BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentPro
 	heap = nullptr;
 	
 	process_monitor = parentProcess.process_monitor;
-//	resource_context = parentProcess.resource_context;
 	code = parentProcess.code;
 	memory = new MemoryTape<T>(*parentProcess.memory);
 
@@ -99,11 +97,12 @@ template < typename T >
 void BrainThreadProcess<T>::Run(void)
 {
 	std::ofstream fs;
+	static CodeTape::bt_instruction current_instruction;
 
 	while(true)
 	{
 		EnterCriticalSection(&code_critical_section);
-		current_instruction = code->ToExecute(this->code_pointer);
+		current_instruction = code->GetInstruction(this->code_pointer);
 		LeaveCriticalSection(&code_critical_section);
 
 		switch(current_instruction.operation)

@@ -23,9 +23,9 @@ void MessageLog::SetMessageLevel(MessageLevel message_level)
 	this->message_level = message_level;
 }
 
-void MessageLog::AddMessage(ErrCode e_code, unsigned int pos, unsigned int line)
+void MessageLog::AddMessage(ErrCode e_code, unsigned int pos)
 {
-	Error e(e_code, pos / line, line);
+	Error e(e_code, pos);
 	
 	messages.push_back(e);
 
@@ -67,11 +67,13 @@ unsigned MessageLog::MessagesCount(void)
 
 void MessageLog::GetMessages(void)
 {
+	unsigned mcnt = 0;
+	
 	if(message_level == MessageLog::mlNone)
 		return;//¿adnych wiadomoœci
 	
-	std::cerr << ErrorsCount() << ((ErrorsCount() != 1)? " errors, " : " error, ") << WarningsCount() << ((WarningsCount() != 1)? " warnings." : " warning.") << std::endl;
-	unsigned mcnt = 0;
+	if(ErrorsCount() || WarningsCount() )
+		std::cerr << std::endl << ErrorsCount() << ((ErrorsCount() != 1)? " errors, " : " error, ") << WarningsCount() << ((WarningsCount() != 1)? " warnings." : " warning.") << std::endl;
 
 	for(std::vector<Error>::iterator it = messages.begin(); it != messages.end(); ++it)
 	{
@@ -86,10 +88,7 @@ void MessageLog::GetMessages(void)
 			std::cerr << ((it->IsWarning())? "Warning " : "Error ") << (unsigned)it->error_code << ": " 
 						  << MapMessages(it->error_code);
 
-			if(it->line > 0)
-				std::cerr <<". Line: " << it->line << " Col: " << it->col << std::endl;
-			else 
-				std::cerr <<". Command: " << it->col << std::endl;
+			std::cerr <<" at instruction " << it->instruction_pos << std::endl;
 		}
 		else if(it->error_code == ecMessage)
 		{
@@ -114,31 +113,34 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
 		case ecELOutOfFunctionScope: return "Loop end out of function scope - ( [ ) ]";
         case ecBLOutOfFunctionScope: return "Loop begin out of function scope - [ ( ] )";
         case ecUnmatchedBreak: return "Mismatched break";
+		case ecEmptyCode: return "Source code is empty";
 
 		case ecInfiniteLoop: return "Detected an infinite loop like []";
         case ecEmptyLoop: return "Detected an empty loop like [[xx]]";
 		
-			
-		case ecEmptyFunction: return "Detected an empty function loop like ()";
+		case ecEmptyFunction: return "Detected an empty function like ()";
         case ecFunctionRedefinition: return "Suspected function redeclaration";
-		case ecFunctionRedefinition2: return "Suspected internal function redeclaration";
-		case ecFunctionLimitExceed: return "Function name pool exceed";
-        case ecFunctionExistsButNoCall: return "A function was declared but no call in code";
+		case ecFunctionRedefinitionInternal: return "Suspected internal function redeclaration";
+		case ecFunctionLimitExceed: return "The set of names for the functions can be exceeded";
+        case ecFunctionExistsButNoCall: return "A function was declared but not used";
 
-		case ecJoinButNoFork: return "A join command exists but no fork";
-		case ecTerminateRepeat: return "Unessesary terminate repeat like !!";
-		case ecJoinRepeat: return "Unessesary join repeat like }}";
+		case ecJoinButNoFork: return "A join command exists but there is no fork";
+		case ecTerminateRepeat: return "Unnecessary terminate instruction repeat";
+		case ecJoinRepeat: return "Unnecessary join instruction repeat";
+		case ecSwapRepeat: return "Unnecessary swap instruction repeat";
         case ecJoinBeforeFork: return "Join before fork";
 			
 		case ecRedundantArithmetic: return "Redundant arithmetics";
-		case ecRedundantArithmetic2: return "Redundant arithmetics + function";
-		case ecRedundantLoopArithmetic: return "Redundant arithmetics in loop - possibly infinite";
-		case ecRedundantNearLoopArithmetic: return "Redundant arithmetics near loop like -[-]";
-        case ecSlowLoop: return "Very slow loop like [+]";	
+		case ecFunctionInLoop: return "Function declaration in the loop";
+		case ecRedundantNearLoopArithmetic: return "Redundant arithmetics before loop like -[+]";
+        case ecSlowLoop: return "Loop approaches infinity or very slow loop";	
 
 		case ecRedundantMoves: return "Redundant pointer moves like ><><";	
 		case ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
-		
+		case ecInfinityRecurention: return "Funcion calls itself recursively";
+
+
+		case ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
 	}
 	return "";
 }

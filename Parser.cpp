@@ -35,13 +35,14 @@ void Parser::Parse(const char * data)
 }
 
 void Parser::Parse(std::ifstream &in)
-{
-	std::istream_iterator<char> start(in), end;
-	std::vector<char> buffer (start, end);
-
+{	
 	if(in.fail())
-		throw std::ios_base::failure("Parser::Parse: File read error");
+		throw std::ios_base::failure("File read error");
 
+	//ladowanie z pliku
+	std::vector<char> buffer;
+	std::copy(std::istream_iterator<char>(in), std::istream_iterator<char>(), std::back_inserter(buffer));
+	
 	Parse(buffer);
 }
 
@@ -51,10 +52,11 @@ void Parser::Parse(std::vector<char> &source)
   std::stack<unsigned int> loop_call_stack;
   std::stack<unsigned int> func_call_stack;
 
+  //zmienna pomocnicza przy okreslaniu jumpów
   unsigned int not_valid_ins = 0;
-  CodeTape::bt_operation curr_op;
 
-  unsigned int line_counter = 1;
+  //bie¿aca operacja
+  CodeTape::bt_operation curr_op;
 
   if(source.empty())
   {
@@ -62,7 +64,7 @@ void Parser::Parse(std::vector<char> &source)
 	  return;
   }
 
-  precode.reserve(source.size() / 2);
+  instructions.reserve(source.size() / 2);
   
   for(std::vector<char>::iterator it = source.begin(); it < source.end(); ++it)
   {
@@ -73,52 +75,52 @@ void Parser::Parse(std::vector<char> &source)
 		if(curr_op == CodeTape::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
 		{
 			loop_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
-			precode.push_back(CodeTape::bt_instruction(curr_op));
+			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
 		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
 		{
 			if(loop_call_stack.empty() == false) 
 			{
-				precode[ loop_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
-				precode.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
+				instructions[ loop_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
+				instructions.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
 				
 				//szukamy [ ( ] )
 				if(func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
 				{
-					errors->AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+					errors->AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
 				}
 
 				loop_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego [
 			{
-				errors->AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins));
 			}
 					
 		}
 		else if(curr_op == CodeTape::btoBeginFunction) 
 		{
 			func_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
-			precode.push_back(CodeTape::bt_instruction(curr_op));
+			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
 		else if(curr_op == CodeTape::btoEndFunction)
 		{
 			if(func_call_stack.empty() == false) 
 			{
-				precode[ func_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
-				precode.push_back(CodeTape::bt_instruction(curr_op, func_call_stack.top()));
+				instructions[ func_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
+				instructions.push_back(CodeTape::bt_instruction(curr_op, func_call_stack.top()));
 
 				//szukamy ( [ ) ]
 				if(loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
 				{
-					errors->AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+					errors->AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
 				}
 
 				func_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego (
 			{
-				errors->AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins));
 			}
 					
 		}
@@ -127,20 +129,17 @@ void Parser::Parse(std::vector<char> &source)
 			std::vector<char>::iterator br_it = std::find(it, source.end(), ']');
 			if(it != source.end()) 
 			{
-				precode.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
+				instructions.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
 			}
 			else 
 			{
 				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}		
 		}*/
-		else precode.push_back(CodeTape::bt_instruction(curr_op));
+		else instructions.push_back(CodeTape::bt_instruction(curr_op));
 	}
 	else
 	{	
-		if(*it == '\n')
-			++line_counter;
-
 		++not_valid_ins;
 	}
   }
@@ -166,14 +165,14 @@ void Parser::Parse(std::vector<char> &source)
   //koniec
 }
 
-void Parser::GetCode(CodeTape &c)
+void Parser::DeliverCode(CodeTape &c)
 {
-	c.Copy(precode.begin(), precode.end());
+	c.Copy(instructions.begin(), instructions.end());
 }
 
 std::vector<CodeTape::bt_instruction> * Parser::GetCode()
 {
-	return &precode;
+	return &instructions;
 }
 
 bool Parser::isCodeValid(void)
@@ -183,7 +182,7 @@ bool Parser::isCodeValid(void)
 
 bool Parser::isValidOperator(char &c)
 {
-	static const char *valid_bt_ops = "<>+-.,[]()&{}!#$%/\\@;:";
+	static const char *valid_bt_ops = "<>+-.,[]()*{}!#$%/\\@;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
 	static const char *valid_pb_ops = "<>+-.,[]():";
 	static const char *valid_bo_ops = "<>+-.,[]Y";
@@ -234,7 +233,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 
 				case '(': return CodeTape::btoBeginFunction;
 				case ')': return CodeTape::btoEndFunction;
-				case '&': return CodeTape::btoCallFunction;
+				case '*': return CodeTape::btoCallFunction;
 
 				case '#': return CodeTape::btoPush;
 				case '$': return CodeTape::btoPop;
@@ -357,7 +356,8 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 	return CodeTape::btoInvalid;
 }
 
-unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int not_valid_pos)
+unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos)
 {
 	return pos - begin - not_valid_pos;
 }
+

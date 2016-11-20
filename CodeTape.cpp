@@ -18,7 +18,7 @@ CodeTape::~CodeTape(void)
 	instructions = NULL;
 }
 
-CodeTape::bt_instruction CodeTape::ToExecute(unsigned int &code_ptr)
+CodeTape::bt_instruction CodeTape::GetInstruction(unsigned int &code_ptr )
 {
 	return code_ptr == len ? btoUnkown : instructions[code_ptr];
 }
@@ -36,7 +36,7 @@ void CodeTape::Alloc(unsigned int size)
   }
   catch(...)
   {
-	  throw std::exception("FATAL> CodeTape::Alloc: Unkown Error");
+	  throw std::exception("FATAL> CodeTape::Alloc: Unknown Error");
   }
 
   len = size;

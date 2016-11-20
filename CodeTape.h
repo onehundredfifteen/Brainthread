@@ -36,9 +36,9 @@ class CodeTape
 			btoDecimalWrite,
 
 			//inverse loops - brainlove /TODO
-			btoInvBeginLoop,
+			/*btoInvBeginLoop,
 			btoInvEndLoop,
-			btoBreak,
+			btoBreak,*/
 
 			//debug instructions
 			btoDEBUG_SimpleMemoryDump = 100,
@@ -52,8 +52,6 @@ class CodeTape
 			btoInvalid,
 			btoUnkown = 0
 		} bt_operation;
-
-		
 
 		struct bt_instruction
 		{
@@ -72,16 +70,14 @@ class CodeTape
 		CodeTape(unsigned int size);
 		~CodeTape(void);
 
-		bt_instruction ToExecute(unsigned int &code_ptr);
+		bt_instruction GetInstruction(unsigned int &code_ptr);
 
-		void CodeTape::Copy(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end);
+		void Copy(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end);
 
 	protected:
 		bt_instruction * instructions;
-		
-		void CodeTape::Alloc(unsigned int size);
-
-
 		unsigned int len;
-		static const unsigned int len_limit = 104857600; //100 kb
+
+		void Alloc(unsigned int size);
+		//static const unsigned int len_limit = 104857600; //100 kb
 };

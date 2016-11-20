@@ -24,14 +24,14 @@ class Parser
 			clDefault
 		} code_lang;
 
+
 		Parser(code_lang lang, MessageLog *messages, bool debug_instructions_on = false);
 		~Parser(void);
 
 		void Parse(const char * data);
 		void Parse(std::ifstream &in);
 		
-
-		void GetCode(CodeTape &c); 
+		void DeliverCode(CodeTape &c); 
 		std::vector<CodeTape::bt_instruction> * GetCode(); 
 
 		bool isCodeValid(void);
@@ -42,7 +42,8 @@ class Parser
 		bool debug_instructions_mode;
 
 		MessageLog *errors;
-		std::vector<CodeTape::bt_instruction> precode;
+
+		std::vector< CodeTape::bt_instruction > instructions;
 
 		void Parse(std::vector<char> &source);
 	
@@ -53,5 +54,6 @@ class Parser
 		unsigned int FindMatchingRightPair(CodeTape::bt_operation op, unsigned int from_pos);
 		unsigned int FindMatchingLeftPair(CodeTape::bt_operation op, unsigned int from_pos); 
 
-		unsigned int GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int not_valid_pos);
+		unsigned int GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos);
 };
+

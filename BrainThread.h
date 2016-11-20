@@ -17,7 +17,6 @@ public:
 
 	typename MemoryTape<T>::mem_option mem_behavior; //zachowanie pamieci
     typename MemoryTape<T>::eof_option eof_behavior; //reakcja na EOF z wejœcia
-	typename BrainThreadProcess<T>::res_context resource_context; //wspo³dzielenie zasobów przez w¹tki
 	unsigned int mem_size;
 
 	void WaitForPendingThreads(void);

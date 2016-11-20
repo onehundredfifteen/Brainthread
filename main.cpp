@@ -27,7 +27,6 @@ Parser::code_lang OP_language;
 
 MemoryTape<char>::mem_option OP_mem_behavior;
 MemoryTape<char>::eof_option OP_eof_behavior; //reakcja na EOF z wejœcia
-BrainThreadProcess<char>::res_context OP_resource_context; //wspo³dzielenie zasobów przez w¹tki
 unsigned int OP_mem_size;
 typedef enum __cellsize
 {
@@ -40,7 +39,7 @@ typedef enum __sourcetype
 };
 __sourcetype OP_sourcetype;
 
-//domyœlan wartoœæ
+//domyœlna wartoœæ
 const unsigned int def_mem_size = 30000;
 
 
@@ -52,11 +51,12 @@ bool RanFromConsole();
 
 //£atwe wrappery
 bool RunParseArguments(GetOpt::GetOpt_pp &ops);
-bool RunParserAndDebug(CodeTape &codetape);
-void RunProgram(CodeTape &codetape);
-template < typename T > void RunProgram(BrainThread<T> &brain_main_thread, CodeTape &codetape);
+bool RunParserAndDebug(CodeTape &code);
+void RunProgram();
+template < typename T > void RunProgram(BrainThread<T> &brain_main_thread);
 
-#define TYPEMOI unsigned short
+//taœma kodu
+CodeTape Code;
 
 int main(int argc, char* argv[])
 {
@@ -66,32 +66,34 @@ int main(int argc, char* argv[])
 	InitializeCriticalSection(&pm_critical_section);
 	InitializeCriticalSection(&heap_critical_section);
 
-	//
-	CodeTape codetape;
-
 	//parsowanie opcji + deklaracje potrzebnych flag
 	GetOpt::GetOpt_pp ops(argc, argv);
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
 
 	if (ops >> GetOpt::OptionPresent('h',"help"))
 	{
-		std::string help_opt;
-		ops >>  GetOpt::Option('h',"help", help_opt);
-		ShowHelp(help_opt);
-	}
-	else if(argc > 1 && RunParseArguments(ops) == true)
-	{
-		if(RunParserAndDebug(codetape) == true && OP_execute == true)
+		if(argc > 2)
 		{
-			RunProgram(codetape);
+			std::string help_opt;
+			ops >>  GetOpt::Option('h',"help", help_opt);
+			ShowHelp(help_opt);
+		}
+		else
+			ShowHelp("");
+	}
+	else if(argc > 1)
+	{
+		if(RunParseArguments(ops) == true && RunParserAndDebug(Code) == true && OP_execute == true)
+		{
+			RunProgram();
 		}
 
 		MessageLog::GetInstance().GetMessages();
 	}
 	else
 	{
-		//ShowUsage();
-		ShowHelp("e");
+		ShowUsage();
+		//ShowHelp("e");
 	}
 	
 	//pa2.Parse(",[#,]$[.$]\0");
@@ -115,40 +117,37 @@ int main(int argc, char* argv[])
 
 bool RunParseArguments(GetOpt::GetOpt_pp &ops)
 {
-	bool ok = true;
-
 	try
 	{
 		InitArguments(ops);
 	}
 	catch(GetOpt::TooManyArgumentsEx ex)
 	{
-		MessageLog::GetInstance().AddMessage("Argument Init Error: Too many arguments");
-		ok = false;
+		MessageLog::GetInstance().AddMessage("Argument Error - too many arguments");
+		return false;
 	}
 	catch(GetOpt::GetOptEx ex)
     {
-        MessageLog::GetInstance().AddMessage("Argument Init Error: Error in arguments: " + std::string(ex.what()));
-		ok = false;
+        MessageLog::GetInstance().AddMessage("Argument Error - error while parsing arguments: " + std::string(ex.what()));
+		return false;
     }
 	catch(BrainThreadInvalidOptionException ex)
 	{
-		MessageLog::GetInstance().AddMessage("Argument Init Error: Invalid argument: " + std::string(ex.what()));
-		ok = false;
+		MessageLog::GetInstance().AddMessage("Argument Error: " + std::string(ex.what()));
+		return false;
 	}
 	catch(...)
 	{
-		MessageLog::GetInstance().AddMessage("Argument Init Error: General error");
-		ok = false;
+		MessageLog::GetInstance().AddMessage("Argument Error - unkown error");
+		return false;
 	}
 
-	if(ok == true)
-		MessageLog::GetInstance().AddInfo("Argument Init Ok");
+	MessageLog::GetInstance().AddInfo("Argument initialisation OK");
 
-	return ok;
+	return true;
 }
 
-bool RunParserAndDebug(CodeTape &codetape)
+bool RunParserAndDebug(CodeTape &code)
 {
 	bool ok = true;
 	try
@@ -162,109 +161,112 @@ bool RunParserAndDebug(CodeTape &codetape)
 		else if(OP_sourcetype == stFile)
 		{
 			std::ifstream in(OP_source);
-			in.open(OP_source);
 			parser.Parse(in);
 			in.close();
 		}
 
 		if(parser.isCodeValid()) //kod wygl¹da w porz¹dku
 		{
-			MessageLog::GetInstance().AddInfo("Parse ends succesfully");
+			MessageLog::GetInstance().AddInfo("Code is successfully parsed");
 		
 			if(OP_debug)
 			{
-				Debuger debuger(parser.GetCode(), sizeof(TYPEMOI), OP_repair);
+				Debuger debuger(parser.GetCode(), OP_repair);
 				debuger.Debug();
 
 				if(debuger.isCodeValid())
 				{
-					MessageLog::GetInstance().AddInfo("Debug ends succesfully");
+					MessageLog::GetInstance().AddInfo("Code is valid");
 					if(OP_repair == true)
-						MessageLog::GetInstance().AddInfo("Repair ends succesfully");
+						MessageLog::GetInstance().AddInfo("Code is repaired successfully");
 				}
 				else
 				{
-					MessageLog::GetInstance().AddMessage("Debug fails");
+					MessageLog::GetInstance().AddMessage("Debug error - code has warnings");
 					ok = false;
 				}
 			}		
 		}
 		else
 		{
-			MessageLog::GetInstance().AddMessage("Parse Error: There are errors in your code");
+			MessageLog::GetInstance().AddMessage("Parse error - code has errors");
 			ok = false;
 		}
 
 		if(ok == true)
-			parser.GetCode(codetape);
+			parser.DeliverCode(code);
 	}
-	catch(std::exception e)
+	catch(std::ios_base::failure &e)
 	{
-		MessageLog::GetInstance().AddMessage("Parse&Debug Error:");
+		MessageLog::GetInstance().AddMessage(MessageLog::ecFatalError, "Runtime error - " + std::string(e.what()));
+		ok = false;
+	}
+	catch(...)
+	{
+		MessageLog::GetInstance().AddMessage(MessageLog::ecUnkownError, "Unkown runtime error");
 		ok = false;
 	}
 
 	return ok;
 }
 
-void RunProgram(CodeTape &codetape)
+void RunProgram()
 {
 	switch(OP_cellsize)
 	{
 		case cs8:
 		{
 			BrainThread<char> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		case cs16:
 		{
 			BrainThread<short> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		case cs32:
 		{
 			BrainThread<int> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		case csu8:
 		{
 			BrainThread<unsigned char> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		case csu16:
 		{
 			BrainThread<unsigned short> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		case csu32:
 		{
 			BrainThread<unsigned int> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 		break;
 		default:
 		{
 			BrainThread<char> brain;
-			RunProgram(brain, codetape);
+			RunProgram(brain);
 		}
 	}
 }
 
 template < typename T > 
-void RunProgram(BrainThread<T> &brain_main_thread, CodeTape &codetape)
+void RunProgram(BrainThread<T> &brain_main_thread)
 {
 	brain_main_thread.mem_size = OP_mem_size;
 
 	brain_main_thread.mem_behavior      = static_cast< MemoryTape<T>::mem_option >(OP_mem_behavior);
 	brain_main_thread.eof_behavior      = static_cast< MemoryTape<T>::eof_option >(OP_eof_behavior);
-	brain_main_thread.resource_context  = static_cast< BrainThreadProcess<T>::res_context >(OP_resource_context);
 	
-	brain_main_thread.Run(&codetape);
+	brain_main_thread.Run(&Code);
 	brain_main_thread.WaitForPendingThreads();
 
 	MessageLog::GetInstance().AddInfo("Execution end");
@@ -360,13 +362,6 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	}
 	OP_language = Parser::clBrainThread;
 
-	// --sharedmemory
-	if (ops >> GetOpt::OptionPresent("sharedmemory"))
-	{
-       OP_resource_context = BrainThreadProcess<char>::rcShared;
-	}
-	else OP_resource_context = BrainThreadProcess<char>::rcIndependent;
-
 	//opcje œrodowiska
 
 	//debug, repair & execute
@@ -382,7 +377,7 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	//--message[all|important|none]
 	//--wall
 	//--silent
-	if (ops >> GetOpt::OptionPresent("messages") || ops >> GetOpt::OptionPresent("wall") || ops >> GetOpt::OptionPresent("silent"))
+	if (ops >> GetOpt::OptionPresent("messages") ||  ops >> GetOpt::OptionPresent("silent"))
 	{
         if(ops >> GetOpt::OptionPresent("messages"))
 		{
@@ -397,13 +392,12 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 				throw BrainThreadInvalidOptionException("MESSAGES", op_arg);
 		}
 
-		if (ops >> GetOpt::OptionPresent("wall"))
-			OP_message = MessageLog::mlImportant;
-
 		if (ops >> GetOpt::OptionPresent("silent"))
 			OP_message = MessageLog::mlNone;
 	}
-	OP_message = MessageLog::mlImportant;
+	else
+		OP_message = MessageLog::mlImportant;
+
 	MessageLog::GetInstance().SetMessageLevel(OP_message);
 	
 	// --log [none|console|filename]
@@ -448,12 +442,9 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 			ops >>  GetOpt::Option('i',"input", op_arg);
 		else
 			ops >>  GetOpt::Option("sourcecode", op_arg);
-
-		if(op_arg.find(".") != std::string::npos) //rozpoznajemy ¿e wpisano plik
-		{
-			OP_sourcetype = stInput;
-			OP_source = op_arg;
-		}
+		
+		OP_sourcetype = stInput;
+		OP_source = op_arg;
 	}
 
 	//--strict //super zgodne ustawienie opcji
@@ -463,20 +454,19 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 		{
 			case Parser::clBrainThread:
 			case Parser::clBrainFork:
-				OP_eof_behavior = MemoryTape<char>::eoMinusOne; //?
-				OP_resource_context = BrainThreadProcess<char>::rcIndependent;
+				OP_eof_behavior = MemoryTape<char>::eoMinusOne; 
 			break;
 
 			case Parser::clPBrain:
 			case Parser::clBrainFuck:
 			default:
 				OP_eof_behavior = MemoryTape<char>::eoUnchanged;
+				
 		}
 
 		OP_mem_size = def_mem_size;
-		OP_debug = false;
-		OP_execute = true;
-
+		OP_cellsize = cs8;
+		OP_mem_behavior = MemoryTape<char>::moLimited;
 	}
 
 	//--nopause //czy chcesz zatrzymaæ program po wykonaniu
@@ -491,20 +481,19 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	{
 		ops >> GetOpt::GlobalOption(op_args);
 
-		if(op_args.size() != 1)
+		if(op_args.size() > 1)
 				throw GetOpt::TooManyArgumentsEx();
 		else 
-		{
-			if(op_args[0].find_first_of(",[]<>+-()") == std::string::npos &&
-			   op_args[0].find(".") != std::string::npos ) //rozpoznajemy ¿e wpisano plik
+		{  
+			if(GetFileAttributesA(op_args[0].c_str()) == INVALID_FILE_ATTRIBUTES) //rozpoznajemy ¿e wpisano plik
 			{
-				OP_sourcetype = stFile;
-				OP_source = op_arg;
+				OP_sourcetype = stInput; //to nie plik
+				OP_source = op_args[0];
 			}
 			else
 			{
-				OP_sourcetype = stInput;
-				OP_source = op_arg;
+				OP_sourcetype = stFile;
+				OP_source = op_args[0];
 			}
 		}
 	}
