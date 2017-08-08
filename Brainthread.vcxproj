@@ -57,6 +57,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -73,6 +74,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -84,10 +86,10 @@
     <ClInclude Include="BrainThreadProcess.h" />
     <ClInclude Include="BrainThreadRuntimeException.h" />
     <ClInclude Include="CodeTape.h" />
-    <ClInclude Include="Debuger.h" />
+    <ClInclude Include="CodeAnalyser.h" />
     <ClInclude Include="FunctionHeap.h" />
     <ClInclude Include="BrainHelp.h" />
-    <ClInclude Include="LogStream.h" />
+    <ClInclude Include="DebugLogStream.h" />
     <ClInclude Include="MemoryHeap.h" />
     <ClInclude Include="MemoryTape.h" />
     <ClInclude Include="MessageLog.h" />
@@ -98,9 +100,9 @@
   <ItemGroup>
     <ClCompile Include="BrainThread.cpp" />
     <ClCompile Include="BrainThreadExceptions.cpp" />
-    <ClCompile Include="Debuger.cpp" />
+    <ClCompile Include="CodeAnalyser.cpp" />
     <ClCompile Include="BrainHelp.cpp" />
-    <ClCompile Include="LogStream.cpp" />
+    <ClCompile Include="DebugLogStream.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BrainThreadProcess.cpp" />
     <ClCompile Include="BrainThreadRuntimeException.cpp" />

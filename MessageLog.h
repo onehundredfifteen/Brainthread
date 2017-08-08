@@ -6,7 +6,7 @@
 class MessageLog
 {
 	public:
-		enum ErrCode
+		typedef enum 
 		{
 			ecUnmatchedLoopBegin = 100,
 			ecUnmatchedLoopEnd,
@@ -19,7 +19,8 @@ class MessageLog
 			ecEmptyCode,
 			ecIntegrityLost,
 			ecFatalError = 190,
-			ecUnkownError = 199,
+			ecArgumentError,
+			ecUnknownError = 199,
 
 			//warningi
 			ecInfiniteLoop = 200,
@@ -48,13 +49,14 @@ class MessageLog
 
 			ecMessage = 600,
 			ecInformation //taka wiadomoœæ bêdzie pomijana
-		};
-		enum MessageLevel
+		} ErrCode;
+
+		typedef enum 
 		{
 			mlAll,
 			mlImportant,
 			mlNone
-		};
+		} MessageLevel;
 
 		struct Error
 		{
@@ -65,20 +67,26 @@ class MessageLog
 
 			Error(ErrCode ec): error_code(ec),instruction_pos(0){}
 			Error(ErrCode ec, unsigned int pos):error_code(ec), instruction_pos(pos){}
-			Error(ErrCode ec, std::string t):error_code(ec),instruction_pos(0),text(t){}
+			Error(ErrCode ec, std::string t):error_code(ec), instruction_pos(0), text(t){}
 
-			bool IsWarning(){ return (int)error_code >= 200;}
-			bool IsMessage(){ return (int)error_code >= 600;}
+			bool IsWarning(void) { 
+				return (int)error_code >= 200;
+			}
+			bool IsMessage(void) { 
+				return (int)error_code >= 600;
+			}
+			bool IsGeneralError(void) { 
+				return (int)error_code >= 190 && (int)error_code < 200;
+			}
 		};
 
-	private: //singleton
-		MessageLog();
-		MessageLog(const MessageLog &);
-		MessageLog& operator=(const MessageLog&);
-	    ~MessageLog(void);
-
 	public:
-		static MessageLog& GetInstance();
+		static MessageLog & Instance()
+		{
+			static MessageLog instance;
+
+			return instance;
+		}
 
 		void SetMessageLevel(MessageLevel message_level);
 
@@ -91,6 +99,16 @@ class MessageLog
 		unsigned WarningsCount(void);
 		unsigned MessagesCount(void);
 		void GetMessages(void);
+
+	private: 
+		MessageLog() {
+			error_count = 0;
+			warning_count = 0;
+		}
+		~MessageLog(void){};
+
+		MessageLog(MessageLog const&);            
+		MessageLog& operator=(MessageLog const&);  
 
 	protected:
 		std::vector<Error> messages;

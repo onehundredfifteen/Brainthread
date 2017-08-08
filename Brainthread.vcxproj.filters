@@ -48,19 +48,19 @@
     <ClInclude Include="ProcessMonitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Debuger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MessageLog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LogStream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BrainThreadExceptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BrainHelp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CodeAnalyser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugLogStream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -95,19 +95,19 @@
     <ClCompile Include="ProcessMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Debuger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MessageLog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LogStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BrainThreadExceptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BrainHelp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CodeAnalyser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugLogStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

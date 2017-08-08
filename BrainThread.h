@@ -4,7 +4,6 @@
 #include <windows.h>
 
 #include "BrainThreadProcess.h"
-#include "ProcessMonitor.h"
 
 template < typename T >
 class BrainThread
@@ -24,5 +23,4 @@ public:
 protected:
 	MemoryHeap<T> shared_heap;
 	BrainThreadProcess<T> *main_process;
-	ProcessMonitor process_monitor;
 };

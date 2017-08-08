@@ -1,39 +1,40 @@
+#include <windows.h>
 #include "BrainHelp.h"
 
 
-void PrintBrainThreadInfo()
+std::string GetExeName(void)
 {
-	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
-				 "(c) by SSStudios 2014-2015\n" << std::endl;
+	char szPath[MAX_PATH];
+    if( GetModuleFileNameA(NULL, szPath, MAX_PATH) == 0 )
+    {
+        return "brainthread.exe";
+    }
+	return std::string(szPath).substr( std::string(szPath).rfind('\\') + 1 );
 }
 
-void PrintBrainThreadInfoEx()
+
+void PrintBrainThreadInfo(void)
 {
 	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
-				 "(c) by SilverShadeStudios 2014-2015\n"
+				 "(c) by onehundredfifteen 2014-2017\n" << std::endl;
+}
+
+void PrintBrainThreadInfoEx(void)
+{
+	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
+				 "(c) by onehundredfifteen 2014-2017\n"
 				 "https://github.com/onehundredfifteen/Brainthread\n"
 				 "Supports BrainThread, BrainFuck, pBrain and BrainFork\n" << std::endl;
 }
 
-void ShowUsage()
+void ShowUsage(void)
 {
 	PrintBrainThreadInfoEx();
-	std::cout << "++ USAGE ++\n"
-			  << "\tbt.exe [options]\n"
-			  << "\tbt.exe [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
-			  << "\tbt.exe --help\n"
-			  << "\n"
-			  << "++ BASIC OPTIONS ++\n"
-			  << "-l --language [brainthread|brainfuck|brainfork|pbrain] Default: brainthread\n"
-			  << "-e --eof [0|255|nochange] Default: 0\n"
-			  << "-m --memorysize <1,2^32> Default: 30000\n"
-			  << "-b --memorybehavior [constant|tapeloop|dynamic] Default: constant\n"
-			  << "-c --cellsize [8|16|32|u8|u16|u32] Default: 8\n"
-			  << "-d --debug\tDefault: flag is not set\n"
-			  << "-s --sourcefile [\"filename\"] Default: not used\n"
-			  << "-i --sourcecode [code] Default: not used\n"
-			  << "--message [all|important|none] Default: important\n"
-			  << "--log [none|console|\"filename\"] Default: filename=bt_log.txt\n"
+	std::cout << "\n++ USAGE ++\n"
+			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
+			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
+			  << "\t" << GetExeName() << " --help\n"
+			  << "\t" << GetExeName() << " --info\n"
 			  << std::endl;
 }
 
@@ -125,15 +126,15 @@ void ShowHelp(std::string help_opt)
 				<< "This flag enforces settings of Urban Müller's brainfuck compiler, or, for other dialects, "
 				<< "default settings for maximum compatibility of executed programs.";
 	}
-	else if(help_opt == "debug" || help_opt == "d")
+	else if(help_opt == "analyse" || help_opt == "a")
 	{
-	  std::cout << "OPTION: DEBUG\n"
+	  std::cout << "OPTION: CODE ANALYSIS\n"
 		        << "\n"
-			    << "Syntax: -d --debug\n"
+			    << "Syntax: -a --analyse\n"
 				<< "Default value: Flag is not set\n"
 				<< "\n"
-				<< "This flag launches a debugger. Debugger will analyse the code and list program's weaknesses. "
-				<< "Some problems with code can be fixed. Only with this flag debugger special instructions will be executed - p.ex. memory dump. ";
+				<< "This flag launches a code analyser. This will look for code weaknesses. "
+				<< "Some problems with code can be fixed. Only with this flag special debugger instructions will be executed - p.ex. memory dump. ";
 	}
 	else if(help_opt == "repair" || help_opt == "r")
 	{
@@ -186,11 +187,11 @@ void ShowHelp(std::string help_opt)
 				<< "completely silent execution. When interpreter is running from console, this message won't be shown, "
 				<< "regardless of --nopause flag state.";
 	}
-	else if(help_opt == "message" || help_opt == "silent")
+	else if(help_opt == "verbose" || help_opt == "silent")
 	{
 	  std::cout << "OPTION: MESSAGE LEVEL\n"
 		        << "\n"
-			    << "Syntax: --message [all|important|none] | --silent\n"
+			    << "Syntax: --verbose [all|important|none] | --silent\n"
 				<< "Default value: important\n"
 				<< "\n"
 				<< "This option defines which type of messages will be shown. \"all\": all messages will be shown including flow informations like 'Execution end'. "
@@ -199,13 +200,13 @@ void ShowHelp(std::string help_opt)
 	}
 	else if(help_opt == "log")
 	{
-	  std::cout << "OPTION: LOGGING SETTINGS\n"
+	  std::cout << "OPTION: DEBUGGING LOG SETTINGS\n"
 		        << "\n"
 			    << "Syntax: --log [none|console|\"filename\"]\n"
-				<< "Default value: filename=\"bt_log.txt\"\n"
+				<< "Default value: console\n"
 				<< "\n"
-				<< "This option can turn on and redirect logging process to a specified destination: console or logfile."
-				<< "Log is used by debugger special instructions, so when --debug flag is not present, there is no need to specify "
+				<< "This option can turn on and redirect debug messages output to a specified destination: console or logfile."
+				<< "Log is used by debugger special instructions, so when --analyse flag is not present, there is no need to specify "
 				<< "this setting.";
 	}
 	//subjects
@@ -221,27 +222,36 @@ void ShowHelp(std::string help_opt)
 	}
 	else
 	{
-	  std::cout << "Type -h --help [option] to get option's description.\n"
-		        << "Type -h --help ['exceptions'] to read about listed subjects.\n\n"
+	  std::cout << "Type --help [option] to get option's description (p.ex --help eof).\n"
+		        //<< "Type --help ['exceptions'] to read about listed subjects.\n"
+		        << "Type --info to read about BrainThread language.\n\n"
 			    << "\t++ EXECUTION OPTIONS ++\n"
 			    << "-l --language [bt|b|bf|pb|brainthread|brainfuck|brainfork|pbrain|auto] Default: brainthread\n"
 				<< "-e --eof [0|255|nochange] Default: 0\n"
-				<< "-m --memorysize <1,2^32> Default: 30000\n"
+				<< "-m --memorysize <1, 2^32> Default: 30000\n"
 				<< "-b --memorybehavior [constant|tapeloop|dynamic] Default: constant\n"
 				<< "-c --cellsize [8|16|32|u8|u16|u32] Default: 8\n"
 				<< "--strict      \tDefault: flag is not set\n"
 				<< "\n"
 				<< "\t++ ENVIROMENT OPTIONS ++\n"
-				<< "-d --debug    \tDefault: flag is not set\n"
+				<< "-a --analyse  \tDefault: flag is not set\n"
 				<< "-r --repair   \tDefault: flag is not set\n"
 				<< "-x --execute  \tDefault: flag is set\n"
 				<< "-s --sourcefile [\"filename\"] Default: not used\n"
 				<< "-i --input [code], --sourcecode [code] Default: not used\n"
 				<< "--nopause     \tDefault: flag is not set\n"
-				<< "--message [all|important|none], --silent Default: important, wall\n"
-				<< "--log [none|console|\"filename\"] Default: filename=\"bt_log.txt\"\n";
+				<< "--verbose [all|important|none], --silent Default: important\n"
+				<< "--log [none|console|\"filename\"] Default: console\n";
 	}
+
 	std::cout << std::endl;
+}
 
-
+void ShowInfo(void)
+{
+	PrintBrainThreadInfoEx();
+	std::cout << "\n++ BrainThread description ++\n"
+			  << "\tInstructions: +-,.<>[] same as Brainfuck\n"
+			  << "\t() - same as pBrain\n"
+			  << std::endl;
 }

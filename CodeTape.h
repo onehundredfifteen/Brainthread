@@ -66,13 +66,11 @@ class CodeTape
 		};
 
 		
-		CodeTape::CodeTape();
-		CodeTape(unsigned int size);
+		CodeTape();
+		CodeTape(std::vector<CodeTape::bt_instruction> *source_code);
 		~CodeTape(void);
 
 		bt_instruction GetInstruction(unsigned int &code_ptr);
-
-		void Copy(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end);
 
 	protected:
 		bt_instruction * instructions;

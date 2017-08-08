@@ -19,7 +19,7 @@ public:
 
   virtual const char* what() const throw()
   {
-	s = "BrainThread Virtual Machine Exception: ";
+	s = "BrainThread Exception: ";
     return s.c_str();
   }
 
@@ -37,8 +37,8 @@ public:
 
   virtual const char* what() const throw()
   {
-    cnvt.str( "" );
-    cnvt << BrainThreadException::what() << "Invalid argument " << op_arg << " of option \"" << op << "\".";
+    cnvt.str("");
+    cnvt << "Invalid argument " << op_arg << " of option \"" << op << "\".";
     s = cnvt.str();
     return s.c_str();
   }

@@ -1,8 +1,8 @@
+#include <iostream>
+
+#include "ProcessMonitor.h"
 #include "BrainThread.h"
 #include "BrainThreadRuntimeException.h"
-
-
-#include <iostream>
 
 extern CRITICAL_SECTION cout_critical_section;
 
@@ -24,25 +24,25 @@ void BrainThread<T>::Run(CodeTape * c)
 {
 	try
 	{
-		main_process = new BrainThreadProcess<T>(&process_monitor, c, &shared_heap, mem_size, mem_behavior, eof_behavior);
+		main_process = new BrainThreadProcess<T>(c, &shared_heap, mem_size, mem_behavior, eof_behavior);
 		main_process->Run();
 	}
-	catch(const BrainThreadRuntimeException &re)
+	catch(BrainThreadRuntimeException &re)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "<main> "<< re.what() << std::endl;
+		std::cerr << "<main> "<< re.what() << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
-	catch(std::exception e)
+	catch(std::exception &e)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "<main> "<< e.what() << std::endl;
+		std::cerr << "<main> "<< e.what() << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(...)
 	{
 		EnterCriticalSection(&cout_critical_section);
-		std::cout << "<main> FATAL ERROR" << std::endl;
+		std::cerr << "<main> FATAL ERROR" << std::endl;
 		LeaveCriticalSection(&cout_critical_section);
 	}
 	delete main_process;
@@ -52,7 +52,7 @@ void BrainThread<T>::Run(CodeTape * c)
 template < typename T >
 void BrainThread<T>::WaitForPendingThreads(void)
 {
-	process_monitor.WaitForWorkingProcesses();
+	ProcessMonitor::Instance().WaitForWorkingProcesses();
 	//todo GetThreadTimes 
 }
 

@@ -4,9 +4,10 @@ CodeTape::CodeTape()
 {
   instructions = NULL;
 }
-CodeTape::CodeTape(unsigned int size)
+CodeTape::CodeTape(std::vector<CodeTape::bt_instruction> *source_code)
 {
-  Alloc(size);
+   Alloc(source_code->size());
+   std::copy(source_code->begin(), source_code->end(), this->instructions);	
 }
 
 CodeTape::~CodeTape(void)
@@ -18,7 +19,7 @@ CodeTape::~CodeTape(void)
 	instructions = NULL;
 }
 
-CodeTape::bt_instruction CodeTape::GetInstruction(unsigned int &code_ptr )
+CodeTape::bt_instruction CodeTape::GetInstruction(unsigned int &code_ptr)
 {
 	return code_ptr == len ? btoUnkown : instructions[code_ptr];
 }
@@ -42,10 +43,5 @@ void CodeTape::Alloc(unsigned int size)
   len = size;
 }
 
-void CodeTape::Copy(std::vector<CodeTape::bt_instruction>::iterator &begin, std::vector<CodeTape::bt_instruction>::iterator &end)
-{
-	Alloc(end - begin);
-	std::copy(begin, end, instructions);	
-}
 
 

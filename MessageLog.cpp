@@ -2,22 +2,6 @@
 
 #include <iostream>
 
-MessageLog::MessageLog()
-{
-	error_count = 0;
-	warning_count = 0;
-}
-
-MessageLog::~MessageLog(void)
-{
-}
-
-MessageLog& MessageLog::GetInstance()
-{
-	static MessageLog instance;
-    return instance;
-}
-
 void MessageLog::SetMessageLevel(MessageLevel message_level)
 {
 	this->message_level = message_level;
@@ -73,7 +57,7 @@ void MessageLog::GetMessages(void)
 		return;//¿adnych wiadomoœci
 	
 	if(ErrorsCount() || WarningsCount() )
-		std::cerr << std::endl << ErrorsCount() << ((ErrorsCount() != 1)? " errors, " : " error, ") << WarningsCount() << ((WarningsCount() != 1)? " warnings." : " warning.") << std::endl;
+		std::cout << std::endl << ErrorsCount() << ((ErrorsCount() != 1)? " errors, " : " error, ") << WarningsCount() << ((WarningsCount() != 1)? " warnings." : " warning.") << std::endl;
 
 	for(std::vector<Error>::iterator it = messages.begin(); it != messages.end(); ++it)
 	{
@@ -81,22 +65,25 @@ void MessageLog::GetMessages(void)
 		{
 		    if(++mcnt > 20)
 			{
-				std::cerr << "Too many warning or error messages." << std::endl;
+				std::cout << "Too many warning or error messages." << std::endl;
 				break;
 			}
 		
-			std::cerr << ((it->IsWarning())? "Warning " : "Error ") << (unsigned)it->error_code << ": " 
+			std::cout << ((it->IsWarning())? "Warning " : "Error ") << (unsigned)it->error_code << ": " 
 						  << MapMessages(it->error_code);
 
-			std::cerr <<" at instruction " << it->instruction_pos << std::endl;
+			if(it->IsGeneralError())
+				std::cout << " " << it->text << std::endl;
+			else
+				std::cout <<" at instruction " << it->instruction_pos << std::endl;
 		}
-		else if(it->error_code == ecMessage)
+		else if(it->error_code == MessageLog::ecMessage)
 		{
-			std::cerr << "Message " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
+			std::cout << "Message: " << it->text << "." << std::endl;
 		}
-		else if(message_level == MessageLog::mlAll && it->error_code == ecInformation)
+		else if(message_level == MessageLog::mlAll && it->error_code == MessageLog::ecInformation)
 		{
-			std::cerr << "Info " << (unsigned)it->error_code << ": " << it->text << "." << std::endl;
+			std::cout << "Info: " << it->text << "." << std::endl;
 		}
 	}
 }
@@ -141,6 +128,11 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
 
 
 		case ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
+
+		//ogolne b³edy
+		case ecFatalError: return "Fatal Error";
+		case ecArgumentError: return "Argument Error";
+		case ecUnknownError: return "Unknown Error";
 	}
 	return "";
 }

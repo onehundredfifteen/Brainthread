@@ -15,7 +15,7 @@ MemoryTape<T>::MemoryTape(unsigned int mem_size, eof_option eof_behavior, mem_op
   {
     mem = new T[mem_size];
   }
-  catch (std::bad_alloc& ba)
+  catch (std::bad_alloc ba)
   {
     throw BFAllocException(mem_size, sizeof(T));
   }
@@ -41,7 +41,7 @@ MemoryTape<T>::MemoryTape(const MemoryTape<T> &memory)
   {
     mem = new T[memory.len];
   }
-  catch (std::bad_alloc& ba)
+  catch (std::bad_alloc ba)
   {
     throw BFAllocException(memory.len, sizeof(T));
   }
@@ -193,7 +193,7 @@ void MemoryTape<T>::DecimalWrite(void)
 {
 	EnterCriticalSection(&cout_critical_section);
 
-	if(std::is_signed<T>::value)
+	if(std::is_signed<T>::value) //!
 		std::cout << static_cast<int>(*pointer) << std::flush;
 	else
 		std::cout << static_cast<unsigned int>(*pointer) << std::flush;
@@ -206,7 +206,7 @@ void MemoryTape<T>::DecimalWrite(void)
 template < typename T >//funkcja zwraca nowa iloœæ pamiêci dla procesu
 unsigned MemoryTape<T>::GetNewMemorySize()
 {
-	return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_pack;	
+	return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_size;	
 }
 
 
@@ -221,7 +221,7 @@ void MemoryTape<T>::Realloc()
   {
       new_mem = new T[new_mem_size];
   }
-  catch (std::bad_alloc& ba)
+  catch (std::bad_alloc ba)
   {
 	  throw BFAllocException(new_mem_size, sizeof(T));
   }
@@ -242,18 +242,18 @@ void MemoryTape<T>::Realloc()
   mem = new_mem;
   pointer = mem + p_pos;
   len = new_mem_size;
-  max_mem = (T*) &mem[  len - 1 ];
+  max_mem = (T*) &mem[ len - 1 ];
 }
 
 //Zwraca pozycjê piórka
 template < typename T >
-inline unsigned int MemoryTape<T>::PointerPosition()  const    
+inline unsigned int MemoryTape<T>::PointerPosition() const    
 {
 	return pointer - mem;
 }
 
 template < typename T >
-inline T* const MemoryTape<T>::GetPointer() const
+inline T* const MemoryTape<T>::GetValue() const
 {
 	return pointer;
 }
@@ -281,9 +281,8 @@ std::ostream& MemoryTape<T>::SimpleMemoryDump(std::ostream &s, unsigned near_cel
 				s << (PointerPosition() == i? "<" : "[") << i << (PointerPosition() == i? ">" : "]") << static_cast<unsigned int>(mem[i]) << " ";
 		}
     }
-	s << std::endl;
 
-	return s;
+	return s << std::endl;
 }
 
 template < typename T > 

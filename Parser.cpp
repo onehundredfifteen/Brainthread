@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "MessageLog.h"
 
 #include <cstring>
 #include <stack>
@@ -11,22 +12,11 @@
  * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
 */
 
-Parser::Parser(code_lang lang, MessageLog *messages, bool debug_instructions_on)
+Parser::Parser(CodeLang lang, bool debug_instructions_mode)
 {
 	language = lang;
-	
-	if(messages == nullptr)
-		throw std::invalid_argument("Parser::Parser: MessageLog * = null");
-	else
-		errors = messages;
-
-	debug_instructions_mode = debug_instructions_on;
+	this->debug_instructions_mode = debug_instructions_mode;
 }
-
-Parser::~Parser(void)
-{
-}
-
 
 void Parser::Parse(const char * data)
 {
@@ -60,8 +50,12 @@ void Parser::Parse(std::vector<char> &source)
 
   if(source.empty())
   {
-	  errors->AddMessage(MessageLog::ecEmptyCode, 0);
+	  MessageLog::Instance().AddMessage(MessageLog::ecEmptyCode, 0);
 	  return;
+  }
+  else if(this->language == Parser::clAuto)
+  {
+	  this->language = RecognizeLang(source);
   }
 
   instructions.reserve(source.size() / 2);
@@ -87,14 +81,14 @@ void Parser::Parse(std::vector<char> &source)
 				//szukamy [ ( ] )
 				if(func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
 				{
-					errors->AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
+					MessageLog::Instance().AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
 				}
 
 				loop_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego [
 			{
-				errors->AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins));
+				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins));
 			}
 					
 		}
@@ -113,14 +107,14 @@ void Parser::Parse(std::vector<char> &source)
 				//szukamy ( [ ) ]
 				if(loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
 				{
-					errors->AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
+					MessageLog::Instance().AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
 				}
 
 				func_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego (
 			{
-				errors->AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins));
+				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins));
 			}
 					
 		}
@@ -136,7 +130,8 @@ void Parser::Parse(std::vector<char> &source)
 				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}		
 		}*/
-		else instructions.push_back(CodeTape::bt_instruction(curr_op));
+		else 
+			instructions.push_back(CodeTape::bt_instruction(curr_op));
 	}
 	else
 	{	
@@ -149,7 +144,7 @@ void Parser::Parse(std::vector<char> &source)
   {	
 	 while(loop_call_stack.empty() == false)
 	 {
-		errors->AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
+		MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
 		loop_call_stack.pop();
 	 }
   }
@@ -158,16 +153,11 @@ void Parser::Parse(std::vector<char> &source)
   {	
 	 while(func_call_stack.empty() == false)
 	 {
-		errors->AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
+		MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
 		func_call_stack.pop();
 	 }
   }
   //koniec
-}
-
-void Parser::DeliverCode(CodeTape &c)
-{
-	c.Copy(instructions.begin(), instructions.end());
 }
 
 std::vector<CodeTape::bt_instruction> * Parser::GetCode()
@@ -177,7 +167,7 @@ std::vector<CodeTape::bt_instruction> * Parser::GetCode()
 
 bool Parser::isCodeValid(void)
 {
-	return errors->ErrorsCount() == 0;
+	return MessageLog::Instance().ErrorsCount() == 0;
 }
 
 bool Parser::isValidOperator(char &c)
@@ -354,6 +344,49 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 	}
 
 	return CodeTape::btoInvalid;
+}
+
+Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
+{
+	std::vector<char>::iterator a, b;
+
+	a = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == '('; });
+
+	b = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == ')'; });
+
+	if(a < b && b != source.end()) //uwaga, mamy funkcje jakby [bt, pb]
+	{
+		a = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == '*'; });
+
+		b = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == ':'; });
+
+
+		if(a == source.end() && b != source.end()) //mamy call w stylu pb, a nie mamy w stylu bt
+		{
+			return Parser::clPBrain;
+		}
+		else if(a != source.end() && b != source.end()) //mamy call w stylu bt, i decimal output
+		{
+			return Parser::clBrainThread;
+		}
+
+	}
+	else //bf, b
+	{
+		a = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == 'Y'; });
+
+		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
+		{
+			return Parser::clBrainFork;
+		}
+	}
+
+	return Parser::clBrainFuck;
 }
 
 unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos)

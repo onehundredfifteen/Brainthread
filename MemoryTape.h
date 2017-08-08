@@ -37,7 +37,7 @@ class MemoryTape
 		void DecimalWrite(void);
 
 		unsigned int PointerPosition() const;
-		T* const GetPointer() const;
+		T* const GetValue() const;
 
 		std::ostream& SimpleMemoryDump(std::ostream &s, unsigned near_cells = 5);
 		std::ostream& MemoryDump(std::ostream &o);
@@ -55,9 +55,9 @@ class MemoryTape
 
 		static const unsigned int double_mem_grow_limit = 2147483648; //2 Mb 
 		//ten limit oznacza, ze do tej liczby objêtoœæ pamiêci siê dubluje,
-		//potem dok³ada siê sta³a iloœci¹ - mem_grow_pack
+		//potem dok³ada siê sta³a iloœci¹ - mem_grow_size
 
-		static const unsigned int mem_grow_pack = 104857600; //100 kb
+		static const unsigned int mem_grow_size = 104857600; //100 kb
 
 		unsigned GetNewMemorySize();
 		void Realloc();

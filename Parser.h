@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CodeTape.h"
-#include "MessageLog.h"
 #include <fstream>
 
 /*
@@ -19,33 +18,29 @@ class Parser
 			clBrainFuck,
 			clPBrain,
 			clBrainFork,
-			clBrainLove,
+			//clBrainLove,
 			clAuto, 
 			clDefault
-		} code_lang;
+		} CodeLang;
 
 
-		Parser(code_lang lang, MessageLog *messages, bool debug_instructions_on = false);
-		~Parser(void);
+		Parser(CodeLang lang, bool debug_instructions_mode = false);
+		//~Parser(void);
 
 		void Parse(const char * data);
 		void Parse(std::ifstream &in);
 		
-		void DeliverCode(CodeTape &c); 
-		std::vector<CodeTape::bt_instruction> * GetCode(); 
-
 		bool isCodeValid(void);
 
+		std::vector<CodeTape::bt_instruction> * GetCode(); 
+
 	private:
-		code_lang language;
-		//code_lang RecognizeLang(void);
+		std::vector< CodeTape::bt_instruction > instructions;
+		CodeLang language;
 		bool debug_instructions_mode;
 
-		MessageLog *errors;
-
-		std::vector< CodeTape::bt_instruction > instructions;
-
 		void Parse(std::vector<char> &source);
+		CodeLang RecognizeLang(std::vector<char> &source);
 	
 		bool isValidOperator(char &c);
 		bool isValidDebugOperator(char &c);

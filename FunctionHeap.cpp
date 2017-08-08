@@ -83,7 +83,7 @@ std::ostream& FunctionHeap<T>::PrintStackTrace(std::ostream &s)
 	  }
 	  s << ">\tat function #" << call_stack_trace.top().second << " (call from cell " << call_stack_trace.top().first << ")";
   }
-  else s << "\n>Stack trace: empty;\n";
+  else s << "\n>Stack trace: empty;" << std::endl;
 
   return s;
 }
@@ -104,7 +104,7 @@ std::ostream& FunctionHeap<T>::PrintDeclaredFunctions(std::ostream &s)
 		s << " Start point: " << mit->second;
 	}
 
-	return s;
+	return s << std::flush;
 }
 
 // Explicit template instantiation

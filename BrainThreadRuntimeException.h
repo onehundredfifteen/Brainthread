@@ -5,11 +5,18 @@
 #include <sstream>
 #include <string>
 
+#include <windows.h>
+
 /*
  * Klasy Wyj¹tków.
  * Definiuja rózne wyj¹tki, które interpreter rzuca podczas wykonywnaia kodu. 
  * (nie s¹ to b³êdy, które mozna wykryæ na etapie kompilacji)
 */
+
+#define ERROR_CODE_NOTENOUGHMEMORY 0x3E1C
+#define ERROR_CODE_TOOMANYTHREADSTOWAIT 0x3E1D
+#define ERROR_CODE_RESERVED1 0x3E1E
+#define ERROR_CODE_RESERVED2 0x3E1F
 
 class BrainThreadRuntimeException: public std::runtime_error {
 public:
@@ -152,19 +159,19 @@ public:
 
 	switch(err_no)
 	{
-		case 11:
+		case ERROR_CODE_NOTENOUGHMEMORY:
+			cnvt << "out of memory"; break;
+	    case ERROR_MAX_THRDS_REACHED:
 			cnvt << "too many threads"; break;
-		case 13:
+		case ERROR_NOT_ENOUGH_MEMORY:
 			cnvt << "not enough system memory"; break;
-		case 22:
-			cnvt << "invalid argument"; break;
-		case 115:
-			cnvt << "not enough memory"; break;
+		case ERROR_INVALID_HANDLE:
+			cnvt << "invalid handle"; break;
 		default:
-			cnvt << "unknown (errno=" << err_no << ")";
+			cnvt << "unknown. System error code: " << err_no;
 	}
 
-    s = cnvt.str();
+     s = cnvt.str();
     return s.c_str();
   }
 
@@ -186,7 +193,7 @@ public:
 
 	switch(err_no)
 	{
-		case 0:
+		case ERROR_CODE_TOOMANYTHREADSTOWAIT:
 			cnvt << "too many threads to wait for"; break;
 		default:
 			cnvt << "wait failed. System error code: " << err_no;
@@ -211,6 +218,22 @@ public:
   {
     cnvt.str( "" );
 	cnvt << BrainThreadRuntimeException::what() << "Invalid input stream.";
+    s = cnvt.str();
+    return s.c_str();
+  }
+};
+
+class BFCannotMonitorThreadsException: public BrainThreadRuntimeException {
+public:
+
+  BFCannotMonitorThreadsException()
+    : BrainThreadRuntimeException()
+    {}
+
+  virtual const char* what() const throw()
+  {
+    cnvt.str( "" );
+    cnvt << BrainThreadRuntimeException::what() << "Cannot monitor child threads: out of memory.";
     s = cnvt.str();
     return s.c_str();
   }
