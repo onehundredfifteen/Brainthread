@@ -24,7 +24,6 @@ class MemoryHeap
 
 	protected:
 		std::stack<T> mem_stack;
-		T tmp;
 
 		static const unsigned int stack_limit = 65536;
 };

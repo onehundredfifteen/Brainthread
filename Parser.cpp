@@ -42,11 +42,14 @@ void Parser::Parse(std::vector<char> &source)
   std::stack<unsigned int> loop_call_stack;
   std::stack<unsigned int> func_call_stack;
 
-  //zmienna pomocnicza przy okreslaniu jumpów
+  //for loop jumps
   unsigned int not_valid_ins = 0;
 
-  //bie¿aca operacja
+  //current op
   CodeTape::bt_operation curr_op;
+
+  //next stack op will be executed on shared stack
+  bool switchToSharedHeap = false;
 
   if(source.empty())
   {
@@ -58,7 +61,7 @@ void Parser::Parse(std::vector<char> &source)
 	  this->language = RecognizeLang(source);
   }
 
-  instructions.reserve(source.size() / 2);
+  instructions.reserve(source.size());
   
   for(std::vector<char>::iterator it = source.begin(); it < source.end(); ++it)
   {
@@ -130,6 +133,26 @@ void Parser::Parse(std::vector<char> &source)
 				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
 			}		
 		}*/
+		else if(switchToSharedHeap && 
+			(curr_op == CodeTape::btoPush || curr_op == CodeTape::btoPop || curr_op == CodeTape::btoSwap))
+		{
+			switchToSharedHeap = false;
+
+			switch(curr_op)
+			{
+				case CodeTape::btoPush: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedPush)); 
+					break;
+				case CodeTape::btoPop: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedPop)); 
+					break;
+				case CodeTape::btoSwap: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedSwap)); 
+					break;
+			}
+		}
+		else if(curr_op == CodeTape::btoSwitchHeap) 
+		{
+			switchToSharedHeap = true; //non executable operation
+			instructions.push_back(CodeTape::bt_instruction(curr_op));
+		}
 		else 
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 	}
@@ -172,7 +195,7 @@ bool Parser::isCodeValid(void)
 
 bool Parser::isValidOperator(char &c)
 {
-	static const char *valid_bt_ops = "<>+-.,[]()*{}!#$%/\\@;:";
+	static const char *valid_bt_ops = "<>+-.,[]()*{}!#^%~;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
 	static const char *valid_pb_ops = "<>+-.,[]():";
 	static const char *valid_bo_ops = "<>+-.,[]Y";
@@ -226,11 +249,12 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case '*': return CodeTape::btoCallFunction;
 
 				case '#': return CodeTape::btoPush;
-				case '$': return CodeTape::btoPop;
+				case '^': return CodeTape::btoPop;
 				case '%': return CodeTape::btoSwap;
-				case '/': return CodeTape::btoSharedPush;
-				case '\\':return CodeTape::btoSharedPop;
-				case '@': return CodeTape::btoSharedSwap;
+				case '~': return CodeTape::btoSwitchHeap;
+				//case '/': return CodeTape::btoSharedPush;
+				//case '\\':return CodeTape::btoSharedPop;
+				//case '@': return CodeTape::btoSharedSwap;
 
 				case ':': return CodeTape::btoDecimalWrite;
 				case ';': return CodeTape::btoDecimalRead;

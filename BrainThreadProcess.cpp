@@ -19,21 +19,21 @@ unsigned int __stdcall run_bt_thread(void * arg)
 	}
 	catch(BrainThreadRuntimeException &re)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<t" <<  GetCurrentThreadId() << "> "<< re.what() << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(std::exception &e)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<t" <<  GetCurrentThreadId() << "> "<< e.what() << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(...)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<t" <<  GetCurrentThreadId() << "> FATAL ERROR" << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
 
 	_endthreadex(0);
@@ -102,9 +102,9 @@ void BrainThreadProcess<T>::Run(void)
 
 	while(true)
 	{
-		EnterCriticalSection(&code_critical_section);
+		ProcessMonitor::EnterCriticalSection(code_critical_section);
 		current_instruction = code->GetInstruction(this->code_pointer);
-		LeaveCriticalSection(&code_critical_section);
+		ProcessMonitor::LeaveCriticalSection(code_critical_section);
 
 		switch(current_instruction.operation)
 		{
@@ -176,60 +176,62 @@ void BrainThreadProcess<T>::Run(void)
 				break;
 			case CodeTape::btoSharedPush: 
 
-				EnterCriticalSection(&heap_critical_section);
+				ProcessMonitor::EnterCriticalSection(heap_critical_section);
 				this->shared_heap->Push( *(this->memory->GetValue()) );
-				LeaveCriticalSection(&heap_critical_section);
+				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
 			case CodeTape::btoSharedPop: 
 
-				EnterCriticalSection(&heap_critical_section);
+				ProcessMonitor::EnterCriticalSection(heap_critical_section);
 				*(this->memory->GetValue()) = this->shared_heap->Pop();
-				LeaveCriticalSection(&heap_critical_section);
+				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
             case CodeTape::btoSharedSwap: 
 
-				EnterCriticalSection(&heap_critical_section);
+				ProcessMonitor::EnterCriticalSection(heap_critical_section);
 				this->shared_heap->Swap();
-				LeaveCriticalSection(&heap_critical_section);
+				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
 
 			/***********************
 			debug instructions
 			************************/
 			case CodeTape::btoDEBUG_SimpleMemoryDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->memory->SimpleMemoryDump(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_MemoryDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->memory->MemoryDump(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_StackDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->heap->PrintStack(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_SharedStackDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->shared_heap->PrintStack(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsStackDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->functions->PrintStackTrace(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_FunctionsDefsDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->functions->PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case CodeTape::btoDEBUG_ThreadInfoDump: 
-					EnterCriticalSection(&cout_critical_section);
+					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->PrintProcessInfo(DebugLogStream::Instance().GetStream());
-					LeaveCriticalSection(&cout_critical_section);
+					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
+				break;
+			case CodeTape::btoSwitchHeap: 
 				break;
 			/***********************
 			end debug instructions
@@ -243,7 +245,6 @@ void BrainThreadProcess<T>::Run(void)
 		Sleep( 0 ); // reszta czasu dla innych w¹tków
 	}
 
-	
 }
 
 template < typename T >
@@ -280,7 +281,7 @@ void BrainThreadProcess<T>::Fork()
 		throw BFForkThreadException(::GetLastError());
 	}
 	
-    hThread = (HANDLE) _beginthreadex(NULL, 0, run_bt_thread<T>, child, 0, NULL);//mozna dac najmniej 64kb 64*1024
+    hThread = (HANDLE) _beginthreadex(NULL, 64000, run_bt_thread<T>, child, 0, NULL);//mozna dac najmniej 64kb 64*1024
 
 	if(hThread <= (HANDLE)0L)
 	{
@@ -291,6 +292,7 @@ void BrainThreadProcess<T>::Fork()
 	try
 	{
 		child_threads.push_back(hThread);
+
 	    ProcessMonitor::Instance().AddProcess(hThread);
 	}
 	catch(...)
@@ -327,23 +329,32 @@ std::ostream& BrainThreadProcess<T>::PrintProcessInfo(std::ostream &s)
 {
 	std::vector<HANDLE>::iterator it;
 	int i = 0;
+	int pid = ProcessMonitor::Instance().GetProcessId( GetCurrentThread() ); 
 
-	if(ProcessMonitor::Instance().IsMainThread( GetCurrentThread() ))
-	{
-		s << "\n>Thread ID: main. Active child threads: "<< child_threads.size() <<", in order of apperance:\n" ;
-	}
-	else
-	{
-		s << "\n>Thread ID: " << GetCurrentThreadId() << ". Active child threads: "<< child_threads.size() <<", in order of apperance:\n";
-	}
+	
+	s << "\n>Thread id/sys_id: " << pid << "/" << GetCurrentThreadId();
+
+	if(pid == 1)
+		s << "(main)";
+	
+	s << ".\nActive child threads: " << child_threads.size() << ", in order of apperance:\n";
 
 	for(it = child_threads.begin(); it < child_threads.end(); ++it)
 	{
-		s << (++i) << ". ID: " << GetThreadId(*it) << " State: " << (WaitForSingleObject(*it, 0) == WAIT_FAILED ? "Error" : "Running") << "\n";
+		s << (++i) 
+		  << ". id: " << ProcessMonitor::Instance().GetProcessId(*it) 
+		  << " sys_id: " << ::GetThreadId(*it) 
+		  << " state: " << (WaitForSingleObject(*it, 0) == WAIT_FAILED ? "error" : "running") << "\n";
 		//WaitForSingleObject z zerem w 2gim parametrze s³u¿y odczytaniu stanu - nie czeka
 	}
 
 	return s << std::flush;
+}
+
+template < typename T >
+unsigned int BrainThreadProcess<T>::GetProcessId(void)
+{
+	return ProcessMonitor::Instance().GetProcessId( GetCurrentThread() );
 }
 
 

@@ -438,11 +438,11 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 		else 
 			throw BrainThreadInvalidOptionException("LOG", op_arg);
 
-		DebugLogStream::Instance().OpenStream(OP_log, op_arg);
+		DebugLogStream::Instance().Init(OP_log, op_arg);
 	}
 	else
 	{
-		DebugLogStream::Instance().OpenStream(DebugLogStream::lsConsole, "");
+		DebugLogStream::Instance().Init(DebugLogStream::lsConsole, "");
 	}
 
 	//-s --sourcefile [filename]

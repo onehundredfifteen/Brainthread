@@ -31,6 +31,7 @@ class CodeTape
 			btoSharedPop,
 			btoSharedPush,
 			btoSharedSwap,
+			btoSwitchHeap, //non executable command
 			//other
 			btoDecimalRead,
 			btoDecimalWrite,

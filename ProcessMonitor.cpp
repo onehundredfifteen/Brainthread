@@ -10,7 +10,11 @@
 */
 
 extern CRITICAL_SECTION pm_critical_section;
+extern CRITICAL_SECTION cout_critical_section;
+extern CRITICAL_SECTION code_critical_section;
+extern CRITICAL_SECTION heap_critical_section;
 
+unsigned int ProcessMonitor::threads_cnt = 0;
 
 unsigned int __stdcall waitfor_queue_thread(void * arg)
 {
@@ -26,9 +30,12 @@ unsigned int __stdcall waitfor_queue_thread(void * arg)
 //Funkcja dodaje uchwyt do w¹tku do listy w sposób bezpieczny dla w¹tków
 void ProcessMonitor::AddProcess(HANDLE h)
 {
-	EnterCriticalSection(&pm_critical_section);
+	::EnterCriticalSection(&pm_critical_section);
+
 	handles.push_back(h);
-	LeaveCriticalSection(&pm_critical_section);
+	ProcessMonitor::threads_cnt = handles.size();
+
+	::LeaveCriticalSection(&pm_critical_section);
 }
 
 //Funkcja czeka na w¹tki, dopóki wszystkie w¹tki siê nie zakoñcz¹.
@@ -69,8 +76,17 @@ void ProcessMonitor::WaitForWorkingProcesses(void)
 	}
 }
 
-bool ProcessMonitor::IsMainThread(HANDLE h)
+unsigned int ProcessMonitor::GetProcessId(HANDLE h)
 {
-	return std::find(handles.begin(), handles.end(), h) == handles.end();
-}
+	std::vector<HANDLE>::iterator it;
+	unsigned int pi;
+
+	::EnterCriticalSection(&pm_critical_section);
+	it = std::find(handles.begin(), handles.end(), h);
+	pi = (it - handles.begin()) + 1;
+
+	::LeaveCriticalSection(&pm_critical_section);
 	
+	return pi;
+}
+

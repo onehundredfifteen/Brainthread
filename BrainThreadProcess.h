@@ -17,6 +17,7 @@ public:
 
 	void Run(void);
 
+	unsigned int GetProcessId(void);
 	std::ostream& PrintProcessInfo(std::ostream &s);
 
 protected:

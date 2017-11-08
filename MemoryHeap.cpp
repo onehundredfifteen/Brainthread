@@ -24,8 +24,10 @@ T MemoryHeap<T>::Pop(void)
 	if(mem_stack.empty())
 		return 0;
 	
+	T tmp;
 	tmp = mem_stack.top();
 	mem_stack.pop();
+
 	return tmp;
 }
 
@@ -37,10 +39,12 @@ void MemoryHeap<T>::Swap(void)
 	if(mem_stack.size() < 2)
 		return;
 	
+	T tmp, tmp2;
+
 	tmp = mem_stack.top();
 	mem_stack.pop();
 
-	T tmp2 = mem_stack.top();
+	tmp2 = mem_stack.top();
 	mem_stack.pop();
 
 	mem_stack.push(tmp);

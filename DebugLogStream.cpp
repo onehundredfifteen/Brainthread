@@ -8,7 +8,7 @@ DebugLogStream::~DebugLogStream()
 		stream.close();
 }
 
-void DebugLogStream::OpenStream(stream_type st, std::string lp)
+void DebugLogStream::Init(stream_type st, std::string lp)
 {
 	StreamType = st;
 

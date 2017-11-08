@@ -29,24 +29,22 @@ void BrainThread<T>::Run(CodeTape * c)
 	}
 	catch(BrainThreadRuntimeException &re)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<main> "<< re.what() << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(std::exception &e)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<main> "<< e.what() << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
 	catch(...)
 	{
-		EnterCriticalSection(&cout_critical_section);
+		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<main> FATAL ERROR" << std::endl;
-		LeaveCriticalSection(&cout_critical_section);
+		::LeaveCriticalSection(&cout_critical_section);
 	}
-	delete main_process;
-	main_process = nullptr;
 }
 
 template < typename T >

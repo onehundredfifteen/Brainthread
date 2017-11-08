@@ -1,9 +1,10 @@
-#include <Windows.h>
 #include <new>
 #include <iostream>
 #include <limits>
+#include <windows.h>
 
 #include "MemoryTape.h"
+#include "ProcessMonitor.h"
 #include "BrainThreadRuntimeException.h"
 
 extern CRITICAL_SECTION cout_critical_section;
@@ -134,7 +135,7 @@ void MemoryTape<T>::MoveLeft(void)
 template < typename T >
 void MemoryTape<T>::Read(void)
 {
-	EnterCriticalSection(&cout_critical_section);
+	ProcessMonitor::EnterCriticalSection(cout_critical_section);
 
 	if(std::cin.peek() == std::char_traits<char>::eof())
 	{
@@ -146,25 +147,25 @@ void MemoryTape<T>::Read(void)
 	}
 	else *pointer = std::cin.get();
 
-	LeaveCriticalSection(&cout_critical_section);
+	ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 }
 /*
 funkcja ma dwie specjalizacje - ascii sa od 0 do 127
 Resztê trzeba konwertowac na char
-}*/
+*/
 template <>
 void MemoryTape<char>::Write(void)
 {
-	EnterCriticalSection(&cout_critical_section);
+	ProcessMonitor::EnterCriticalSection(cout_critical_section);
 	std::cout << *pointer << std::flush;
-	LeaveCriticalSection(&cout_critical_section);
+	ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 }
 template < typename T >
 void MemoryTape<T>::Write(void)
 {
-	EnterCriticalSection(&cout_critical_section);
+	ProcessMonitor::EnterCriticalSection(cout_critical_section);
 	std::cout << static_cast<char>(*pointer) << std::flush;
-	LeaveCriticalSection(&cout_critical_section);
+	ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 }
 
 template < typename T >
@@ -172,33 +173,33 @@ void MemoryTape<T>::DecimalRead(void)
 {
 	unsigned int i; //niewa¿ne, czy signed czy unsigned
 
-	EnterCriticalSection(&cout_critical_section);
+	ProcessMonitor::EnterCriticalSection(cout_critical_section);
 	std::cin >> i;
 
 	if (std::cin.fail())
 	{
 		std::cin.clear();
 		std::cin.ignore(UINT_MAX, '\n');
-		LeaveCriticalSection(&cout_critical_section); //opuœæ sekcjê przed throw, aby nie zakleszczyæ w¹tków
+		ProcessMonitor::LeaveCriticalSection(cout_critical_section); //opuœæ sekcjê przed throw, aby nie zakleszczyæ w¹tków
 
 		throw BFInvalidInputStreamException();
 	}
 	*pointer = static_cast<T>(i);
 
-	LeaveCriticalSection(&cout_critical_section);
+	ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 }
 
 template< typename T>  
 void MemoryTape<T>::DecimalWrite(void)
 {
-	EnterCriticalSection(&cout_critical_section);
+	ProcessMonitor::EnterCriticalSection(cout_critical_section);
 
 	if(std::is_signed<T>::value) //!
 		std::cout << static_cast<int>(*pointer) << std::flush;
 	else
 		std::cout << static_cast<unsigned int>(*pointer) << std::flush;
 
-	LeaveCriticalSection(&cout_critical_section);
+	ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 }
 
 /*Funkcje wewntrzne tasmy*/

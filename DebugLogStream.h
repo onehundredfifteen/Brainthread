@@ -30,7 +30,7 @@ class DebugLogStream
 	    ~DebugLogStream(void);
 
 	public:
-		void OpenStream(stream_type st, std::string lp);
+		void Init(stream_type st, std::string lp);
 		std::ostream& GetStream();
 
 	private:
