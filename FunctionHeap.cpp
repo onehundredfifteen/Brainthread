@@ -21,7 +21,7 @@ FunctionHeap<T>::~FunctionHeap(void)
 {
 }
 
-//dodaj funkcje do listy
+//add new function to list
 template < typename T >
 void FunctionHeap<T>::Add(T const& index, unsigned int const& code_ptr)
 {
@@ -33,7 +33,7 @@ void FunctionHeap<T>::Add(T const& index, unsigned int const& code_ptr)
     functions[index] = code_ptr + 1;
 }
 
-//wywo³aj funkcje (przesuñ wskaŸnik i wrzuc na stos wywo³anie)
+//call function (move code pointer to function body and put old position on call stack)
 template < typename T >
 void FunctionHeap<T>::Call(T const& index, unsigned int * code_ptr)
 {
@@ -46,9 +46,9 @@ void FunctionHeap<T>::Call(T const& index, unsigned int * code_ptr)
 	  ++callingFunction;
 }
 
-//zakoñcz wywo³anie - zrzuæ ze stosu i powróc do dawnej pozycji w kodzie
+//return a function - pop calling code position from call stack
 template < typename T >
-void FunctionHeap<T>::Return(unsigned int * code_ptr)
+bool FunctionHeap<T>::Return(unsigned int * code_ptr)
 {
 	if(call_stack.empty() == false)
 	{
@@ -56,17 +56,20 @@ void FunctionHeap<T>::Return(unsigned int * code_ptr)
 		call_stack.pop();
 
 		--callingFunction;
+		return true;
 	}
+
+	return false;
 }
 
-//ile juz na stosie
+//call stack size
 template < typename T >
 unsigned FunctionHeap<T>::Calls()
 {
 	return callingFunction;
 }
 
-//staktrace
+//stacktrace
 template < typename T >
 std::ostream& FunctionHeap<T>::PrintStackTrace(std::ostream &s)
 {

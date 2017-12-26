@@ -34,5 +34,8 @@ protected:
 
 	void Fork(void);
 	void Join(void);
+
+private:
+	bool isMain;
 };
 

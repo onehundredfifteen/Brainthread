@@ -46,6 +46,7 @@ unsigned int __stdcall run_bt_thread(void * arg)
 
 template < typename T >
 BrainThreadProcess<T>::BrainThreadProcess(CodeTape * c, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
+	: isMain(true)
 {
 	 memory = nullptr;
 	 functions = nullptr;
@@ -64,7 +65,7 @@ BrainThreadProcess<T>::BrainThreadProcess(CodeTape * c, MemoryHeap<T> *shared_he
 }
 
 template < typename T >
-BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentProcess)
+BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentProcess) : isMain(false)
 {
 	memory = nullptr;
 	functions = nullptr;
@@ -150,7 +151,10 @@ void BrainThreadProcess<T>::Run(void)
 				code_pointer = current_instruction.jump;
 				break;
 			case CodeTape::btoEndFunction: 
-				this->functions->Return(&code_pointer);
+
+				if(this->functions->Return(&code_pointer) == false && isMain == false)//terminate threads spawned within function
+					return;
+
 				break;
 			case CodeTape::btoCallFunction: 
 

@@ -14,7 +14,7 @@ class FunctionHeap
 
 		void Add(T const& index, unsigned int const& code_ptr);
 		void Call(T const& index, unsigned int *code_ptr);
-		void Return(unsigned int *code_ptr);
+		bool Return(unsigned int *code_ptr);
 
 		unsigned Calls(void);
 
