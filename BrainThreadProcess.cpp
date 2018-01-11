@@ -99,7 +99,7 @@ BrainThreadProcess<T>::~BrainThreadProcess(void)
 template < typename T >
 void BrainThreadProcess<T>::Run(void)
 {
-	static CodeTape::bt_instruction current_instruction;
+	CodeTape::bt_instruction current_instruction;
 
 	while(true)
 	{

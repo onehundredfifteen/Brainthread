@@ -73,6 +73,21 @@ bool CodeAnalyser::IsChangingCellInstruction(const CodeTape::bt_instruction &op)
 			op.operation == CodeTape::btoDecimalRead);
 }
 
+//Operatory dla testu Przed forkiem
+bool CodeAnalyser::IsSharedHeapInstruction(const CodeTape::bt_instruction &op)
+{
+	return (op.operation == CodeTape::btoSharedPop || 
+			op.operation == CodeTape::btoSharedPush ||
+			op.operation == CodeTape::btoSharedSwap);
+}
+
+//Operatory ³¹czone parami z innymi: pêtle i funkcje
+bool CodeAnalyser::IsFlowChangingInstruction(const CodeTape::bt_instruction &op)
+{
+	return (IsLinkedInstruction(op) ||
+		    op.operation == CodeTape::btoCallFunction); 
+}
+
 
 void CodeAnalyser::Analyse(void)
 {
@@ -101,7 +116,10 @@ void CodeAnalyser::Analyse(void)
 		if(TestForFunctionsErrors(it))
 			continue;
 
-		if(TestThreads(it))
+		if(TestForThreads(it))
+			continue;
+
+		if(TestForHeaps(it))
 			continue;
 
 		if(TestLoopPerformance(it))
@@ -212,6 +230,7 @@ bool CodeAnalyser::TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::i
 bool CodeAnalyser::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
 	std::vector<CodeTape::bt_instruction>::iterator m, n, o;
+	std::vector<CodeTape::bt_instruction>::reverse_iterator r, s;
 
 	if(it->operation == CodeTape::btoEndFunction)
 	{
@@ -303,6 +322,17 @@ bool CodeAnalyser::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>:
 			MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - instructions->begin() + 1);
 		}
 	}
+	else if(it->operation == CodeTape::btoCallFunction) //undefined call
+	{
+		r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
+		s = std::find_if(r, instructions->rend(), 
+								[](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+		
+		if(s == instructions->rend())
+		{
+			MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, (r+1).base() - instructions->begin());	
+		}
+	}
 	return false;
 }
 
@@ -310,8 +340,7 @@ bool CodeAnalyser::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>:
 //1. Join, czy nie jest za wczeœnie wywo³any
 //2. Czy ktoœ zapomnia³, ¿e fork zeruje bie¿¹ca komórke i cos tam dodawa³ odejmowa³ wczesniej
 //3 i 4 - powtórzenia join i terminate
-//5 i 6  - powtórzenia swapów
-bool CodeAnalyser::TestThreads(std::vector<CodeTape::bt_instruction>::iterator &it)
+bool CodeAnalyser::TestForThreads(std::vector<CodeTape::bt_instruction>::iterator &it)
 {
 	std::vector<CodeTape::bt_instruction>::iterator n, m;
 	std::vector<CodeTape::bt_instruction>::reverse_iterator r;
@@ -347,10 +376,60 @@ bool CodeAnalyser::TestThreads(std::vector<CodeTape::bt_instruction>::iterator &
         if(TestForRepetition(it, CodeTape::btoTerminate))
 			MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - instructions->begin() + 1);
 	}
-	else if(it->operation == CodeTape::btoSwap || it->operation == CodeTape::btoSharedSwap) 
+	
+	return false;
+}
+
+//Funkcja testuje sprawy zwi¹zane z heap
+//Szczegolnie switche [sa dystalne]
+//1. Switch scope and repeat
+//2. swap repeat
+bool CodeAnalyser::TestForHeaps(std::vector<CodeTape::bt_instruction>::iterator &it)
+{
+	std::vector<CodeTape::bt_instruction>::iterator n, m;
+	std::vector<CodeTape::bt_instruction>::reverse_iterator r;
+
+	if(it->operation == CodeTape::btoSwitchHeap)
 	{
-        if(TestForRepetition(it, CodeTape::btoSwap) || TestForRepetition(it, CodeTape::btoSharedSwap))
+		if(TestForRepetition(it, CodeTape::btoSwitchHeap))
+			MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - instructions->begin() + 1);
+
+		n = std::find_if(it + 1, instructions->end(), IsSharedHeapInstruction);
+
+		if(n == instructions->end()) 
+		{
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - instructions->begin() + 1);
+
+			if(repair) //usuwamy switch
+			{
+				it = instructions->erase(it);
+				this->RelinkCommands(it, (n - it - 1));
+				++repaired_issues;
+				return true;
+			}
+		}
+		else // jest jakas instrukcja shared heapa
+		{
+			m = std::find_if(it + 1, n, IsFlowChangingInstruction);
+
+			if(m != n) 
+				MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - instructions->begin() + 1);
+		}
+	}
+	else if(it->operation == CodeTape::btoSwap) 
+	{
+        if(TestForRepetition(it, CodeTape::btoSwap))
 			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions->begin() + 1);
+	}
+	else if(it->operation == CodeTape::btoSharedSwap) 
+	{   //we have ~ op beetween
+        n = std::find_if(it + 1, instructions->end(), 
+			             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoSharedSwap; });
+
+		if(n != instructions->end() && n - it == 2) //~%~%
+		{
+			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions->begin() + 1);
+		}
 	}
 	return false;
 }
@@ -384,7 +463,7 @@ bool CodeAnalyser::TestLoopPerformance(std::vector<CodeTape::bt_instruction>::it
 			if(it - 1 != n) //jest znaleziona przynajmniej jedna instrukcja + -
 			{
 				//tutaj n oznacza pierwsza nie + - instrukcje przed pêtl¹
-				s = Calcule(n + 1, it);
+				s = Evaluate(n + 1, it);
 
 				if(lim != 0 && (lim > 0 || (lim < 0 && s < 0) )) //je¿eli pêtla jest policzalna, a sekwencja przed ni¹ da¿y inaczej ni¿ pêtla
 				{
@@ -411,7 +490,7 @@ bool CodeAnalyser::TestArithmetics(std::vector<CodeTape::bt_instruction>::iterat
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla ++ [ops=2] a nie +-+-++ [ops=5]
 
 		ops = std::count_if(it, n, IsArithmeticInstruction);
-		sum = Calcule(it, n);
+		sum = Evaluate(it, n);
 
 		if((n - it) > 1 && abs(sum) != ops)
 		{
@@ -453,7 +532,7 @@ bool CodeAnalyser::TestRedundantMoves(std::vector<CodeTape::bt_instruction>::ite
 		//mamy ci¹g < > 
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla >> [ops=2] a nie <><>>> [ops=5]
 
-		sum = CalculeMoves(it, n);
+		sum = EvaluateMoves(it, n);
 		ops = std::count_if(it, n, IsMoveInstruction);
 		
 		if((n - it) > 1 && abs(sum) != ops)
@@ -498,7 +577,7 @@ bool CodeAnalyser::TestForRepetition(std::vector<CodeTape::bt_instruction>::iter
 				it = instructions->erase(it+1, n);
 				++repaired_issues;
 			}
-			else it = n;
+			else it = n - 1;
 		}
 	}
 	else return false;
@@ -508,7 +587,7 @@ bool CodeAnalyser::TestForRepetition(std::vector<CodeTape::bt_instruction>::iter
 
 //Funkcja liczy sume wynikaj¹ca z operacji + i - w pewnym ci¹gu instrukcji od start do poprzedzaj¹cego end
 //Nie sa wa¿ne inne operacje 
-int CodeAnalyser::Calcule(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
+int CodeAnalyser::Evaluate(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
 {
 	int sum = 0;
 	for(std::vector<CodeTape::bt_instruction>::iterator it = begin; it < end; ++it)
@@ -525,7 +604,7 @@ int CodeAnalyser::Calcule(const std::vector<CodeTape::bt_instruction>::iterator 
 
 //Funkcja liczy operacje < i >, cel taki jak w Calcule
 //Nie sa wa¿ne inne operacje 
-int CodeAnalyser::CalculeMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
+int CodeAnalyser::EvaluateMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const
 {
 	int sum = 0;
 	for(std::vector<CodeTape::bt_instruction>::iterator it = begin; it < end; ++it)
@@ -567,7 +646,7 @@ short CodeAnalyser::GetLoopLimes(const std::vector<CodeTape::bt_instruction>::it
 																					 o.operation == CodeTape::btoEndLoop; }); //szukamy pierwszej instrukcji pêtli
 
 			if(n != m) //sa jakies operacje -> [+-+-[
-				limesii.push_back( Calcule(m, a) < 0 ? -1 : 1 ); //pêtla z przewaga minusów da tutaj -1, inaczej 1, zero liczy sie jak do nieksonczonoœci
+				limesii.push_back( Evaluate(m, a) < 0 ? -1 : 1 ); //pêtla z przewaga minusów da tutaj -1, inaczej 1, zero liczy sie jak do nieksonczonoœci
 			else   //nie ma ¿adnej operacji -> [[
 				limesii.push_back( -1 ); //liczy sie jako normalna zdrowa operacje d¹¿¹ca do zera
 

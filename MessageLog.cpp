@@ -112,9 +112,10 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
         case ecFunctionExistsButNoCall: return "A function was declared but not used";
 
 		case ecJoinButNoFork: return "A join command exists but there is no fork";
-		case ecTerminateRepeat: return "Unnecessary terminate instruction repeat";
-		case ecJoinRepeat: return "Unnecessary join instruction repeat";
-		case ecSwapRepeat: return "Unnecessary swap instruction repeat";
+		case ecTerminateRepeat: return "Unnecessary terminate instruction repetition";
+		case ecJoinRepeat: return "Unnecessary join instruction repetition";
+		case ecSwapRepeat: return "Unnecessary swap instruction repetition";
+		case ecSwitchRepeat: return "Unnecessary switch to shared heap instruction repetition";
         case ecJoinBeforeFork: return "Join before fork";
 			
 		case ecRedundantArithmetic: return "Redundant arithmetics";
@@ -125,7 +126,10 @@ const char*  MessageLog::MapMessages(ErrCode &ec) const
 		case ecRedundantMoves: return "Redundant pointer moves like ><><";	
 		case ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
 		case ecInfinityRecurention: return "Funcion calls itself recursively";
+		case ecRedundantSwitch: return "Switch to shared heap instruction has no effect";
+		case ecSwithOutOfScope: return "Switch to shared heap instruction is out of scope";
 
+		case ecCallButNoFunction: return "Call but no function defined";
 
 		case ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
 

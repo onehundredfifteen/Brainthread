@@ -50,6 +50,7 @@ void Parser::Parse(std::vector<char> &source)
 
   //next stack op will be executed on shared stack
   bool switchToSharedHeap = false;
+  unsigned int switchJump = 0;
 
   if(source.empty())
   {
@@ -147,10 +148,13 @@ void Parser::Parse(std::vector<char> &source)
 				case CodeTape::btoSwap: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedSwap)); 
 					break;
 			}
+
+			instructions.back().jump = switchJump;
 		}
 		else if(curr_op == CodeTape::btoSwitchHeap) 
 		{
 			switchToSharedHeap = true; //non executable operation
+			switchJump = GetValidPos(it, source.begin(), not_valid_ins);
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
 		else 
@@ -195,7 +199,7 @@ bool Parser::isCodeValid(void)
 
 bool Parser::isValidOperator(char &c)
 {
-	static const char *valid_bt_ops = "<>+-.,[]()*{}!#^%~;:";
+	static const char *valid_bt_ops = "<>+-.,[]()*{}!&^%~;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
 	static const char *valid_pb_ops = "<>+-.,[]():";
 	static const char *valid_bo_ops = "<>+-.,[]Y";
@@ -248,7 +252,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				case ')': return CodeTape::btoEndFunction;
 				case '*': return CodeTape::btoCallFunction;
 
-				case '#': return CodeTape::btoPush;
+				case '&': return CodeTape::btoPush;
 				case '^': return CodeTape::btoPop;
 				case '%': return CodeTape::btoSwap;
 				case '~': return CodeTape::btoSwitchHeap;

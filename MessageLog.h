@@ -39,13 +39,17 @@ class MessageLog
 			ecJoinRepeat,
 			ecSwapRepeat,
 			ecJoinBeforeFork,
-			ecRedundantArithmetic,
 
+			ecRedundantArithmetic,
 			ecRedundantNearLoopArithmetic,
 			ecSlowLoop,
 			ecRedundantMoves,
 			ecRedundantOpBeforeFork,
 
+			ecRedundantSwitch,
+			ecSwitchRepeat,
+			ecSwithOutOfScope,
+			ecCallButNoFunction,
 
 			ecMessage = 600,
 			ecInformation //taka wiadomoœæ bêdzie pomijana

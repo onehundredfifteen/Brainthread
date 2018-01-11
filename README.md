@@ -11,7 +11,7 @@ Brainthread:
 * is Brainfuck compatible
 * has functions from pBrain (function call operand is *, not :)
 * has threading from Brainfork: { 'fork' inhanced by control commands } 'join' and ! 'terminate' 
-* has heaps: & 'push', ^ 'pop' and % 'swap'. The heap command preceded by ~ causes the shared heap to be used. Threads can commnicate this way.
+* has heaps: type & to 'push', ^ 'pop' and % 'swap'. The heap command preceded by ~ causes the shared heap to be used. Threads can commnicate this way.
 * introduces decimal input and output (; and : commands)
 
 
