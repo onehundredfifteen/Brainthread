@@ -10,9 +10,6 @@
 */
 
 extern CRITICAL_SECTION pm_critical_section;
-extern CRITICAL_SECTION cout_critical_section;
-extern CRITICAL_SECTION code_critical_section;
-extern CRITICAL_SECTION heap_critical_section;
 
 unsigned int ProcessMonitor::threads_cnt = 0;
 

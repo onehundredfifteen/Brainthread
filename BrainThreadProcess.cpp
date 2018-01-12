@@ -5,7 +5,6 @@
 #include "BrainThreadRuntimeException.h"
 #include "DebugLogStream.h"
 
-extern CRITICAL_SECTION code_critical_section;
 extern CRITICAL_SECTION cout_critical_section;
 extern CRITICAL_SECTION heap_critical_section;
 
@@ -103,9 +102,9 @@ void BrainThreadProcess<T>::Run(void)
 
 	while(true)
 	{
-		ProcessMonitor::EnterCriticalSection(code_critical_section);
+		//ProcessMonitor::EnterCriticalSection(code_critical_section);
 		current_instruction = code->GetInstruction(this->code_pointer);
-		ProcessMonitor::LeaveCriticalSection(code_critical_section);
+		//ProcessMonitor::LeaveCriticalSection(code_critical_section);
 
 		switch(current_instruction.operation)
 		{

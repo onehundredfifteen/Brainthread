@@ -4,7 +4,7 @@
 #include <string>
 
 #ifndef BT_VERSION
-	#define BT_VERSION "1.2"
+	#define BT_VERSION "1.3"
 #endif
 
 void PrintBrainThreadInfo(void);

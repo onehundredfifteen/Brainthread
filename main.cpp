@@ -13,7 +13,6 @@
 #include "BrainHelp.h"
 
 //sekcje krytyczne
-CRITICAL_SECTION code_critical_section;
 CRITICAL_SECTION cout_critical_section;
 CRITICAL_SECTION pm_critical_section;
 CRITICAL_SECTION heap_critical_section;
@@ -62,7 +61,6 @@ std::unique_ptr<CodeTape> Code;
 int main(int argc, char* argv[])
 {
 	//inicjalizacja sekcji krytycznych
-	InitializeCriticalSection(&code_critical_section);
 	InitializeCriticalSection(&cout_critical_section);
 	InitializeCriticalSection(&pm_critical_section);
 	InitializeCriticalSection(&heap_critical_section);
@@ -123,7 +121,6 @@ int main(int argc, char* argv[])
 	if(OP_nopause == false)
 		system("pause");
 	
-	DeleteCriticalSection(&code_critical_section);
 	DeleteCriticalSection(&cout_critical_section);
 	DeleteCriticalSection(&pm_critical_section);
 	DeleteCriticalSection(&heap_critical_section);

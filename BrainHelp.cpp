@@ -12,7 +12,6 @@ std::string GetExeName(void)
 	return std::string(szPath).substr( std::string(szPath).rfind('\\') + 1 );
 }
 
-
 void PrintBrainThreadInfo(void)
 {
 	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
@@ -224,7 +223,6 @@ void ShowHelp(std::string help_opt)
 	{
 	  std::cout << "Type --help [option] to get option's description (p.ex --help eof).\n"
 		        //<< "Type --help ['exceptions'] to read about listed subjects.\n"
-		        << "Type --info to read about BrainThread language.\n\n"
 			    << "\t++ EXECUTION OPTIONS ++\n"
 			    << "-l --language [bt|b|bf|pb|brainthread|brainfuck|brainfork|pbrain|auto] Default: brainthread\n"
 				<< "-e --eof [0|255|nochange] Default: 0\n"
@@ -250,8 +248,47 @@ void ShowHelp(std::string help_opt)
 void ShowInfo(void)
 {
 	PrintBrainThreadInfoEx();
-	std::cout << "\n++ BrainThread description ++\n"
-			  << "\tInstructions: +-,.<>[] same as Brainfuck\n"
-			  << "\t() - same as pBrain\n"
+
+	std::cout << "\n++ DESCRIPTION OF BRAINTHREAD LANGUAGE ++\n"
+			  << "Brainthread is a derivative of Brainfuck, supports functions (from pBrain), threads (like Brainfork) and heaps. "
+			  << "All Brainthread programs are also valid Brainfuck programs, although they may (of course) behave very differently.\n"
+			  << "Each thread has it's own separate memory and heap. Threads can use and communicate each other by one global shared heap.\n"
+
+			  << "\n++ Basic commands ++\n"
+			  << " > increment the data pointer (to point to the next cell to the right).\n"
+			  << " < decrement the data pointer (to point to the next cell to the left).\n"
+			  << " + increment (increase by one) the cell at the data pointer.\n"
+			  << " - decrement (decrease by one) the cell at the data pointer.\n"
+			  << " . output the cell at the data pointer.\n"
+			  << " , accept one byte of input, storing its value in the cell at the data pointer.\n"
+			  << " [ if the cell at the data pointer is zero, then jump it forward to the command after the matching ] command.\n"
+			  << " ] if the cell at the data pointer is nonzero, then jump it back to the command after the matching [ command.\n"
+
+			  << "\n++ Threading commands ++\n"
+			  << " { the current thread forks and child continues to execute from this point.\n"
+			  << " } the current thread waits for all it's children threads.\n"
+			  << " ! terminate the current thread. If this is the main thread, terminate the program itself.\n"
+			  << "A thread forks with the cell at the data pointer being zeroed and the memory being copied. In the child the data pointer being"
+			  << "moved one to the right and that cell set to 1. Heaps aren't copied.\n\n"
+
+			  << "\n++ Function commands ++\n"
+			  << " ( begin of function definition\n"
+			  << " ) end of function definition\n"
+			  << " * call the function of which the identifier is equal to the current cell value.\n"
+			  << "A procedure is delimited by the ( and ) instructions. It's assigned a numeric identifier equal to the contents of the active"
+			  << "cell at the time the ( is encountered. Threads spawned from the procedure terminates with it's end.\n"
+
+			  << "\n++ Heap commands ++\n"
+			  << " & push the current cell value to the heap\n"
+			  << " ^ pop the first element of the heap to the current cell. If the heap is empty, 0 is assigned.\n"
+			  << " % swap two first elements of the heap. If the heap contains less than 2 values, nothing happens.\n"
+			  << " ~ the next heap command refers to shared heap. (from the perspective of the code, not of the flow)\n"
+			  << "Use the swap command p.ex to check if the heap is either empty or it's elements are zero\n"
+
+			  << "\n++ Additional commands ++\n"
+			  << " : output the cell at the data pointer as integer\n"
+			  << " ; accept one integer of input, storing its value in the cell at the data pointer.\n"
+			  << "An easy way to read and write numbers."
+
 			  << std::endl;
 }

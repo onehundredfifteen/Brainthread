@@ -1,8 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>--language brainthread -i "{[-&lt;]+++[&gt;+++++&lt;-]&gt;[&gt;+&gt;+++&gt;+&gt;++&gt;+++++&gt;++&lt;[++&lt;]&gt;---]&gt;-&gt;-.[&gt;++&gt;+&lt;&lt;--]&gt;--.--.+.&gt;&gt;&gt;++.&lt;&lt;.&lt;------.+.+++++.&gt;&gt;-.&lt;++++.&lt;--.&gt;&gt;&gt;.&lt;&lt;---.&lt;.--&gt;-.&gt;+.[+++++.---&lt;]&gt;&gt;[.---&gt;]&lt;&lt;.&lt;+.++.++&gt;+++[.&lt;][.]&lt;++."</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-a -i "++++~~++"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <ShowAllFiles>false</ShowAllFiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>$(TargetPath)</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>--info</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

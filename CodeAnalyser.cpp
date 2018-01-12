@@ -330,7 +330,7 @@ bool CodeAnalyser::TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>:
 		
 		if(s == instructions->rend())
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, (r+1).base() - instructions->begin());	
+			MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - instructions->begin() + 1);	
 		}
 	}
 	return false;
@@ -368,7 +368,7 @@ bool CodeAnalyser::TestForThreads(std::vector<CodeTape::bt_instruction>::iterato
         r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
 		if(r != std::find_if_not(r, instructions->rend(), IsChangingCellInstruction))
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, (r+1).base() - instructions->begin());	
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - instructions->begin() + 1);	
 		}
 	}
 	else if(it->operation == CodeTape::btoTerminate) 
