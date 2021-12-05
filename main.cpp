@@ -18,7 +18,8 @@ CRITICAL_SECTION pm_critical_section;
 CRITICAL_SECTION heap_critical_section;
 
 //flagi
-bool OP_debug, OP_repair, OP_execute, OP_nopause;
+bool OP_debug, OP_repair, OP_optimize, OP_execute, OP_nopause;
+
 MessageLog::MessageLevel OP_message;
 DebugLogStream::stream_type OP_log;
 std::string OP_source = "";
@@ -184,8 +185,8 @@ void RunParserAndDebug()
 			if(OP_debug)
 			{
 				//MessageLog::Instance().AddInfo("Code analysis started..");
-				CodeAnalyser analyser(parser.GetCode(), OP_repair);
-				analyser.Analyse();
+				CodeAnalyser analyser(parser.GetCode());
+				OP_optimize ? analyser.Repair() : analyser.Analyse();
 
 				if(analyser.isCodeValid())
 				{
@@ -385,10 +386,12 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 
 	//debug, repair & execute
 	OP_debug = (ops >> GetOpt::OptionPresent('a', "analyse"));
-	OP_repair = (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia³
+	
+	OP_optimize = (ops >> GetOpt::OptionPresent('o', "optimize")); //todo o2 o3
+	OP_repair = OP_optimize || (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia³
 	OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamia³
 	
-	if(OP_repair)//aby by³ repair, musi byc debug
+	if(OP_optimize || OP_repair)//aby by³ repair, musi byc debug
 		OP_debug = true;
 	if(OP_debug == false)//nie debugujesz? musi byc execute
 		OP_execute = true;

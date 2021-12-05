@@ -234,6 +234,13 @@ void BrainThreadProcess<T>::Run(void)
 					this->PrintProcessInfo(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
+			
+				// Optimizer
+			case CodeTape::btoOPT_SetCellToZero:
+				this->memory->NullifyValue();
+				break;
+
+			case CodeTape::btoOPT_NoOperation:
 			case CodeTape::btoSwitchHeap: 
 				break;
 			/***********************

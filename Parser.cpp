@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "MessageLog.h"
+#include "CodeOptimizer.h"
 
 #include <cstring>
 #include <stack>
@@ -42,6 +43,10 @@ void Parser::Parse(std::vector<char> &source)
   std::stack<unsigned int> loop_call_stack;
   std::stack<unsigned int> func_call_stack;
 
+  //optimizer
+  std::queue<unsigned int> optimizer_entrypoint;
+  bool optimize = true;
+
   //for loop jumps
   unsigned int not_valid_ins = 0;
 
@@ -74,6 +79,11 @@ void Parser::Parse(std::vector<char> &source)
 		{
 			loop_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
+
+			
+			if (optimize && (optimizer_entrypoint.empty() || instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop)) {
+				optimizer_entrypoint.push(instructions.size() - 1);
+			}
 		}
 		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
 		{
@@ -157,6 +167,11 @@ void Parser::Parse(std::vector<char> &source)
 			switchJump = GetValidPos(it, source.begin(), not_valid_ins);
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
+		else if(optimize && isOptimizableToo(curr_op)) {
+			/*if (optimizer_entrypoint.empty() || instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop) {
+				optimizer_entrypoint.push(instructions.size() - 1);
+			}*/
+		}
 		else 
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 	}
@@ -183,6 +198,11 @@ void Parser::Parse(std::vector<char> &source)
 		MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
 		func_call_stack.pop();
 	 }
+  }
+
+  if (optimize) {
+	  CodeOptimizer optimizer(&instructions, coLevel::co1);
+	  optimizer.Optimize(optimizer_entrypoint);
   }
   //koniec
 }
@@ -374,6 +394,11 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 	return CodeTape::btoInvalid;
 }
 
+bool Parser::isOptimizableToo(const CodeTape::bt_operation &ins) {
+	//without loops
+	return ins == (CodeTape::btoMoveLeft || CodeTape::btoMoveRight);
+}
+
 Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 {
 	std::vector<char>::iterator a, b;
@@ -403,7 +428,7 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 		}
 
 	}
-	else //bf, b
+	else //haven't functions
 	{
 		a = std::find_if(source.begin(), source.end(), 
 				             [](const char &c){ return c == 'Y'; });
@@ -411,6 +436,23 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
 		{
 			return Parser::clBrainFork;
+		}
+
+		//next guess
+		a = std::find_if(source.begin(), source.end(), 
+							 [](const char &c){ return strchr("}~^%&", c) != 0; });
+
+		if(a != source.end()) //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
+		{
+			return Parser::clBrainThread;
+		}
+
+		a = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == '{'; });
+
+		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
+		{
+			return Parser::clBrainThread;
 		}
 	}
 

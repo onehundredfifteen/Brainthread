@@ -41,6 +41,10 @@ class CodeTape
 			btoInvEndLoop,
 			btoBreak,*/
 
+			//wrapped, optimized instructions
+			btoOPT_SetCellToZero,
+			btoOPT_NoOperation,
+
 			//debug instructions
 			btoDEBUG_SimpleMemoryDump = 100,
 			btoDEBUG_MemoryDump,
@@ -58,6 +62,7 @@ class CodeTape
 		{
 			bt_operation operation;
 			unsigned int jump;
+			unsigned int repetitions;
 
 			bt_instruction(bt_operation op, unsigned int index): operation(op), jump(index){};
 			bt_instruction(bt_operation op): operation(op), jump(UINT_MAX){};
