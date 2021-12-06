@@ -218,7 +218,6 @@ void CodeAnalyser::Repair(void)
 				_it = instructions->erase(_it, _it + 2);
 				RelinkCommands(_it, 2);
 				++repaired_issues;
-				return true;
 			},
 			[this](CodeIterator &_it) {
 				instructions->erase(instructions->begin() + (_it->jump));
@@ -226,7 +225,6 @@ void CodeAnalyser::Repair(void)
 				RelinkCommands(_it, instructions->begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
 				RelinkCommands(instructions->begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 				++repaired_issues;
-				return true;
 			}))
 			continue;
 
@@ -236,7 +234,6 @@ void CodeAnalyser::Repair(void)
 			_it = instructions->erase(_it);
 			this->RelinkCommands(_it, 2);
 			++repaired_issues;
-			return true;
 		},
 			[this](CodeIterator &_it) {
 			instructions->erase(instructions->begin() + (_it->jump));
@@ -244,7 +241,6 @@ void CodeAnalyser::Repair(void)
 			this->RelinkCommands(_it, instructions->begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
 			this->RelinkCommands(instructions->begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 			++repaired_issues;
-			return true;
 		}))
 			continue;
 
@@ -275,7 +271,6 @@ void CodeAnalyser::Repair(void)
 					this->RelinkCommands(_it, (ops - sum));
 
 				++repaired_issues;
-				return true;
 			}))
 				continue;
 		}
@@ -296,8 +291,6 @@ void CodeAnalyser::Repair(void)
 					instructions->end()),
 					this->RelinkCommands(_it, (ops - sum));
 				++repaired_issues;
-
-				return true;
 			}))
 				continue;
 		}
@@ -355,7 +348,7 @@ bool CodeAnalyser::TestForInfiniteLoops(CodeIterator &it, const RepairFn &infLoo
 			MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - instructions->begin() + 1);	
 			if(infLoopRep)
 			{
-				return infLoopRep(it);			
+				infLoopRep(it);			
 			}
 		}
 		//pusta pêtla [[xxxx]]
@@ -364,7 +357,7 @@ bool CodeAnalyser::TestForInfiniteLoops(CodeIterator &it, const RepairFn &infLoo
 			MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - instructions->begin() + 1);
 			if(emptyLoopRep)
 			{
-				return emptyLoopRep(it);
+				emptyLoopRep(it);
 			}
 		}	 
 	}
@@ -488,7 +481,7 @@ bool CodeAnalyser::TestForThreads(CodeIterator &it, const RepairFn2 & repairCB, 
 
 	if(it->operation == CodeTape::btoJoin)
 	{
-		if(TestForRepetition(it, CodeTape::btoJoin, repairRepetitionCB))
+		if(TestForRepetition(it, repairRepetitionCB))
 			MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - instructions->begin() + 1);
 		
 		
@@ -511,7 +504,7 @@ bool CodeAnalyser::TestForThreads(CodeIterator &it, const RepairFn2 & repairCB, 
 	}
 	else if(it->operation == CodeTape::btoTerminate) 
 	{
-        if(TestForRepetition(it, CodeTape::btoTerminate, repairRepetitionCB))
+        if(TestForRepetition(it, repairRepetitionCB))
 			MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - instructions->begin() + 1);
 	}
 	
@@ -529,7 +522,7 @@ bool CodeAnalyser::TestForHeaps(CodeIterator &it, const RepairFn2 & repairCB, co
 
 	if(it->operation == CodeTape::btoSwitchHeap)
 	{
-		if(TestForRepetition(it, CodeTape::btoSwitchHeap, repairRepetitionCB))
+		if(TestForRepetition(it, repairRepetitionCB))
 			MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - instructions->begin() + 1);
 
 		n = std::find_if(it + 1, instructions->end(), IsSharedHeapInstruction);
@@ -553,7 +546,7 @@ bool CodeAnalyser::TestForHeaps(CodeIterator &it, const RepairFn2 & repairCB, co
 	}
 	else if(it->operation == CodeTape::btoSwap) 
 	{
-        if(TestForRepetition(it, CodeTape::btoSwap, repairRepetitionCB))
+        if(TestForRepetition(it, repairRepetitionCB))
 			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions->begin() + 1);
 	}
 	else if(it->operation == CodeTape::btoSharedSwap) 
@@ -671,22 +664,17 @@ bool CodeAnalyser::TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & repa
 }
 
 //Funkcja testuje czy wystapi³y jakies powtórzenia operatorów, np !
-bool CodeAnalyser::TestForRepetition(CodeIterator &it, const CodeTape::bt_operation &op, const RepairFn2 & repairCB)
+bool CodeAnalyser::TestForRepetition(CodeIterator &it, const RepairFn2 & repairCB)
 {
-	CodeIterator n;
-
-	if(it->operation == op && it + 1 < instructions->end() && (it+1)->operation == op)
-	{
-		n = std::find_if_not(it + 1, instructions->end(), [&op](const CodeTape::bt_instruction &o){ return o.operation == op; });
-		if(n != instructions->end()) //jest jakies powtórzenie
+	CodeIterator n = std::find_if_not(it + 1, instructions->end(), [&it](const CodeTape::bt_instruction &o){ return o.operation == it->operation; });
+	if(n != instructions->end()) //jest jakies powtórzenie
 		{
 			if(repairCB) //usuwamy wszsytkie bez pierwszego
 			{
-				repairCB(it, n);
-				
+				repairCB(it, n);	
 			}
 			else it = n - 1;
-		}
+		
 	}
 	else return false;
 

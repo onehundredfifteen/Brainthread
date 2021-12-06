@@ -78,9 +78,19 @@ void MemoryTape<T>::Increment(void)
 	 ++(*pointer);
 }
 template < typename T >
+void MemoryTape<T>::Increment(int amount)
+{
+	(*pointer) += amount;
+}
+template < typename T >
 void MemoryTape<T>::Decrement(void)
 {
 	--(*pointer);
+}
+template < typename T >
+void MemoryTape<T>::Decrement(int amount)
+{
+	(*pointer) -= amount;
 }
 
 template < typename T >
@@ -114,6 +124,14 @@ void MemoryTape<T>::MoveRight(void)
 }
 
 template < typename T >
+void MemoryTape<T>::MoveRight(int amount)
+{
+	while (amount--) {
+		MoveRight();
+	}
+}
+
+template < typename T >
 void MemoryTape<T>::MoveLeft(void)
 {
 	if(pointer <= mem)
@@ -130,6 +148,14 @@ void MemoryTape<T>::MoveLeft(void)
 		}
 	}
 	--pointer;
+}
+
+template < typename T >
+void MemoryTape<T>::MoveLeft(int amount)
+{
+	while (amount--) {
+		MoveLeft();
+	}
 }
 
 template < typename T >

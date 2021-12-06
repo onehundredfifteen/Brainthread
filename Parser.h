@@ -49,7 +49,7 @@ class Parser
 		unsigned int FindMatchingRightPair(CodeTape::bt_operation op, unsigned int from_pos);
 		unsigned int FindMatchingLeftPair(CodeTape::bt_operation op, unsigned int from_pos); 
 
-		bool isOptimizableToo(const CodeTape::bt_operation &ins);
+		//bool isOptimizableToo(const CodeTape::bt_operation &ins);
 
 		unsigned int GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos);
 };

@@ -1,7 +1,7 @@
 #include "CodeOptimizer.h"
 
-CodeOptimizer::CodeOptimizer(std::vector<CodeTape::bt_instruction> *instructions, coLevel _level)
-	: CodeAnalyser(instructions) , level(_level)
+CodeOptimizer::CodeOptimizer(std::list<unsigned int>& _entrypoints, std::vector<CodeTape::bt_instruction> *instructions, coLevel _level)
+	: optimizer_entrypoints(_entrypoints), CodeAnalyser(instructions) , level(_level)
 {
 	
 }
@@ -10,15 +10,21 @@ CodeOptimizer::~CodeOptimizer(void)
 {
 }
 
-void CodeOptimizer::Optimize(std::queue<unsigned int> &optimizer_entrypoints)
+void CodeOptimizer::Optimize()
 {
 	CodeIterator it = instructions->begin();
 
+	//funkcje naprawcze
+	auto repairRepetition = [this](CodeIterator& _it, CodeIterator& n) {
+		this->RelinkCommands(_it, (n - _it - 1));
+		_it->repetitions = (n - _it);
+		_it = instructions->erase(_it + 1, n);
+		//++repaired_issues;
+	};
 
-	while (optimizer_entrypoints.empty() == false)
+	for(unsigned int n : optimizer_entrypoints)
 	{
-		it = instructions->begin() + optimizer_entrypoints.front();
-		optimizer_entrypoints.pop();
+		it = instructions->begin() + n;
 
 		if (it->operation == CodeTape::btoBeginLoop) {
 			if (it + 2 < instructions->end() && 
@@ -30,11 +36,6 @@ void CodeOptimizer::Optimize(std::queue<unsigned int> &optimizer_entrypoints)
 				(it + 2)->operation = CodeTape::btoOPT_SetCellToZero;
 			}
 		}
-		/*else if (it->operation == CodeTape::btoMoveLeft) {
-			if (it + 2 < instructions->end()) {
-				TestForRepetition()
-			}
-		}*/
 	}
 }
 
@@ -87,6 +88,23 @@ bool CodeOptimizer::OptimizeToZeroLoop(CodeIterator &it, const RepairFn2 & repai
 
 	}
 	return false;
+}
+
+//Funkcje modyfikuj¹ linkowania 
+void CodeOptimizer::RelinkCommands(const CodeIterator& start, short n)
+{
+	RelinkCommands(start, instructions->end(), n);
+}
+
+void CodeOptimizer::RelinkCommands(const CodeIterator& start, const CodeIterator& end, short n)
+{
+	for (CodeIterator it = start; it < end; ++it)
+	{
+		if (IsLinkedInstruction(*it) || it->NullJump() == false)
+		{
+			it->jump -= n;
+		}
+	}
 }
 
 

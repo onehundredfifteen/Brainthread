@@ -99,6 +99,7 @@ template < typename T >
 void BrainThreadProcess<T>::Run(void)
 {
 	CodeTape::bt_instruction current_instruction;
+	int opt = true;
 
 	while(true)
 	{
@@ -109,16 +110,16 @@ void BrainThreadProcess<T>::Run(void)
 		switch(current_instruction.operation)
 		{
 			case CodeTape::btoIncrement: 
-				memory->Increment(); 
+				opt ? memory->Increment(current_instruction.repetitions) : memory->Increment();
 				break;
 			case CodeTape::btoDecrement: 
-				memory->Decrement(); 
+				opt ? memory->Decrement(current_instruction.repetitions) : memory->Decrement();
 				break;
 			case CodeTape::btoMoveLeft: 
-				memory->MoveLeft(); 
+				opt ? memory->MoveLeft(current_instruction.repetitions) : memory->MoveLeft();
 				break;
 			case CodeTape::btoMoveRight: 
-				memory->MoveRight(); 
+				opt ? memory->MoveRight(current_instruction.repetitions) : memory->MoveRight();
 				break;
 			case CodeTape::btoAsciiWrite: 
 				memory->Write(); 

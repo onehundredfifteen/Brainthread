@@ -26,10 +26,14 @@ class MemoryTape
 		~MemoryTape(void);
 
 		void Increment(void);
+		void Increment(int);
 		void Decrement(void);
+		void Decrement(int);
 
 		void MoveLeft(void);
+		void MoveLeft(int);
 		void MoveRight(void);
+		void MoveRight(int);
 
 		void Read(void);
 		void Write(void);

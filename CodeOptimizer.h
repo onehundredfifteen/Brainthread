@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CodeAnalyser.h"
-#include <queue>
+#include <list>
 /*
  * Klasa CodeOptimizer
  * Pozwala optymalizowaæ kod
@@ -18,14 +18,25 @@ class CodeOptimizer : public CodeAnalyser
 {
 public:
 
-	CodeOptimizer(std::vector<CodeTape::bt_instruction> *instructions, coLevel lvl);
+	CodeOptimizer(std::list<unsigned int>&, std::vector<CodeTape::bt_instruction> *, coLevel lvl);
 	~CodeOptimizer(void);
 
-	void Optimize(std::queue<unsigned int> &optimizer_entrypoints);
+	void Optimize();
+	void RelinkCommands(const CodeIterator& start, short n);
+	void RelinkCommands(const CodeIterator& start, const CodeIterator& end, short n);
+
+	static bool isOptimizable(const CodeTape::bt_operation& ins, bool woLoops = true) {
+		//without loops
+		return (ins == CodeTape::btoMoveLeft || 
+			ins == CodeTape::btoMoveRight ||
+			ins == CodeTape::btoIncrement || 
+			ins == CodeTape::btoDecrement);
+	}
 
 
 private:
 	coLevel level;
+	std::list<unsigned int>& optimizer_entrypoints;
 
 	bool OptimizeToZeroLoop(CodeIterator &it, const RepairFn2 & = nullptr);
 };

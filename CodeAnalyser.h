@@ -13,9 +13,9 @@
 
 typedef std::vector<CodeTape::bt_instruction>::iterator CodeIterator;
 
-typedef std::function<bool(CodeIterator &)> RepairFn;
-typedef std::function<bool(CodeIterator &, CodeIterator &)> RepairFn2;
-typedef std::function<bool(CodeIterator &, CodeIterator &, int& ,int&)> RepairFn2i2;
+typedef std::function<void(CodeIterator &)> RepairFn;
+typedef std::function<void(CodeIterator &, CodeIterator &)> RepairFn2;
+typedef std::function<void(CodeIterator &, CodeIterator &, int& ,int&)> RepairFn2i2;
 
 class CodeAnalyser
 {
@@ -46,7 +46,7 @@ class CodeAnalyser
 		bool TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & = nullptr);
 		void TestOpsBeforeFork(CodeIterator &it);
 
-		bool TestForRepetition(CodeIterator &it, const CodeTape::bt_operation &op, const RepairFn2 & = nullptr);
+		bool TestForRepetition(CodeIterator &it, const RepairFn2 & = nullptr);
 		int Evaluate(const CodeIterator &begin, const CodeIterator &end) const;
 		int EvaluateMoves(const CodeIterator &begin, const CodeIterator &end) const;
 

@@ -44,14 +44,15 @@ void Parser::Parse(std::vector<char> &source)
   std::stack<unsigned int> func_call_stack;
 
   //optimizer
-  std::queue<unsigned int> optimizer_entrypoint;
-  bool optimize = true;
+  std::list<unsigned int> optimizer_entrypoint;
+  bool _optimize = true;
 
   //for loop jumps
   unsigned int not_valid_ins = 0;
 
   //current op
-  CodeTape::bt_operation curr_op;
+  CodeTape::bt_operation curr_op, _tmp_op;
+  std::vector<char>::iterator _it;
 
   //next stack op will be executed on shared stack
   bool switchToSharedHeap = false;
@@ -81,8 +82,12 @@ void Parser::Parse(std::vector<char> &source)
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 
 			
-			if (optimize && (optimizer_entrypoint.empty() || instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop)) {
-				optimizer_entrypoint.push(instructions.size() - 1);
+			if (_optimize && optimizer_entrypoint.empty()) {
+				optimizer_entrypoint.push_back(instructions.size() - 1);
+				//_middle = optimizer_entrypoint.begin();
+			}
+			else if (_optimize && instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop) {
+				optimizer_entrypoint.push_back(instructions.size() - 1);
 			}
 		}
 		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
@@ -167,10 +172,18 @@ void Parser::Parse(std::vector<char> &source)
 			switchJump = GetValidPos(it, source.begin(), not_valid_ins);
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
-		else if(optimize && isOptimizableToo(curr_op)) {
-			/*if (optimizer_entrypoint.empty() || instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop) {
-				optimizer_entrypoint.push(instructions.size() - 1);
-			}*/
+		else if(_optimize && CodeOptimizer::isOptimizable(curr_op)) {
+			int reps = 1;
+			_it = (it + reps);
+			while (_it < source.end()) {
+				if (MapCharToOperator(*_it) == curr_op) {
+					_it = (it + (++reps));
+				}
+				else break;
+			}
+			it = (_it - 1);
+
+			instructions.push_back(CodeTape::bt_instruction(curr_op, UINT_MAX, reps));
 		}
 		else 
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
@@ -200,9 +213,10 @@ void Parser::Parse(std::vector<char> &source)
 	 }
   }
 
-  if (optimize) {
-	  CodeOptimizer optimizer(&instructions, coLevel::co1);
-	  optimizer.Optimize(optimizer_entrypoint);
+  if (_optimize) {
+	  //optimizer_other_entrypoint.splice(optimizer_other_entrypoint.end(), optimizer_loop_entrypoint);
+	  CodeOptimizer optimizer(optimizer_entrypoint, &instructions, coLevel::co1);
+	  optimizer.Optimize();
   }
   //koniec
 }
@@ -392,11 +406,6 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 	}
 
 	return CodeTape::btoInvalid;
-}
-
-bool Parser::isOptimizableToo(const CodeTape::bt_operation &ins) {
-	//without loops
-	return ins == (CodeTape::btoMoveLeft || CodeTape::btoMoveRight);
 }
 
 Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)

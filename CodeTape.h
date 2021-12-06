@@ -64,11 +64,17 @@ class CodeTape
 			unsigned int jump;
 			unsigned int repetitions;
 
-			bt_instruction(bt_operation op, unsigned int index): operation(op), jump(index){};
+			bt_instruction(bt_operation op, unsigned int index, unsigned int reps = 0)
+				: operation(op), jump(index), repetitions(reps) {};
 			bt_instruction(bt_operation op): operation(op), jump(UINT_MAX){};
-			bt_instruction(): operation(CodeTape::btoUnkown), jump(UINT_MAX){};
+			bt_instruction(): operation(CodeTape::btoUnkown), jump(UINT_MAX), repetitions(0){};
 
 			bool NullJump(){return jump == UINT_MAX;}
+
+			/*bt_instruction(bt_operation op, unsigned int index, unsigned int reps = 0)
+				: operation(op), jump(index), repetitions(reps) {};
+			bt_instruction(bt_operation op): bt_instruction(op, UINT_MAX){};
+			bt_instruction(): bt_instruction(CodeTape::btoUnkown){};*/
 		};
 
 		
