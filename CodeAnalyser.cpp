@@ -666,15 +666,19 @@ bool CodeAnalyser::TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & repa
 //Funkcja testuje czy wystapi³y jakies powtórzenia operatorów, np !
 bool CodeAnalyser::TestForRepetition(CodeIterator &it, const RepairFn2 & repairCB)
 {
-	CodeIterator n = std::find_if_not(it + 1, instructions->end(), [&it](const CodeTape::bt_instruction &o){ return o.operation == it->operation; });
-	if(n != instructions->end()) //jest jakies powtórzenie
+	std::vector<CodeTape::bt_instruction>::iterator n;
+
+	if (it + 1 < instructions->end())
+	{
+		n = std::find_if_not(it + 1, instructions->end(), [&it](const CodeTape::bt_instruction &o) { return o.operation == it->operation; });
+		if (n != instructions->end()) //jest jakies powtórzenie
 		{
-			if(repairCB) //usuwamy wszsytkie bez pierwszego
+			if (repairCB) //usuwamy wszsytkie bez pierwszego
 			{
-				repairCB(it, n);	
+				repairCB(it, n);
 			}
 			else it = n - 1;
-		
+		}
 	}
 	else return false;
 
