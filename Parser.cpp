@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "MessageLog.h"
+#include "CodeOptimizer.h"
 
 #include <cstring>
 #include <stack>
@@ -42,11 +43,17 @@ void Parser::Parse(std::vector<char> &source)
   std::stack<unsigned int> loop_call_stack;
   std::stack<unsigned int> func_call_stack;
 
+  //optimizer
+  std::list<unsigned int> optimizer_entrypoint;
+  bool _optimize = true;
+
   //for loop jumps
-  unsigned int not_valid_ins = 0;
+  unsigned int ignore_ins = 0;
 
   //current op
   CodeTape::bt_operation curr_op;
+  std::vector<char>::iterator _it;
+  int reps = 0;
 
   //next stack op will be executed on shared stack
   bool switchToSharedHeap = false;
@@ -72,53 +79,75 @@ void Parser::Parse(std::vector<char> &source)
 		
 		if(curr_op == CodeTape::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
 		{
-			loop_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
-			instructions.push_back(CodeTape::bt_instruction(curr_op));
+			
+			if (_optimize && (optimizer_entrypoint.empty() ||
+				instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop)) {
+				
+				_it = (it + 2);
+				if(_it < source.end() && 
+					MapCharToOperator(*_it) == CodeTape::btoEndLoop &&
+					MapCharToOperator(*--_it) == CodeTape::btoDecrement) {
+						instructions.push_back(CodeTape::bt_instruction(CodeTape::btoOPT_SetCellToZero));
+						ignore_ins += 2;
+						std::advance(it, 2);			
+				}
+				else {
+					loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
+					instructions.push_back(CodeTape::bt_instruction(curr_op));
+
+					optimizer_entrypoint.push_back(instructions.size() - 1);
+				}
+				
+			}
+			else {
+				loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
+				instructions.push_back(CodeTape::bt_instruction(curr_op));
+			}
 		}
 		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
 		{
 			if(loop_call_stack.empty() == false) 
 			{
-				instructions[ loop_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
+				instructions[ loop_call_stack.top() ].jump = GetValidPos(it, source.begin(), ignore_ins);
 				instructions.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
 				
 				//szukamy [ ( ] )
-				if(func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
+				if(func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins)) 
 				{
-					MessageLog::Instance().AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
+					MessageLog::Instance().AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
 				}
 
 				loop_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego [
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), not_valid_ins));
+				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), ignore_ins));
 			}
 					
 		}
 		else if(curr_op == CodeTape::btoBeginFunction) 
 		{
-			func_call_stack.push(GetValidPos(it, source.begin(), not_valid_ins));
+			func_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
 		else if(curr_op == CodeTape::btoEndFunction)
 		{
 			if(func_call_stack.empty() == false) 
 			{
-				instructions[ func_call_stack.top() ].jump = GetValidPos(it, source.begin(), not_valid_ins);
+				instructions[ func_call_stack.top() ].jump = GetValidPos(it, source.begin(), ignore_ins);
 				instructions.push_back(CodeTape::bt_instruction(curr_op, func_call_stack.top()));
 
 				//szukamy ( [ ) ]
-				if(loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), not_valid_ins)) 
+				if(loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins)) 
 				{
-					MessageLog::Instance().AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), not_valid_ins));
+					MessageLog::Instance().AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
 				}
 
 				func_call_stack.pop();
 			}
 			else //nie ma nic do œci¹gniêcia - brak odpowiadaj¹cego (
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), not_valid_ins));
+				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), ignore_ins));
 			}
 					
 		}
@@ -131,7 +160,7 @@ void Parser::Parse(std::vector<char> &source)
 			}
 			else 
 			{
-				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), not_valid_ins), line_counter);
+				errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), ignore_ins), line_counter);
 			}		
 		}*/
 		else if(switchToSharedHeap && 
@@ -154,15 +183,30 @@ void Parser::Parse(std::vector<char> &source)
 		else if(curr_op == CodeTape::btoSwitchHeap) 
 		{
 			switchToSharedHeap = true; //non executable operation
-			switchJump = GetValidPos(it, source.begin(), not_valid_ins);
-			instructions.push_back(CodeTape::bt_instruction(curr_op));
+			switchJump = GetValidPos(it, source.begin(), ignore_ins);
+			//instructions.push_back(CodeTape::bt_instruction(curr_op));
+		}
+		else if(_optimize && CodeOptimizer::isOptimizable(curr_op)) {
+			reps = 1;
+			_it = (it + 1);
+			while (_it < source.end()) {
+				if (MapCharToOperator(*_it) == curr_op) {
+					++_it;
+					++reps;
+				}
+				else break;
+			}
+			it = (_it - 1);
+			ignore_ins += (reps - 1);
+
+			instructions.push_back(CodeTape::bt_instruction(curr_op, UINT_MAX, reps));
 		}
 		else 
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 	}
 	else
 	{	
-		++not_valid_ins;
+		++ignore_ins;
 	}
   }
 
@@ -183,6 +227,11 @@ void Parser::Parse(std::vector<char> &source)
 		MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
 		func_call_stack.pop();
 	 }
+  }
+
+  if (0&&_optimize) {
+	  CodeOptimizer optimizer(optimizer_entrypoint, &instructions, coLevel::co1);
+	  optimizer.Optimize();
   }
   //koniec
 }
@@ -403,7 +452,7 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 		}
 
 	}
-	else //bf, b
+	else //haven't functions
 	{
 		a = std::find_if(source.begin(), source.end(), 
 				             [](const char &c){ return c == 'Y'; });
@@ -411,6 +460,23 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
 		{
 			return Parser::clBrainFork;
+		}
+
+		//next guess
+		a = std::find_if(source.begin(), source.end(), 
+							 [](const char &c){ return strchr("}~^%&", c) != 0; });
+
+		if(a != source.end()) //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
+		{
+			return Parser::clBrainThread;
+		}
+
+		a = std::find_if(source.begin(), source.end(), 
+				             [](const char &c){ return c == '{'; });
+
+		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
+		{
+			return Parser::clBrainThread;
 		}
 	}
 

@@ -135,16 +135,17 @@ void ShowHelp(std::string help_opt)
 				<< "This flag launches a code analyser. This will look for code weaknesses. "
 				<< "Some problems with code can be fixed. Only with this flag special debugger instructions will be executed - p.ex. memory dump. ";
 	}
-	else if(help_opt == "repair" || help_opt == "r")
+	else if (help_opt == "optimize" || help_opt == "o" || help_opt == "o2" || help_opt == "o3")
 	{
-	  std::cout << "OPTION: REPAIR\n"
-		        << "\n"
-			    << "Syntax: -r --repeir\n"
-				<< "Default value: Flag is not set\n"
-				<< "\n"
-				<< "When this flag is set, the debugger will try to fix some problems encountered during code analyse. "
-				<< "Flag --debug is set by default.";
-	}
+	std::cout << "OPTION: OPTIMIZE\n"
+		<< "\n"
+		<< "Syntax: -o -o2 -o3 --optimize\n"
+		<< "Default value: Flag is not set\n"
+		<< "\n"
+		<< "When this flag is set, the debugger will try to fix some problems encountered during code analyse. "
+		<< "There are different levels: o - repair only; o2 - simple optimization; -o3 max optimization. "
+		<< "Flag --debug is set by default, obsolete -r --repair args are each equal to -o";
+	} 
 	else if(help_opt == "execute" || help_opt == "x")
 	{
 	  std::cout << "OPTION: EXCEUTE\n"

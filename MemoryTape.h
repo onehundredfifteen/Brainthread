@@ -26,10 +26,14 @@ class MemoryTape
 		~MemoryTape(void);
 
 		void Increment(void);
+		void Increment(int);
 		void Decrement(void);
+		void Decrement(int);
 
 		void MoveLeft(void);
+		void MoveLeft(int);
 		void MoveRight(void);
+		void MoveRight(int);
 
 		void Read(void);
 		void Write(void);
@@ -38,6 +42,7 @@ class MemoryTape
 
 		unsigned int PointerPosition() const;
 		T* const GetValue() const;
+		void NullifyValue();
 
 		std::ostream& SimpleMemoryDump(std::ostream &s, unsigned near_cells = 5);
 		std::ostream& MemoryDump(std::ostream &o);

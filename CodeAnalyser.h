@@ -4,52 +4,59 @@
 #include "MessageLog.h"
 
 #include <vector>
+#include <functional>
 
 /*
  * Klasa CodeAnalyser
  * Pozwala debugowaæ i optymalizowaæ kod
 */
 
+typedef std::vector<CodeTape::bt_instruction>::iterator CodeIterator;
+
+typedef std::function<void(CodeIterator &)> RepairFn;
+typedef std::function<void(CodeIterator &, CodeIterator &)> RepairFn2;
+typedef std::function<void(CodeIterator &, CodeIterator &, int& ,int&)> RepairFn2i2;
+
 class CodeAnalyser
 {
 	public:
-		CodeAnalyser(std::vector<CodeTape::bt_instruction> *instructions, bool repair = false);
+		CodeAnalyser(std::vector<CodeTape::bt_instruction> *instructions);
 		~CodeAnalyser(void);
 
 		void Analyse();
+		void Repair();
 
 		bool isCodeValid(void);
 		bool RepairedSomething();
 
-	private:
-		Parser::CodeLang language;
+	protected:
+		const Parser::CodeLang language;
+		const short typesize;
+    
 		std::vector<CodeTape::bt_instruction> *instructions;
-
-		short typesize;
-		bool repair;
 		unsigned repaired_issues;
 
-		bool TestForInfiniteLoops(std::vector<CodeTape::bt_instruction>::iterator &it);
-		bool TestForFunctionsErrors(std::vector<CodeTape::bt_instruction>::iterator &it);
-		bool TestForThreads(std::vector<CodeTape::bt_instruction>::iterator &it);
-		bool TestForHeaps(std::vector<CodeTape::bt_instruction>::iterator &it);
+		bool TestForInfiniteLoops(CodeIterator &it, const RepairFn & = nullptr, const RepairFn & = nullptr);
+		bool TestForFunctionsErrors(CodeIterator &it, const RepairFn2 & = nullptr, const RepairFn & = nullptr);
+		bool TestForThreads(CodeIterator &it, const RepairFn2 & = nullptr, const RepairFn2 & = nullptr);
+		bool TestForHeaps(CodeIterator &it, const RepairFn2 & = nullptr, const RepairFn2 & = nullptr);
 
-		bool TestLoopPerformance(std::vector<CodeTape::bt_instruction>::iterator &it);
-		bool TestArithmetics(std::vector<CodeTape::bt_instruction>::iterator &it);
-		bool TestRedundantMoves(std::vector<CodeTape::bt_instruction>::iterator &it);
-		void TestOpsBeforeFork(std::vector<CodeTape::bt_instruction>::iterator &it);
+		bool TestLoopPerformance(CodeIterator &it);
+		bool TestArithmetics(CodeIterator &it, const RepairFn2i2 & = nullptr);
+		bool TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & = nullptr);
+		void TestOpsBeforeFork(CodeIterator &it);
 
-		bool TestForRepetition(std::vector<CodeTape::bt_instruction>::iterator &it, const CodeTape::bt_operation &op);
-		int Evaluate(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
-		int EvaluateMoves(const std::vector<CodeTape::bt_instruction>::iterator &begin, const std::vector<CodeTape::bt_instruction>::iterator &end) const;
+		bool TestForRepetition(CodeIterator &it, const RepairFn2 & = nullptr);
+		int Evaluate(const CodeIterator &begin, const CodeIterator &end) const;
+		int EvaluateMoves(const CodeIterator &begin, const CodeIterator &end) const;
 
-		short CodeAnalyser::GetLoopLimes(const std::vector<CodeTape::bt_instruction>::iterator &op) const;
+		short CodeAnalyser::GetLoopLimes(const CodeIterator &op) const;
 		
-		void RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, short n = 1);
-		void RelinkCommands(const std::vector<CodeTape::bt_instruction>::iterator &start, const std::vector<CodeTape::bt_instruction>::iterator &end, short n = 1);
+		void RelinkCommands(const CodeIterator &start, short n = 1);
+		void RelinkCommands(const CodeIterator &start, const CodeIterator &end, short n = 1);
 
 		
-		bool IsWithinFunction(const std::vector<CodeTape::bt_instruction>::iterator &op) const;
+		bool IsWithinFunction(const CodeIterator &op) const;
 
 		bool TestLinks();
 		
