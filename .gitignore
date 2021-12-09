@@ -14,6 +14,11 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
+## VS
+*.pdb
+*.tlog
+*.obj
+
 # =========================
 # Operating System Files
 # =========================
@@ -41,3 +46,12 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+*.vcxproj
+Debug/vc142.idb
+Debug/Brainthread.vcxproj.FileListAbsolute.txt
+Debug/Brainthread.log
+Debug/Brainthread.Build.CppClean.log
+ClassDiagram1.cd
+Brainthread.vcxproj.filters
+Brainthread.vcxproj.user
+Brainthread.vcxproj.user
