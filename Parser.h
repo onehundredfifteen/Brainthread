@@ -25,32 +25,26 @@ class Parser
 
 
 		Parser(CodeLang lang, bool debug_instructions_mode = false);
-		//~Parser(void);
 
 		void Parse(const char * data);
 		void Parse(std::ifstream &in);
 		
-		bool isCodeValid(void);
-
-		std::vector<CodeTape::bt_instruction> * GetCode(); 
+		bool isCodeValid(void) const;
+		//releases ownerhip
+		CodeTape::Tape GetCode(); 
 
 	private:
-		std::vector< CodeTape::bt_instruction > instructions;
+		CodeTape::Tape instructions;
 		CodeLang language;
 		bool debug_instructions_mode;
 
 		void Parse(std::vector<char> &source);
-		CodeLang RecognizeLang(std::vector<char> &source);
+		CodeLang RecognizeLang(std::vector<char> &source) const;
 	
-		bool isValidOperator(char &c);
-		bool isValidDebugOperator(char &c);
-	    CodeTape::bt_operation MapCharToOperator(char &c);
+		bool isValidOperator(const char &c) const;
+		bool isValidDebugOperator(const char &c) const;
+	    CodeTape::bt_operation MapCharToOperator(const char &c) const;
 
-		unsigned int FindMatchingRightPair(CodeTape::bt_operation op, unsigned int from_pos);
-		unsigned int FindMatchingLeftPair(CodeTape::bt_operation op, unsigned int from_pos); 
-
-		//bool isOptimizableToo(const CodeTape::bt_operation &ins);
-
-		unsigned int GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos);
+		unsigned int GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const;
 };
 

@@ -12,7 +12,7 @@ public:
 	BrainThread();
 	~BrainThread(void);
 
-	void Run(CodeTape * c);
+	void Run(const CodeTape::Tape &);
 
 	typename MemoryTape<T>::mem_option mem_behavior; //zachowanie pamieci
     typename MemoryTape<T>::eof_option eof_behavior; //reakcja na EOF z wejœcia

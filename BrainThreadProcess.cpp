@@ -8,6 +8,8 @@
 extern CRITICAL_SECTION cout_critical_section;
 extern CRITICAL_SECTION heap_critical_section;
 
+using namespace CodeTape;
+
 template < typename T >
 unsigned int __stdcall run_bt_thread(void * arg) 
 {
@@ -44,40 +46,17 @@ unsigned int __stdcall run_bt_thread(void * arg)
 }
 
 template < typename T >
-BrainThreadProcess<T>::BrainThreadProcess(CodeTape * c, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
-	: isMain(true)
+BrainThreadProcess<T>::BrainThreadProcess(const CodeTape::Tape &ctape, MemoryHeap<T> &_shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo)
+	: isMain(true), code(ctape), shared_heap(_shared_heap), memory(mem_size, eo, mo)
 {
-	 memory = nullptr;
-	 functions = nullptr;
-	 heap = nullptr;
-
-	 code = c;
-
-	 memory = new MemoryTape<T>(mem_size, eo, mo);
-	 functions = new FunctionHeap<T>();
-	 heap = new MemoryHeap<T>;
-
-	 this->shared_heap = shared_heap;
-	 
 	 code_pointer = 0;
 	 child_threads.reserve(4);
 }
 
 template < typename T >
-BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentProcess) : isMain(false)
+BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentProcess) 
+	: isMain(false), code(parentProcess.code), shared_heap(parentProcess.shared_heap), memory(parentProcess.memory)
 {
-	memory = nullptr;
-	functions = nullptr;
-	heap = nullptr;
-	
-	code = parentProcess.code;
-	memory = new MemoryTape<T>(*parentProcess.memory);
-
-	functions = new FunctionHeap<T>(*parentProcess.functions);
-	heap = new MemoryHeap<T>;
-
-	shared_heap = parentProcess.shared_heap;
-
 	code_pointer = parentProcess.code_pointer;
 	child_threads.reserve(4);
 }
@@ -85,164 +64,157 @@ BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T> &parentPro
 template < typename T >
 BrainThreadProcess<T>::~BrainThreadProcess(void)
 {
-	if(memory)	
-		delete memory;
 
-	if(functions)	
-		delete functions;
-
-	if(heap)	
-		delete heap;
 }
 
 template < typename T >
 void BrainThreadProcess<T>::Run(void)
 {
-	CodeTape::bt_instruction current_instruction;
+	bt_instruction current_instruction;
 	int opt = true;
 
 	while(true)
 	{
 		//ProcessMonitor::EnterCriticalSection(code_critical_section);
-		current_instruction = code->GetInstruction(this->code_pointer);
+		current_instruction = code[this->code_pointer];
 		//ProcessMonitor::LeaveCriticalSection(code_critical_section);
 
 		switch(current_instruction.operation)
 		{
-			case CodeTape::btoIncrement: 
-				opt ? memory->Increment(current_instruction.repetitions) : memory->Increment();
+			case bt_operation::btoIncrement:
+				opt ? memory.Increment(current_instruction.repetitions) : memory.Increment();
 				break;
-			case CodeTape::btoDecrement: 
-				opt ? memory->Decrement(current_instruction.repetitions) : memory->Decrement();
+			case bt_operation::btoDecrement:
+				opt ? memory.Decrement(current_instruction.repetitions) : memory.Decrement();
 				break;
-			case CodeTape::btoMoveLeft: 
-				opt ? memory->MoveLeft(current_instruction.repetitions) : memory->MoveLeft();
+			case bt_operation::btoMoveLeft:
+				opt ? memory.MoveLeft(current_instruction.repetitions) : memory.MoveLeft();
 				break;
-			case CodeTape::btoMoveRight: 
-				opt ? memory->MoveRight(current_instruction.repetitions) : memory->MoveRight();
+			case bt_operation::btoMoveRight:
+				opt ? memory.MoveRight(current_instruction.repetitions) : memory.MoveRight();
 				break;
-			case CodeTape::btoAsciiWrite: 
-				memory->Write(); 
+			case bt_operation::btoAsciiWrite:
+				memory.Write(); 
 				break;
-			case CodeTape::btoAsciiRead: 
-				memory->Read(); 
+			case bt_operation::btoAsciiRead:
+				memory.Read(); 
 				break;
-			case CodeTape::btoDecimalWrite: 
-				memory->DecimalWrite(); 
+			case bt_operation::btoDecimalWrite:
+				memory.DecimalWrite(); 
 				break;
-			case CodeTape::btoDecimalRead: 
-				memory->DecimalRead(); 
+			case bt_operation::btoDecimalRead:
+				memory.DecimalRead(); 
 				break;
-			case CodeTape::btoBeginLoop: 
-				if(*(this->memory->GetValue()) == 0)
+			case bt_operation::btoBeginLoop:
+				if(*(this->memory.GetValue()) == 0)
 				{
 					code_pointer = current_instruction.jump;
 				}
 				break;
-			case CodeTape::btoEndLoop: 
-				if(*(this->memory->GetValue()) != 0)
+			case bt_operation::btoEndLoop:
+				if(*(this->memory.GetValue()) != 0)
 				{
 					code_pointer = current_instruction.jump;
 				}
 				break;
-            case CodeTape::btoBeginFunction: 
+            case bt_operation::btoBeginFunction:
 
-				this->functions->Add(*(this->memory->GetValue()), code_pointer);
+				this->functions.Add(*(this->memory.GetValue()), code_pointer);
 				code_pointer = current_instruction.jump;
 				break;
-			case CodeTape::btoEndFunction: 
+			case bt_operation::btoEndFunction:
 
-				if(this->functions->Return(&code_pointer) == false && isMain == false)//terminate threads spawned within function
+				if(this->functions.Return(&code_pointer) == false && isMain == false)//terminate threads spawned within function
 					return;
 
 				break;
-			case CodeTape::btoCallFunction: 
+			case bt_operation::btoCallFunction:
 
-				this->functions->Call(*(this->memory->GetValue()), &code_pointer);
+				this->functions.Call(*(this->memory.GetValue()), &code_pointer);
 				--code_pointer; //bo na koñcu pêtli jest ++
 				break;
-			case CodeTape::btoFork: 
+			case bt_operation::btoFork:
 				this->Fork();
 				break;
-			case CodeTape::btoJoin: 
+			case bt_operation::btoJoin: 
 				this->Join();
 				break;
-            case CodeTape::btoTerminate:
+            case bt_operation::btoTerminate:
 				return; // :)
-			case CodeTape::btoPush: 
-				this->heap->Push( *(this->memory->GetValue()) );
+			case bt_operation::btoPush: 
+				this->heap.Push( *(this->memory.GetValue()) );
 				break;
-			case CodeTape::btoPop: 
-				*(this->memory->GetValue()) = this->heap->Pop();
+			case bt_operation::btoPop: 
+				*(this->memory.GetValue()) = this->heap.Pop();
 				break;
-            case CodeTape::btoSwap: 
-				this->heap->Swap();
+            case bt_operation::btoSwap: 
+				this->heap.Swap();
 				break;
-			case CodeTape::btoSharedPush: 
+			case bt_operation::btoSharedPush: 
 
 				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				this->shared_heap->Push( *(this->memory->GetValue()) );
+				this->shared_heap.Push( *(this->memory.GetValue()) );
 				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
-			case CodeTape::btoSharedPop: 
+			case bt_operation::btoSharedPop: 
 
 				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				*(this->memory->GetValue()) = this->shared_heap->Pop();
+				*(this->memory.GetValue()) = this->shared_heap.Pop();
 				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
-            case CodeTape::btoSharedSwap: 
+            case bt_operation::btoSharedSwap: 
 
 				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				this->shared_heap->Swap();
+				this->shared_heap.Swap();
 				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
 				break;
 
 			/***********************
 			debug instructions
 			************************/
-			case CodeTape::btoDEBUG_SimpleMemoryDump: 
+			case bt_operation::btoDEBUG_SimpleMemoryDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->memory->SimpleMemoryDump(DebugLogStream::Instance().GetStream());
+					this->memory.SimpleMemoryDump(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_MemoryDump: 
+			case bt_operation::btoDEBUG_MemoryDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->memory->MemoryDump(DebugLogStream::Instance().GetStream());
+					this->memory.MemoryDump(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_StackDump: 
+			case bt_operation::btoDEBUG_StackDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->heap->PrintStack(DebugLogStream::Instance().GetStream());
+					this->heap.PrintStack(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_SharedStackDump: 
+			case bt_operation::btoDEBUG_SharedStackDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->shared_heap->PrintStack(DebugLogStream::Instance().GetStream());
+					this->shared_heap.PrintStack(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_FunctionsStackDump: 
+			case bt_operation::btoDEBUG_FunctionsStackDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->functions->PrintStackTrace(DebugLogStream::Instance().GetStream());
+					this->functions.PrintStackTrace(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_FunctionsDefsDump: 
+			case bt_operation::btoDEBUG_FunctionsDefsDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
-					this->functions->PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
+					this->functions.PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
-			case CodeTape::btoDEBUG_ThreadInfoDump: 
+			case bt_operation::btoDEBUG_ThreadInfoDump: 
 					ProcessMonitor::EnterCriticalSection(cout_critical_section);
 					this->PrintProcessInfo(DebugLogStream::Instance().GetStream());
 					ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			
 				// Optimizer
-			case CodeTape::btoOPT_SetCellToZero:
-				this->memory->NullifyValue();
+			case bt_operation::btoOPT_SetCellToZero:
+				*(this->memory.GetValue()) = 0;
 				break;
 
-			case CodeTape::btoOPT_NoOperation:
-			case CodeTape::btoSwitchHeap: 
+			case bt_operation::btoOPT_NoOperation:
+			case bt_operation::btoSwitchHeap: 
 				break;
 			/***********************
 			end debug instructions
@@ -262,28 +234,28 @@ template < typename T >
 void BrainThreadProcess<T>::Fork()
 {
 	HANDLE hThread;
-	BrainThreadProcess<T> * child;
+	BrainThreadProcess<T> * child = nullptr;
 
 	try
 	{
-		*(this->memory->GetValue()) = 0;
+		*(this->memory.GetValue()) = 0;
 
 		child = new BrainThreadProcess<T>(*this);
 		//*(this->memory->GetValue()) = 0;
 		//*(child->memory->GetValue()) = 0;
 		
-		child->memory->MoveRight();
-		*(child->memory->GetValue()) = 1;
+		child->memory.MoveRight();
+		*(child->memory.GetValue()) = 1;
 		++child->code_pointer;
 	}
-	catch(const BFRangeException re)
+	catch(const BFRangeException &re)
 	{
 		delete child;
 		throw re;
 	}
-	catch(std::bad_alloc ba)
+	catch(const std::bad_alloc &ba)
 	{
-		delete child;
+		//delete child;
 		throw BFForkThreadException(ERROR_CODE_NOTENOUGHMEMORY);
 	}
 	catch(...)

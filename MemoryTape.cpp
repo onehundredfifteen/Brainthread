@@ -284,11 +284,6 @@ inline T* const MemoryTape<T>::GetValue() const
 {
 	return pointer;
 }
-template < typename T >
-inline void MemoryTape<T>::NullifyValue()
-{
-	*pointer = 0;
-}
 
 template < typename T > //pokazuje n komórek w lewo i w prawo ze wskaŸnikiem mozliwie poœrodku
 std::ostream& MemoryTape<T>::SimpleMemoryDump(std::ostream &s, unsigned near_cells)

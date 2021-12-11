@@ -4,13 +4,9 @@
 #include <cmath>
 #include <list>
 
-CodeAnalyser::CodeAnalyser(std::vector<CodeTape::bt_instruction> *instructions)
-	: language(Parser::clBrainThread), typesize(1)
+CodeAnalyser::CodeAnalyser(std::vector<CodeTape::bt_instruction> &_instructions)
+	: language(Parser::clBrainThread), typesize(1), instructions(_instructions)
 {
-	if(instructions == nullptr)
-		throw std::invalid_argument("CodeAnalyser::CodeAnalyser: invalid argument");
-
-	this->instructions = instructions;
 	repaired_issues = 0;
 
 	function_limit = static_cast<unsigned int>(std::pow(2.0, typesize*8));
@@ -21,73 +17,73 @@ CodeAnalyser::~CodeAnalyser(void)
 }
 
 //Operatory arytmetyczne: + -
-bool CodeAnalyser::IsArithmeticInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsArithmeticInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (op.operation == CodeTape::btoIncrement ||
-		    op.operation == CodeTape::btoDecrement ); 
+	return (ins.operation == bt_operation::btoIncrement ||
+		    ins.operation == bt_operation::btoDecrement ); 
 }
 
 //Operatory ruchu piórka: < >
-bool CodeAnalyser::IsMoveInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsMoveInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (op.operation == CodeTape::btoMoveLeft ||
-		   op.operation == CodeTape::btoMoveRight); 
+	return (ins.operation == bt_operation::btoMoveLeft ||
+			ins.operation == bt_operation::btoMoveRight);
 }
 
 //Operatory zmieniaj¹ce przep³yw lub wartoœæ komórek
 //Wszystkie operatory Brainfuck (bez output) + function Call
 //Nie ma tutaj definicji funkcji! ()
-bool CodeAnalyser::IsChangingInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsChangingInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (IsArithmeticInstruction(op)				  ||
-		    IsMoveInstruction(op)					  ||
-		    op.operation == CodeTape::btoAsciiRead	  ||
-		    op.operation == CodeTape::btoDecimalRead  ||
-		    op.operation == CodeTape::btoBeginLoop	  ||
-		    op.operation == CodeTape::btoEndLoop      ||
-		    op.operation == CodeTape::btoCallFunction ||
-		    op.operation == CodeTape::btoPop		  ||
-		    op.operation == CodeTape::btoSharedPop);
+	return (IsArithmeticInstruction(ins)				  ||
+		    IsMoveInstruction(ins)					  ||
+		    ins.operation == bt_operation::btoAsciiRead	  ||
+		    ins.operation == bt_operation::btoDecimalRead  ||
+		    ins.operation == bt_operation::btoBeginLoop	  ||
+		    ins.operation == bt_operation::btoEndLoop      ||
+		    ins.operation == bt_operation::btoCallFunction ||
+		    ins.operation == bt_operation::btoPop		  ||
+		    ins.operation == bt_operation::btoSharedPop);
 }
 
 //Operatory ³¹czone parami z innymi: pêtle i funkcje
-bool CodeAnalyser::IsLinkedInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsLinkedInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (op.operation == CodeTape::btoBeginLoop	   ||
-		    op.operation == CodeTape::btoEndLoop	   ||
-		    op.operation == CodeTape::btoBeginFunction ||
-		    op.operation == CodeTape::btoEndFunction); 
+	return (ins.operation == bt_operation::btoBeginLoop	   ||
+		    ins.operation == bt_operation::btoEndLoop	   ||
+		    ins.operation == bt_operation::btoBeginFunction ||
+		    ins.operation == bt_operation::btoEndFunction); 
 }
 
 //Operatory dla testu Przed forkiem
-bool CodeAnalyser::IsChangingCellInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsChangingCellInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (IsArithmeticInstruction(op) ||
-		    op.operation == CodeTape::btoPop || 
-			op.operation == CodeTape::btoSharedPop ||
-			op.operation == CodeTape::btoAsciiRead || 
-			op.operation == CodeTape::btoDecimalRead);
+	return (IsArithmeticInstruction(ins) ||
+		    ins.operation == bt_operation::btoPop || 
+			ins.operation == bt_operation::btoSharedPop ||
+			ins.operation == bt_operation::btoAsciiRead || 
+			ins.operation == bt_operation::btoDecimalRead);
 }
 
 //Operatory dla testu Przed forkiem
-bool CodeAnalyser::IsSharedHeapInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsSharedHeapInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (op.operation == CodeTape::btoSharedPop || 
-			op.operation == CodeTape::btoSharedPush ||
-			op.operation == CodeTape::btoSharedSwap);
+	return (ins.operation == bt_operation::btoSharedPop || 
+			ins.operation == bt_operation::btoSharedPush ||
+			ins.operation == bt_operation::btoSharedSwap);
 }
 
 //Operatory ³¹czone parami z innymi: pêtle i funkcje
-bool CodeAnalyser::IsFlowChangingInstruction(const CodeTape::bt_instruction &op)
+bool CodeAnalyser::IsFlowChangingInstruction(const CodeTape::bt_instruction &ins)
 {
-	return (IsLinkedInstruction(op) ||
-		    op.operation == CodeTape::btoCallFunction); 
+	return (IsLinkedInstruction(ins) ||
+		    ins.operation == bt_operation::btoCallFunction); 
 }
 
 
 void CodeAnalyser::Analyse(void)
 {
-	CodeIterator it = instructions->begin();
+	TapeIterator it = instructions.begin();
 	
 	function_def = 0;
 	function_calls = 0;
@@ -96,7 +92,7 @@ void CodeAnalyser::Analyse(void)
 	ignore_arithmetic_test = false;
 	ignore_moves_test = false;
 	
-	while( it < instructions->end() )
+	while( it < instructions.end() )
 	{
 		//reset flag
 		if(IsArithmeticInstruction(*it) == false && ignore_arithmetic_test == true) 
@@ -134,11 +130,11 @@ void CodeAnalyser::Analyse(void)
 				continue;
 		}
 
-		if(it->operation == CodeTape::btoFork) 
+		if(it->operation == bt_operation::btoFork) 
 			++forks;
-		else if(it->operation == CodeTape::btoJoin) 
+		else if(it->operation == bt_operation::btoJoin) 
 			++joins;
-		else if(it->operation == CodeTape::btoCallFunction) 
+		else if(it->operation == bt_operation::btoCallFunction) 
 			++function_calls;
 	
 	    ++it;
@@ -167,7 +163,7 @@ void CodeAnalyser::Analyse(void)
 
 	/*std::cout << std::endl;
 	int q=0;
-	for(std::vector<CodeTape::bt_instruction>::iterator it = instructions->begin(); it < instructions->end(); ++it)
+	for(std::vector<bt_operation::bt_instruction>::iterator it = instructions.begin(); it < instructions.end(); ++it)
 	{
 		std::cout << q++ << ": " << it->operation << ": " << (it->NullJump() ? 115 : it->jump) << "\n";
 	}
@@ -176,7 +172,7 @@ void CodeAnalyser::Analyse(void)
 
 void CodeAnalyser::Repair(void)
 {
-	CodeIterator it = instructions->begin();
+	TapeIterator it = instructions.begin();
 
 	function_def = 0;
 	function_calls = 0;
@@ -186,21 +182,21 @@ void CodeAnalyser::Repair(void)
 	ignore_moves_test = false;
 
 	//funkcje naprawcze
-	auto repairRepetition = [this](CodeIterator &_it, CodeIterator &n) {
+	auto repairRepetition = [this](TapeIterator &_it, TapeIterator &n) {
 		this->RelinkCommands(_it, (n - _it - 1));
-		_it = instructions->erase(_it + 1, n);
+		_it = instructions.erase(_it + 1, n);
 		++repaired_issues;
 		return false;
 	};
 
-	auto repairH = [this](CodeIterator &_it, CodeIterator &n) {
-		_it = instructions->erase(_it);
+	auto repairH = [this](TapeIterator &_it, TapeIterator &n) {
+		_it = instructions.erase(_it);
 		this->RelinkCommands(_it, (n - _it - 1));
 		++repaired_issues;
 		return true; 
 	};
 
-	while (it < instructions->end())
+	while (it < instructions.end())
 	{
 		//reset flag
 		if (IsArithmeticInstruction(*it) == false && ignore_arithmetic_test == true)
@@ -214,32 +210,32 @@ void CodeAnalyser::Repair(void)
 		
 
 		if (TestForInfiniteLoops(it,
-			[this](CodeIterator &_it) {
-				_it = instructions->erase(_it, _it + 2);
+			[this](TapeIterator &_it) {
+				_it = instructions.erase(_it, _it + 2);
 				RelinkCommands(_it, 2);
 				++repaired_issues;
 			},
-			[this](CodeIterator &_it) {
-				instructions->erase(instructions->begin() + (_it->jump));
-				_it = instructions->erase(_it);
-				RelinkCommands(_it, instructions->begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
-				RelinkCommands(instructions->begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
+			[this](TapeIterator &_it) {
+				instructions.erase(instructions.begin() + (_it->jump));
+				_it = instructions.erase(_it);
+				RelinkCommands(_it, instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
+				RelinkCommands(instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 				++repaired_issues;
 			}))
 			continue;
 
 		if (TestForFunctionsErrors(it,
-			[this](CodeIterator &_it, CodeIterator &n) {
-			instructions->erase(n);
-			_it = instructions->erase(_it);
+			[this](TapeIterator &_it, TapeIterator &n) {
+			instructions.erase(n);
+			_it = instructions.erase(_it);
 			this->RelinkCommands(_it, 2);
 			++repaired_issues;
 		},
-			[this](CodeIterator &_it) {
-			instructions->erase(instructions->begin() + (_it->jump));
-			_it = instructions->erase(_it);
-			this->RelinkCommands(_it, instructions->begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
-			this->RelinkCommands(instructions->begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
+			[this](TapeIterator &_it) {
+			instructions.erase(instructions.begin() + (_it->jump));
+			_it = instructions.erase(_it);
+			this->RelinkCommands(_it, instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
+			this->RelinkCommands(instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 			++repaired_issues;
 		}))
 			continue;
@@ -256,18 +252,18 @@ void CodeAnalyser::Repair(void)
 		if (ignore_arithmetic_test == false)
 		{
 			if (TestArithmetics(it,
-				[this](CodeIterator &_it, CodeIterator &n, int &sum, int &ops) {
+				[this](TapeIterator &_it, TapeIterator &n, int &sum, int &ops) {
 				int k = (ops - abs(sum)) / 2;
 
 				for (int i = 0; i < k; ++i)
 				{
-					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoDecrement; })->operation = CodeTape::btoUnkown;
-					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoIncrement; })->operation = CodeTape::btoUnkown;
+					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoDecrement; })->operation = bt_operation::btoUnkown;
+					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoIncrement; })->operation = bt_operation::btoUnkown;
 				}
 
-				instructions->erase(
-					std::remove_if(_it, instructions->end(), [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoUnkown; }),
-					instructions->end()),
+				instructions.erase(
+					std::remove_if(_it, instructions.end(), [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoUnkown; }),
+					instructions.end()),
 					this->RelinkCommands(_it, (ops - sum));
 
 				++repaired_issues;
@@ -278,28 +274,28 @@ void CodeAnalyser::Repair(void)
 		if (ignore_moves_test == false)
 		{
 			if (TestRedundantMoves(it,
-				[this](CodeIterator &_it, CodeIterator &n, int &sum, int &ops) {
+				[this](TapeIterator &_it, TapeIterator &n, int &sum, int &ops) {
 				int k = (ops - abs(sum)) / 2;
 				for (int i = 0; i < k; ++i)
 				{
-					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoMoveLeft; })->operation = CodeTape::btoUnkown;
-					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoMoveRight; })->operation = CodeTape::btoUnkown;
+					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoMoveLeft; })->operation = bt_operation::btoUnkown;
+					std::find_if(_it, n, [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoMoveRight; })->operation = bt_operation::btoUnkown;
 				}
 
-				instructions->erase(
-					std::remove_if(_it, instructions->end(), [](const CodeTape::bt_instruction &op) { return op.operation == CodeTape::btoUnkown; }),
-					instructions->end()),
+				instructions.erase(
+					std::remove_if(_it, instructions.end(), [](const CodeTape::bt_instruction &op) { return op.operation == bt_operation::btoUnkown; }),
+					instructions.end()),
 					this->RelinkCommands(_it, (ops - sum));
 				++repaired_issues;
 			}))
 				continue;
 		}
 
-		if (it->operation == CodeTape::btoFork)
+		if (it->operation == bt_operation::btoFork)
 			++forks;
-		else if (it->operation == CodeTape::btoJoin)
+		else if (it->operation == bt_operation::btoJoin)
 			++joins;
-		else if (it->operation == CodeTape::btoCallFunction)
+		else if (it->operation == bt_operation::btoCallFunction)
 			++function_calls;
 
 		++it;
@@ -338,23 +334,23 @@ void CodeAnalyser::Repair(void)
 //Funkcja zwraca prawde, je¿eli naprawila coœ
 //1. Puste pêtle
 //2. Nieskoñczone pêtle
-bool CodeAnalyser::TestForInfiniteLoops(CodeIterator &it, const RepairFn &infLoopRep, const RepairFn &emptyLoopRep)
+bool CodeAnalyser::TestForInfiniteLoops(TapeIterator &it, const RepairFn &infLoopRep, const RepairFn &emptyLoopRep)
 {
-	if(it->operation == CodeTape::btoBeginLoop)
+	if(it->operation == bt_operation::btoBeginLoop)
 	{
 		//nieskoñczona pêtla []
-		if( (it + 1)->operation == CodeTape::btoEndLoop)
+		if( (it + 1)->operation == bt_operation::btoEndLoop)
 		{ 
-			MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - instructions.begin() + 1);	
 			if(infLoopRep)
 			{
 				infLoopRep(it);			
 			}
 		}
 		//pusta pêtla [[xxxx]]
-		else if( (it + 1)->operation == CodeTape::btoBeginLoop && (instructions->begin() + (it->jump) - 1)->operation == CodeTape::btoEndLoop)
+		else if( (it + 1)->operation == bt_operation::btoBeginLoop && (instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndLoop)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - instructions.begin() + 1);
 			if(emptyLoopRep)
 			{
 				emptyLoopRep(it);
@@ -370,44 +366,44 @@ bool CodeAnalyser::TestForInfiniteLoops(CodeIterator &it, const RepairFn &infLoo
 //2. Redefinicja (xx)(xx)
 //3. Rekurencja (:xx) 
 //4. Funkcja w pêtli 
-bool CodeAnalyser::TestForFunctionsErrors(CodeIterator &it, const RepairFn2 &emptyFunType1Rep, const RepairFn &emptyFunType2Rep)
+bool CodeAnalyser::TestForFunctionsErrors(TapeIterator &it, const RepairFn2 &emptyFunType1Rep, const RepairFn &emptyFunType2Rep)
 {
-	CodeIterator m, n, o;
+	TapeIterator m, n, o;
 	std::vector<CodeTape::bt_instruction>::reverse_iterator r, s;
 
-	if(it->operation == CodeTape::btoEndFunction)
+	if(it->operation == bt_operation::btoEndFunction)
 	{
 		//szukam nastêpnej funkcji
-		n = std::find_if(it, instructions->end(), 
-			             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+		n = std::find_if(it, instructions.end(), 
+			             [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoBeginFunction; });
 			
-		if(n != instructions->end()) //jest - sprawdzamy instrukcje pomiedzy ) i (
+		if(n != instructions.end()) //jest - sprawdzamy instrukcje pomiedzy ) i (
 		{	
 			m = std::find_if(it, n, IsChangingInstruction);
 			if(m == n || n - it == 1) //nie ma zmieniajacych coœ instrukcji lub w ogóle nie ma nic
 			{
 				//jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami
-				MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinition, n - instructions->begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinition, n - instructions.begin() + 1);
 			}
 		}
 	}
-	else if(it->operation == CodeTape::btoBeginFunction) 
+	else if(it->operation == bt_operation::btoBeginFunction) 
 	{
-		n = instructions->begin() + it->jump;//bierzemy ca³¹ treœæ funkcji
+		n = instructions.begin() + it->jump;//bierzemy ca³¹ treœæ funkcji
 
 		//pusta funkcja  ()
-		if((it + 1)->operation == CodeTape::btoEndFunction) 
+		if((it + 1)->operation == bt_operation::btoEndFunction) 
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions.begin() + 1);	
 			if(emptyFunType1Rep) //usuwamy funkcjê
 			{
 				emptyFunType1Rep(it, n);
 			}
 		}
 		//pusta funkcja ((xx))
-		else if( (it + 1)->operation == CodeTape::btoBeginFunction && (instructions->begin() + (it->jump) - 1)->operation == CodeTape::btoEndFunction)
+		else if( (it + 1)->operation == bt_operation::btoBeginFunction && (instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndFunction)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions.begin() + 1);
 			if(emptyFunType2Rep)
 			{
 				emptyFunType2Rep(it);
@@ -416,7 +412,7 @@ bool CodeAnalyser::TestForFunctionsErrors(CodeIterator &it, const RepairFn2 &emp
 		else // nie jest pusta -> szukamy funkcji wewêtrznej (bez pierwszego elementu, bo to wlasnie '(' )
 		{
 			m = std::find_if(it + 1, n, 
-				             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+				             [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoBeginFunction; });
 
 			if(m != n) //mamy funkcjê wewnêtrzn¹
 			{
@@ -425,18 +421,18 @@ bool CodeAnalyser::TestForFunctionsErrors(CodeIterator &it, const RepairFn2 &emp
 				o = std::find_if(it, m, IsChangingInstruction); //szukamy czy dziel¹ je jakies istotne instrukcje
 				if( o == m || m - it == 1) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami (xx( lub pusto ((
 				{
-					MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinitionInternal, m - instructions->begin() + 1);
+					MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinitionInternal, m - instructions.begin() + 1);
 				}
 			}
 			else //nie ma funkcji wewnêtrznaj
 			{
 				m = std::find_if(it + 1, n, 
-					             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoCallFunction; });
+					             [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoCallFunction; });
 
 				o = std::find_if(it + 1, m, IsChangingInstruction); //szukamy zmieniajacych instrukcji do momentu pierwszego call, nastpne calle niewazne
 				if( m != n && o == m)  //jest call i nie ma instrukcji zmieniajacych 
 			    {
-					MessageLog::Instance().AddMessage(MessageLog::ecInfinityRecurention, m - instructions->begin() + 1);
+					MessageLog::Instance().AddMessage(MessageLog::ecInfinityRecurention, m - instructions.begin() + 1);
 				}
 			}
 
@@ -444,27 +440,27 @@ bool CodeAnalyser::TestForFunctionsErrors(CodeIterator &it, const RepairFn2 &emp
 		
 		++function_def;	
 	}
-	else if(it->operation == CodeTape::btoBeginLoop) // funkcja w pêtli
+	else if(it->operation == bt_operation::btoBeginLoop) // funkcja w pêtli
 	{
-		n = instructions->begin() + it->jump;
+		n = instructions.begin() + it->jump;
 
 		m = std::find_if(it + 1, n, 
-					             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+					             [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoBeginFunction; });
 
 		if(m != n)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - instructions.begin() + 1);
 		}
 	}
-	else if(it->operation == CodeTape::btoCallFunction) //undefined call
+	else if(it->operation == bt_operation::btoCallFunction) //undefined call
 	{
 		r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
-		s = std::find_if(r, instructions->rend(), 
-								[](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+		s = std::find_if(r, instructions.rend(), 
+								[](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoBeginFunction; });
 		
-		if(s == instructions->rend())
+		if(s == instructions.rend())
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - instructions.begin() + 1);	
 		}
 	}
 	return false;
@@ -474,38 +470,38 @@ bool CodeAnalyser::TestForFunctionsErrors(CodeIterator &it, const RepairFn2 &emp
 //1. Join, czy nie jest za wczeœnie wywo³any
 //2. Czy ktoœ zapomnia³, ¿e fork zeruje bie¿¹ca komórke i cos tam dodawa³ odejmowa³ wczesniej
 //3 i 4 - powtórzenia join i terminate
-bool CodeAnalyser::TestForThreads(CodeIterator &it, const RepairFn2 & repairCB, const RepairFn2 & repairRepetitionCB)
+bool CodeAnalyser::TestForThreads(TapeIterator &it, const RepairFn2 & repairCB, const RepairFn2 & repairRepetitionCB)
 {
-	CodeIterator n, m;
+	TapeIterator n, m;
 	std::vector<CodeTape::bt_instruction>::reverse_iterator r;
 
-	if(it->operation == CodeTape::btoJoin)
+	if(it->operation == bt_operation::btoJoin)
 	{
 		if(TestForRepetition(it, repairRepetitionCB))
-			MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - instructions.begin() + 1);
 		
 		
 		if(IsWithinFunction(it) == false && forks == 0) //join poza funkcj¹. Mo¿e byc call do póŸniejszej funkcji z fork, ale to trudno stwierdziæ
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecJoinBeforeFork, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecJoinBeforeFork, it - instructions.begin() + 1);	
 			if(repairCB) //usuwamy join
 			{
 				repairCB(it, n);
 			}
 		}	
 	}
-	else if(it->operation == CodeTape::btoFork && it > instructions->begin()) 
+	else if(it->operation == bt_operation::btoFork && it > instructions.begin()) 
 	{
         r = std::vector<CodeTape::bt_instruction>::reverse_iterator(it);
-		if(r != std::find_if_not(r, instructions->rend(), IsChangingCellInstruction))
+		if(r != std::find_if_not(r, instructions.rend(), IsChangingCellInstruction))
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - instructions.begin() + 1);	
 		}
 	}
-	else if(it->operation == CodeTape::btoTerminate) 
+	else if(it->operation == bt_operation::btoTerminate) 
 	{
         if(TestForRepetition(it, repairRepetitionCB))
-			MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - instructions.begin() + 1);
 	}
 	
 	return false;
@@ -515,21 +511,21 @@ bool CodeAnalyser::TestForThreads(CodeIterator &it, const RepairFn2 & repairCB, 
 //Szczegolnie switche [sa dystalne]
 //1. Switch scope and repeat
 //2. swap repeat
-bool CodeAnalyser::TestForHeaps(CodeIterator &it, const RepairFn2 & repairCB, const RepairFn2 & repairRepetitionCB)
+bool CodeAnalyser::TestForHeaps(TapeIterator &it, const RepairFn2 & repairCB, const RepairFn2 & repairRepetitionCB)
 {
-	CodeIterator n, m;
+	TapeIterator n, m;
 	std::vector<CodeTape::bt_instruction>::reverse_iterator r;
 
-	if(it->operation == CodeTape::btoSwitchHeap)
+	if(it->operation == bt_operation::btoSwitchHeap)
 	{
 		if(TestForRepetition(it, repairRepetitionCB))
-			MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - instructions.begin() + 1);
 
-		n = std::find_if(it + 1, instructions->end(), IsSharedHeapInstruction);
+		n = std::find_if(it + 1, instructions.end(), IsSharedHeapInstruction);
 
-		if(n == instructions->end()) 
+		if(n == instructions.end()) 
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - instructions.begin() + 1);
 
 			if(repairCB) //usuwamy switch
 			{
@@ -541,22 +537,22 @@ bool CodeAnalyser::TestForHeaps(CodeIterator &it, const RepairFn2 & repairCB, co
 			m = std::find_if(it + 1, n, IsFlowChangingInstruction);
 
 			if(m != n) 
-				MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - instructions->begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - instructions.begin() + 1);
 		}
 	}
-	else if(it->operation == CodeTape::btoSwap) 
+	else if(it->operation == bt_operation::btoSwap) 
 	{
         if(TestForRepetition(it, repairRepetitionCB))
-			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions.begin() + 1);
 	}
-	else if(it->operation == CodeTape::btoSharedSwap) 
+	else if(it->operation == bt_operation::btoSharedSwap) 
 	{   //we have ~ op beetween
-        n = std::find_if(it + 1, instructions->end(), 
-			             [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoSharedSwap; });
+        n = std::find_if(it + 1, instructions.end(), 
+			             [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoSharedSwap; });
 
-		if(n != instructions->end() && n - it == 2) //~%~%
+		if(n != instructions.end() && n - it == 2) //~%~%
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions->begin() + 1);
+			MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions.begin() + 1);
 		}
 	}
 	return false;
@@ -565,24 +561,24 @@ bool CodeAnalyser::TestForHeaps(CodeIterator &it, const RepairFn2 & repairCB, co
 //Funkcja testuje pêtle, czy:
 //1. wszystkie grzecznie szybko d¹¿¹ do zera
 //2. Nie ma niepotrzebnych operacji + - przed
-bool CodeAnalyser::TestLoopPerformance(CodeIterator &it)
+bool CodeAnalyser::TestLoopPerformance(TapeIterator &it)
 {   
-	CodeIterator n;
+	TapeIterator n;
 	int lim, s;
 
-	if(it->operation == CodeTape::btoBeginLoop)
+	if(it->operation == bt_operation::btoBeginLoop)
 	{
 		lim = GetLoopLimes(it);
 
 		if(lim > 0) //wolna pêtla d¹¿¹ca do nieskoñczonoœci
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecSlowLoop, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecSlowLoop, it - instructions.begin() + 1);	
 		}
 
 		//teraz czy przed pêtl¹ s¹ sensowne operacje
-		if(it > instructions->begin()) //ofc tylko dla dalszych instrukcji
+		if(it > instructions.begin()) //ofc tylko dla dalszych instrukcji
 		{
-			for(n = it - 1; n > instructions->begin(); --n)
+			for(n = it - 1; n > instructions.begin(); --n)
 			{
 				if(IsArithmeticInstruction(*n) == false)
 				   break; //krêci siê w ty³, a¿ znajdzie inna instrukcje + - albo pocz¹tek ci¹gu
@@ -595,7 +591,7 @@ bool CodeAnalyser::TestLoopPerformance(CodeIterator &it)
 
 				if(lim != 0 && (lim > 0 || (lim < 0 && s < 0) )) //je¿eli pêtla jest policzalna, a sekwencja przed ni¹ da¿y inaczej ni¿ pêtla
 				{
-					MessageLog::Instance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - instructions->begin() ); // specjalnie bez  + 1
+					MessageLog::Instance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - instructions.begin() ); // specjalnie bez  + 1
 				}
 			}
 		}
@@ -605,15 +601,15 @@ bool CodeAnalyser::TestLoopPerformance(CodeIterator &it)
 }
 
 //Funkcja testuje operacje arytmetyczne, czy nie sa nadmiarowe
-bool CodeAnalyser::TestArithmetics(CodeIterator &it, const RepairFn2i2 & repairCB)
+bool CodeAnalyser::TestArithmetics(TapeIterator &it, const RepairFn2i2 & repairCB)
 {
-	CodeIterator m, n;
+	TapeIterator m, n;
 	int sum, ops;
 
 	if(IsArithmeticInstruction(*it))
 	{
 		ignore_arithmetic_test = true;
-		n = std::find_if_not(it, instructions->end(), IsArithmeticInstruction);
+		n = std::find_if_not(it, instructions.end(), IsArithmeticInstruction);
 		//mamy ci¹g + - 
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla ++ [ops=2] a nie +-+-++ [ops=5]
 
@@ -622,7 +618,7 @@ bool CodeAnalyser::TestArithmetics(CodeIterator &it, const RepairFn2i2 & repairC
 
 		if((n - it) > 1 && abs(sum) != ops)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecRedundantArithmetic, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantArithmetic, it - instructions.begin() + 1);	
 			if(repairCB)
 			{
 				repairCB(it, n, sum, ops);
@@ -635,15 +631,15 @@ bool CodeAnalyser::TestArithmetics(CodeIterator &it, const RepairFn2i2 & repairC
 }
 
 //Funkcja testuje operacje ruchu, czy nie sa nadmiarowe
-bool CodeAnalyser::TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & repairCB)
+bool CodeAnalyser::TestRedundantMoves(TapeIterator &it, const RepairFn2i2 & repairCB)
 {
-	CodeIterator n;
+	TapeIterator n;
 	int sum, ops;
 
 	if(IsMoveInstruction(*it))
 	{
 		ignore_moves_test = true;
-		n = std::find_if_not(it, instructions->end(), IsMoveInstruction);
+		n = std::find_if_not(it, instructions.end(), IsMoveInstruction);
 		//mamy ci¹g < > 
 		//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla >> [ops=2] a nie <><>>> [ops=5]
 
@@ -652,7 +648,7 @@ bool CodeAnalyser::TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & repa
 		
 		if((n - it) > 1 && abs(sum) != ops)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecRedundantMoves, it - instructions->begin() + 1);	
+			MessageLog::Instance().AddMessage(MessageLog::ecRedundantMoves, it - instructions.begin() + 1);	
 			if(repairCB)
 			{
 				repairCB(it, n, sum, ops);
@@ -664,14 +660,14 @@ bool CodeAnalyser::TestRedundantMoves(CodeIterator &it, const RepairFn2i2 & repa
 }
 
 //Funkcja testuje czy wystapi³y jakies powtórzenia operatorów, np !
-bool CodeAnalyser::TestForRepetition(CodeIterator &it, const RepairFn2 & repairCB)
+bool CodeAnalyser::TestForRepetition(TapeIterator &it, const RepairFn2 & repairCB)
 {
-	std::vector<CodeTape::bt_instruction>::iterator n;
+	TapeIterator n;
 
-	if (it + 1 < instructions->end())
+	if (it + 1 < instructions.end())
 	{
-		n = std::find_if_not(it + 1, instructions->end(), [&it](const CodeTape::bt_instruction &o) { return o.operation == it->operation; });
-		if (n != instructions->end()) //jest jakies powtórzenie
+		n = std::find_if_not(it + 1, instructions.end(), [&it](const CodeTape::bt_instruction &o) { return o.operation == it->operation; });
+		if (n != instructions.end()) //jest jakies powtórzenie
 		{
 			if (repairCB) //usuwamy wszsytkie bez pierwszego
 			{
@@ -687,15 +683,15 @@ bool CodeAnalyser::TestForRepetition(CodeIterator &it, const RepairFn2 & repairC
 
 //Funkcja liczy sume wynikaj¹ca z operacji + i - w pewnym ci¹gu instrukcji od start do poprzedzaj¹cego end
 //Nie sa wa¿ne inne operacje 
-int CodeAnalyser::Evaluate(const CodeIterator &begin, const CodeIterator &end) const
+int CodeAnalyser::Evaluate(const TapeIterator &begin, const TapeIterator &end) const
 {
 	int sum = 0;
-	for(CodeIterator it = begin; it < end; ++it)
+	for(TapeIterator it = begin; it < end; ++it)
 	{
 		switch(it->operation)
 		{
-			case CodeTape::btoIncrement: ++sum; break;
-			case CodeTape::btoDecrement: --sum; break;
+			case bt_operation::btoIncrement: ++sum; break;
+			case bt_operation::btoDecrement: --sum; break;
 		}
 	}
 
@@ -704,15 +700,15 @@ int CodeAnalyser::Evaluate(const CodeIterator &begin, const CodeIterator &end) c
 
 //Funkcja liczy operacje < i >, cel taki jak w Calcule
 //Nie sa wa¿ne inne operacje 
-int CodeAnalyser::EvaluateMoves(const CodeIterator &begin, const CodeIterator &end) const
+int CodeAnalyser::EvaluateMoves(const TapeIterator &begin, const TapeIterator &end) const
 {
 	int sum = 0;
-	for(CodeIterator it = begin; it < end; ++it)
+	for(TapeIterator it = begin; it < end; ++it)
 	{
 		switch(it->operation)
 		{
-			case CodeTape::btoMoveRight: ++sum; break;
-			case CodeTape::btoMoveLeft:  --sum; break;
+			case bt_operation::btoMoveRight: ++sum; break;
+			case bt_operation::btoMoveLeft:  --sum; break;
 		}
 	}
 
@@ -721,29 +717,29 @@ int CodeAnalyser::EvaluateMoves(const CodeIterator &begin, const CodeIterator &e
 
 //Funkcja liczy sposób zachowania siê pêtli
 //Return 0 - niepoliczalne, -1: pêtla d¹¿y do zera, 1: pêtla d¹¿y do nieskoñczonoœci
-short CodeAnalyser::GetLoopLimes(const CodeIterator &op) const
+short CodeAnalyser::GetLoopLimes(const TapeIterator &op) const
 {
-	CodeIterator a, n, m;
+	TapeIterator a, n, m;
 	std::list<short> limesii; //wyniki podpêtli w kolejnoœci (to wa¿ne jaka kolejnoœæ)
 	int s = 0;
 
-	a = instructions->begin() + op->jump;
+	a = instructions.begin() + op->jump;
 	m = op + 1;
 
 	if(m == a)
 		return 0; //nieskoñczona pêtla
 
-	n = std::find_if_not(m, a, [&op](const CodeTape::bt_instruction &o){ return IsArithmeticInstruction(o) || 
+	n = std::find_if_not(m, a, [](const CodeTape::bt_instruction &o){ return IsArithmeticInstruction(o) || 
 																				IsChangingInstruction(o) == false ||
-																				o.operation == CodeTape::btoBeginLoop || 
-																				o.operation == CodeTape::btoEndLoop; } );
+																				o.operation == bt_operation::btoBeginLoop || 
+																				o.operation == bt_operation::btoEndLoop; } );
 
 	if(n == a) //s¹ tylko + - i pêtle i inne niewazne operacje
 	{
 		while(true)
 		{
-			n = std::find_if(m, a, [&op](const CodeTape::bt_instruction &o){ return o.operation == CodeTape::btoBeginLoop || 
-																					 o.operation == CodeTape::btoEndLoop; }); //szukamy pierwszej instrukcji pêtli
+			n = std::find_if(m, a, [](const CodeTape::bt_instruction &o){ return o.operation == bt_operation::btoBeginLoop || 
+																					 o.operation == bt_operation::btoEndLoop; }); //szukamy pierwszej instrukcji pêtli
 
 			if(n != m) //sa jakies operacje -> [+-+-[
 				limesii.push_back( Evaluate(m, a) < 0 ? -1 : 1 ); //pêtla z przewaga minusów da tutaj -1, inaczej 1, zero liczy sie jak do nieksonczonoœci
@@ -753,7 +749,7 @@ short CodeAnalyser::GetLoopLimes(const CodeIterator &op) const
 			if(n != a) //oho mamy pêtle w œrodku jak¹œ, dawaj jeszcze jej limes
 			{
 				limesii.push_back(GetLoopLimes(n));
-				m = instructions->begin() + n->jump + 1;
+				m = instructions.begin() + n->jump + 1;
 			}
 			else break; //nie ma pêtli wewnêtrznej
 		}
@@ -774,28 +770,28 @@ short CodeAnalyser::GetLoopLimes(const CodeIterator &op) const
 
 //Funkcja zwraca true, je¿eli ¿¹dana instrukcja znajduje siê w œrodku funkcji
 //Liczymy poprostu nawiasy, inaczej nie bêdziemy pewni
-bool CodeAnalyser::IsWithinFunction(const CodeIterator &op) const
+bool CodeAnalyser::IsWithinFunction(const TapeIterator &op) const
 {
 	int opening_bracket_cnt, closing_bracket_cnt;
 
-	opening_bracket_cnt = std::count_if(instructions->begin(), op, 
-		                                [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoBeginFunction; });
+	opening_bracket_cnt = std::count_if(instructions.begin(), op, 
+		                                [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoBeginFunction; });
 
-	closing_bracket_cnt = std::count_if(instructions->begin(), op, 
-		                                [](const CodeTape::bt_instruction &op){ return op.operation == CodeTape::btoEndFunction; });
+	closing_bracket_cnt = std::count_if(instructions.begin(), op, 
+		                                [](const CodeTape::bt_instruction &op){ return op.operation == bt_operation::btoEndFunction; });
 
 	return opening_bracket_cnt > closing_bracket_cnt;
 }
 
 //Funkcje modyfikuj¹ linkowania 
-void CodeAnalyser::RelinkCommands(const CodeIterator &start, short n)
+void CodeAnalyser::RelinkCommands(const TapeIterator &start, short n)
 {
-	RelinkCommands(start, instructions->end(), n);
+	RelinkCommands(start, instructions.end(), n);
 }
 
-void CodeAnalyser::RelinkCommands(const CodeIterator &start, const CodeIterator &end, short n)
+void CodeAnalyser::RelinkCommands(const TapeIterator &start, const TapeIterator &end, short n)
 {
-	for(CodeIterator it = start; it < end; ++it)
+	for(TapeIterator it = start; it < end; ++it)
 	{
 		if(IsLinkedInstruction(*it) || it->NullJump() == false)
 		{
@@ -807,9 +803,9 @@ void CodeAnalyser::RelinkCommands(const CodeIterator &start, const CodeIterator 
 //Testuje poprawnoœæ linkujacych komend - ka¿da z nich musi linkowaæ do innej, nie mog¹ byc bez par
 bool CodeAnalyser::TestLinks()
 {
-	for(CodeIterator it = instructions->begin(); it < instructions->end(); ++it)
+	for(TapeIterator it = instructions.begin(); it < instructions.end(); ++it)
 	{
-		if(IsLinkedInstruction(*it) && IsLinkedInstruction(instructions->at( it->jump ) ) == false)
+		if(IsLinkedInstruction(*it) && IsLinkedInstruction(instructions.at( it->jump ) ) == false)
 		{
 			return true;
 		}
@@ -837,7 +833,7 @@ short CodeAnalyser::GetLoopLimes(const std::vector<CodeTape::bt_instruction>::it
 	std::list<short> limesii; //wyniki podpêtli w kolejnoœci (to wa¿ne jaka kolejnoœæ)
 	int s = 0;
 
-	a = instructions->begin() + op->jump;
+	a = instructions.begin() + op->jump;
 	m = op + 1;
 
 	if(m == a)
@@ -861,7 +857,7 @@ short CodeAnalyser::GetLoopLimes(const std::vector<CodeTape::bt_instruction>::it
 			if(n != a) //oho mamy pêtle w œrodku jak¹œ, dawaj jeszcze jej limes
 			{
 				limesii.push_back(GetLoopLimes(n));
-				m = instructions->begin() + n->jump + 1;
+				m = instructions.begin() + n->jump + 1;
 			}
 			else break; //nie ma pêtli wewnêtrznej
 		}

@@ -50,18 +50,17 @@ bool RanFromConsole();
 //Rekacja na prwerwanie programu ctrl+break
 bool CtrlHandler(DWORD fdwCtrlType);
 
-//£atwe wrappery
+//wrappers
 bool RunParseArguments(GetOpt::GetOpt_pp &ops);
 void RunParserAndDebug();
 void RunProgram();
 template < typename T > void RunProgram(BrainThread<T> &brain_main_thread);
 
-//taœma kodu
-std::unique_ptr<CodeTape> Code;
+//instruction tape
+CodeTape::Tape Code;
 
 int main(int argc, char* argv[])
 {
-	//inicjalizacja sekcji krytycznych
 	InitializeCriticalSection(&cout_critical_section);
 	InitializeCriticalSection(&pm_critical_section);
 	InitializeCriticalSection(&heap_critical_section);
@@ -107,7 +106,7 @@ int main(int argc, char* argv[])
 			
 			RunParserAndDebug();
 		 
-			if(Code && OP_execute == true){
+			if(false == Code.empty() && OP_execute == true){
 					RunProgram();
 			}
 		}
@@ -163,8 +162,6 @@ void RunParserAndDebug()
 {
 	try
 	{
-		//MessageLog::Instance().AddInfo("Code parsing started..");
-
 		Parser parser(OP_language, OP_debug);
 
 		if(OP_sourcetype == stInput)
@@ -178,14 +175,14 @@ void RunParserAndDebug()
 			in.close();
 		}
 
-		if(parser.isCodeValid()) //kod wygl¹da w porz¹dku
+		if(parser.isCodeValid()) //code seems ok
 		{
 			MessageLog::Instance().AddInfo("Code is valid");
+			Code = parser.GetCode();
 		
 			if(OP_debug)
 			{
-				//MessageLog::Instance().AddInfo("Code analysis started..");
-				CodeAnalyser analyser(parser.GetCode());
+				CodeAnalyser analyser(Code);
 				OP_optimize ? analyser.Repair() : analyser.Analyse();
 
 				if(analyser.isCodeValid())
@@ -200,8 +197,6 @@ void RunParserAndDebug()
 					MessageLog::Instance().AddMessage("Code has warnings");
 				}
 			}	
-
-			Code = std::unique_ptr<CodeTape>(new CodeTape(parser.GetCode()) );
 		}
 		else
 		{
@@ -289,7 +284,7 @@ void RunProgram(BrainThread<T> &brain_main_thread)
 	brain_main_thread.mem_behavior      = static_cast< MemoryTape<T>::mem_option >(OP_mem_behavior);
 	brain_main_thread.eof_behavior      = static_cast< MemoryTape<T>::eof_option >(OP_eof_behavior);
 	
-	brain_main_thread.Run(Code.get());
+	brain_main_thread.Run(Code);
 	brain_main_thread.WaitForPendingThreads();
 }
 

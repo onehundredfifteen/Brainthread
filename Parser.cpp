@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <iterator>
 
+using namespace CodeTape;
+
 /*
  * Klasa Parsera
  * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
@@ -77,23 +79,23 @@ void Parser::Parse(std::vector<char> &source)
 	{
 		curr_op = MapCharToOperator(*it);
 		
-		if(curr_op == CodeTape::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
+		if(curr_op == bt_operation::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
 		{
 			
 			if (_optimize && (optimizer_entrypoint.empty() ||
-				instructions[optimizer_entrypoint.back()].operation != CodeTape::btoBeginLoop)) {
+				instructions[optimizer_entrypoint.back()].operation != bt_operation::btoBeginLoop)) {
 				
 				_it = (it + 2);
 				if(_it < source.end() && 
-					MapCharToOperator(*_it) == CodeTape::btoEndLoop &&
-					MapCharToOperator(*--_it) == CodeTape::btoDecrement) {
-						instructions.push_back(CodeTape::bt_instruction(CodeTape::btoOPT_SetCellToZero));
+					MapCharToOperator(*_it) == bt_operation::btoEndLoop &&
+					MapCharToOperator(*--_it) == bt_operation::btoDecrement) {
+						instructions.push_back(bt_instruction(bt_operation::btoOPT_SetCellToZero));
 						ignore_ins += 2;
 						std::advance(it, 2);			
 				}
 				else {
 					loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-					instructions.push_back(CodeTape::bt_instruction(curr_op));
+					instructions.push_back(bt_instruction(curr_op));
 
 					optimizer_entrypoint.push_back(instructions.size() - 1);
 				}
@@ -101,15 +103,15 @@ void Parser::Parse(std::vector<char> &source)
 			}
 			else {
 				loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-				instructions.push_back(CodeTape::bt_instruction(curr_op));
+				instructions.push_back(bt_instruction(curr_op));
 			}
 		}
-		else if(curr_op == CodeTape::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
+		else if(curr_op == bt_operation::btoEndLoop /*|| curr_op == CodeTape::btoInvEndLoop*/)
 		{
 			if(loop_call_stack.empty() == false) 
 			{
 				instructions[ loop_call_stack.top() ].jump = GetValidPos(it, source.begin(), ignore_ins);
-				instructions.push_back(CodeTape::bt_instruction(curr_op, loop_call_stack.top()));
+				instructions.push_back(bt_instruction(curr_op, loop_call_stack.top()));
 				
 				//szukamy [ ( ] )
 				if(func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins)) 
@@ -125,12 +127,12 @@ void Parser::Parse(std::vector<char> &source)
 			}
 					
 		}
-		else if(curr_op == CodeTape::btoBeginFunction) 
+		else if(curr_op == bt_operation::btoBeginFunction) 
 		{
 			func_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
 			instructions.push_back(CodeTape::bt_instruction(curr_op));
 		}
-		else if(curr_op == CodeTape::btoEndFunction)
+		else if(curr_op == bt_operation::btoEndFunction)
 		{
 			if(func_call_stack.empty() == false) 
 			{
@@ -164,27 +166,27 @@ void Parser::Parse(std::vector<char> &source)
 			}		
 		}*/
 		else if(switchToSharedHeap && 
-			(curr_op == CodeTape::btoPush || curr_op == CodeTape::btoPop || curr_op == CodeTape::btoSwap))
+			(curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap))
 		{
 			switchToSharedHeap = false;
 
 			switch(curr_op)
 			{
-				case CodeTape::btoPush: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedPush)); 
+				case bt_operation::btoPush: instructions.push_back(bt_instruction(bt_operation::btoSharedPush)); 
 					break;
-				case CodeTape::btoPop: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedPop)); 
+				case bt_operation::btoPop: instructions.push_back(CodeTape::bt_instruction(bt_operation::btoSharedPop)); 
 					break;
-				case CodeTape::btoSwap: instructions.push_back(CodeTape::bt_instruction(CodeTape::btoSharedSwap)); 
+				case bt_operation::btoSwap: instructions.push_back(CodeTape::bt_instruction(bt_operation::btoSharedSwap)); 
 					break;
 			}
 
 			instructions.back().jump = switchJump;
 		}
-		else if(curr_op == CodeTape::btoSwitchHeap) 
+		else if(curr_op == bt_operation::btoSwitchHeap) 
 		{
 			switchToSharedHeap = true; //non executable operation
 			switchJump = GetValidPos(it, source.begin(), ignore_ins);
-			//instructions.push_back(CodeTape::bt_instruction(curr_op));
+			//instructions.push_back(bt_operation::bt_instruction(curr_op));
 		}
 		else if(_optimize && CodeOptimizer::isOptimizable(curr_op)) {
 			reps = 1;
@@ -230,23 +232,23 @@ void Parser::Parse(std::vector<char> &source)
   }
 
   if (0&&_optimize) {
-	  CodeOptimizer optimizer(optimizer_entrypoint, &instructions, coLevel::co1);
-	  optimizer.Optimize();
+	  //CodeOptimizer optimizer(optimizer_entrypoint, &instructions, coLevel::co1);
+	  //optimizer.Optimize();
   }
   //koniec
 }
 
-std::vector<CodeTape::bt_instruction> * Parser::GetCode()
+CodeTape::Tape Parser::GetCode()
 {
-	return &instructions;
+	return std::move(instructions);
 }
-
-bool Parser::isCodeValid(void)
+ 
+bool Parser::isCodeValid(void) const
 {
 	return MessageLog::Instance().ErrorsCount() == 0;
 }
 
-bool Parser::isValidOperator(char &c)
+bool Parser::isValidOperator(const char &c) const
 {
 	static const char *valid_bt_ops = "<>+-.,[]()*{}!&^%~;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
@@ -266,7 +268,7 @@ bool Parser::isValidOperator(char &c)
 	return false;
 }
 
-bool Parser::isValidDebugOperator(char &c)
+bool Parser::isValidDebugOperator(const char &c) const
 {
 	static const char *valid_db_ops = "MTFSD";
 	
@@ -276,7 +278,7 @@ bool Parser::isValidDebugOperator(char &c)
 	return strchr(valid_db_ops,c) != 0;
 }
 
-CodeTape::bt_operation Parser::MapCharToOperator(char &c)
+CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 {
 	switch(language)	
 	{
@@ -284,33 +286,33 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 		{
 			switch(c)
 			{
-				case '<': return CodeTape::btoMoveLeft;
-				case '>': return CodeTape::btoMoveRight;
-				case '+': return CodeTape::btoIncrement;
-				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoAsciiWrite;
-				case ',': return CodeTape::btoAsciiRead;
-				case '[': return CodeTape::btoBeginLoop;
-				case ']': return CodeTape::btoEndLoop;
+				case '<': return bt_operation::btoMoveLeft;
+				case '>': return bt_operation::btoMoveRight;
+				case '+': return bt_operation::btoIncrement;
+				case '-': return bt_operation::btoDecrement;
+				case '.': return bt_operation::btoAsciiWrite;
+				case ',': return bt_operation::btoAsciiRead;
+				case '[': return bt_operation::btoBeginLoop;
+				case ']': return bt_operation::btoEndLoop;
 
-			    case '{': return CodeTape::btoFork;
-				case '}': return CodeTape::btoJoin;
-				case '!': return CodeTape::btoTerminate;
+			    case '{': return bt_operation::btoFork;
+				case '}': return bt_operation::btoJoin;
+				case '!': return bt_operation::btoTerminate;
 
-				case '(': return CodeTape::btoBeginFunction;
-				case ')': return CodeTape::btoEndFunction;
-				case '*': return CodeTape::btoCallFunction;
+				case '(': return bt_operation::btoBeginFunction;
+				case ')': return bt_operation::btoEndFunction;
+				case '*': return bt_operation::btoCallFunction;
 
-				case '&': return CodeTape::btoPush;
-				case '^': return CodeTape::btoPop;
-				case '%': return CodeTape::btoSwap;
-				case '~': return CodeTape::btoSwitchHeap;
-				//case '/': return CodeTape::btoSharedPush;
-				//case '\\':return CodeTape::btoSharedPop;
-				//case '@': return CodeTape::btoSharedSwap;
+				case '&': return bt_operation::btoPush;
+				case '^': return bt_operation::btoPop;
+				case '%': return bt_operation::btoSwap;
+				case '~': return bt_operation::btoSwitchHeap;
+				//case '/': return bt_operation::btoSharedPush;
+				//case '\\':return bt_operation::btoSharedPop;
+				//case '@': return bt_operation::btoSharedSwap;
 
-				case ':': return CodeTape::btoDecimalWrite;
-				case ';': return CodeTape::btoDecimalRead;
+				case ':': return bt_operation::btoDecimalWrite;
+				case ';': return bt_operation::btoDecimalRead;
 			}
 		}
 		break;
@@ -318,14 +320,14 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 		{
 			switch(c)
 			{
-				case '<': return CodeTape::btoMoveLeft;
-				case '>': return CodeTape::btoMoveRight;
-				case '+': return CodeTape::btoIncrement;
-				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoAsciiWrite;
-				case ',': return CodeTape::btoAsciiRead;
-				case '[': return CodeTape::btoBeginLoop;
-				case ']': return CodeTape::btoEndLoop;
+				case '<': return bt_operation::btoMoveLeft;
+				case '>': return bt_operation::btoMoveRight;
+				case '+': return bt_operation::btoIncrement;
+				case '-': return bt_operation::btoDecrement;
+				case '.': return bt_operation::btoAsciiWrite;
+				case ',': return bt_operation::btoAsciiRead;
+				case '[': return bt_operation::btoBeginLoop;
+				case ']': return bt_operation::btoEndLoop;
 			}
 		}
 		break;
@@ -333,17 +335,17 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 		{
 			switch(c)
 			{
-				case '<': return CodeTape::btoMoveLeft;
-				case '>': return CodeTape::btoMoveRight;
-				case '+': return CodeTape::btoIncrement;
-				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoAsciiWrite;
-				case ',': return CodeTape::btoAsciiRead;
-				case '[': return CodeTape::btoBeginLoop;
-				case ']': return CodeTape::btoEndLoop;
-				case '(': return CodeTape::btoBeginFunction;
-				case ')': return CodeTape::btoEndFunction;
-				case ':': return CodeTape::btoCallFunction;
+				case '<': return bt_operation::btoMoveLeft;
+				case '>': return bt_operation::btoMoveRight;
+				case '+': return bt_operation::btoIncrement;
+				case '-': return bt_operation::btoDecrement;
+				case '.': return bt_operation::btoAsciiWrite;
+				case ',': return bt_operation::btoAsciiRead;
+				case '[': return bt_operation::btoBeginLoop;
+				case ']': return bt_operation::btoEndLoop;
+				case '(': return bt_operation::btoBeginFunction;
+				case ')': return bt_operation::btoEndFunction;
+				case ':': return bt_operation::btoCallFunction;
 			}
 		}
 		break;
@@ -351,15 +353,15 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 		{
 			switch(c)
 			{
-				case '<': return CodeTape::btoMoveLeft;
-				case '>': return CodeTape::btoMoveRight;
-				case '+': return CodeTape::btoIncrement;
-				case '-': return CodeTape::btoDecrement;
-				case '.': return CodeTape::btoAsciiWrite;
-				case ',': return CodeTape::btoAsciiRead;
-				case '[': return CodeTape::btoBeginLoop;
-				case ']': return CodeTape::btoEndLoop;
-			    case 'Y': return CodeTape::btoFork;
+				case '<': return bt_operation::btoMoveLeft;
+				case '>': return bt_operation::btoMoveRight;
+				case '+': return bt_operation::btoIncrement;
+				case '-': return bt_operation::btoDecrement;
+				case '.': return bt_operation::btoAsciiWrite;
+				case ',': return bt_operation::btoAsciiRead;
+				case '[': return bt_operation::btoBeginLoop;
+				case ']': return bt_operation::btoEndLoop;
+			    case 'Y': return bt_operation::btoFork;
 			}
 		}
 		break;
@@ -373,13 +375,13 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 			{
 				switch(c)
 				{
-					case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
-					case 'D': return CodeTape::btoDEBUG_MemoryDump;
-					case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
-					case 'E': return CodeTape::btoDEBUG_FunctionsDefsDump;
-					case 'S': return CodeTape::btoDEBUG_StackDump;
-					case 'H': return CodeTape::btoDEBUG_SharedStackDump;
-					case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
+					case 'D': return bt_operation::btoDEBUG_MemoryDump;
+					case 'F': return bt_operation::btoDEBUG_FunctionsStackDump;
+					case 'E': return bt_operation::btoDEBUG_FunctionsDefsDump;
+					case 'S': return bt_operation::btoDEBUG_StackDump;
+					case 'H': return bt_operation::btoDEBUG_SharedStackDump;
+					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
 				}
 			}
 			break;
@@ -388,8 +390,8 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				switch(c)
 				{
 					case '#':
-					case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
-					case 'D': return CodeTape::btoDEBUG_MemoryDump;
+					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
+					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 				}
 			}
 			break;
@@ -398,10 +400,10 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				switch(c)
 				{
 					case '#':
-				    case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
-					case 'D': return CodeTape::btoDEBUG_MemoryDump;
-					case 'F': return CodeTape::btoDEBUG_FunctionsStackDump;
-					case 'E': return CodeTape::btoDEBUG_FunctionsDefsDump;
+				    case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
+					case 'D': return bt_operation::btoDEBUG_MemoryDump;
+					case 'F': return bt_operation::btoDEBUG_FunctionsStackDump;
+					case 'E': return bt_operation::btoDEBUG_FunctionsDefsDump;
 				}
 			}
 			break;
@@ -410,9 +412,9 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 				switch(c)
 				{
 					case '#':
-				    case 'M': return CodeTape::btoDEBUG_SimpleMemoryDump;
-					case 'D': return CodeTape::btoDEBUG_MemoryDump;
-					case 'T': return CodeTape::btoDEBUG_ThreadInfoDump;
+				    case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
+					case 'D': return bt_operation::btoDEBUG_MemoryDump;
+					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
 				}
 			}
 			break;
@@ -420,10 +422,10 @@ CodeTape::bt_operation Parser::MapCharToOperator(char &c)
 
 	}
 
-	return CodeTape::btoInvalid;
+	return bt_operation::btoInvalid;
 }
 
-Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
+Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
 {
 	std::vector<char>::iterator a, b;
 
@@ -483,7 +485,7 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source)
 	return Parser::clBrainFuck;
 }
 
-unsigned int inline Parser::GetValidPos(std::vector<char>::iterator &pos, std::vector<char>::iterator &begin, unsigned int &not_valid_pos)
+unsigned int inline Parser::GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const
 {
 	return pos - begin - not_valid_pos;
 }

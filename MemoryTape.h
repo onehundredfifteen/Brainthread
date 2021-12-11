@@ -42,7 +42,6 @@ class MemoryTape
 
 		unsigned int PointerPosition() const;
 		T* const GetValue() const;
-		void NullifyValue();
 
 		std::ostream& SimpleMemoryDump(std::ostream &s, unsigned near_cells = 5);
 		std::ostream& MemoryDump(std::ostream &o);

@@ -11,7 +11,7 @@ template < typename T >
 class BrainThreadProcess
 {
 public:
-	BrainThreadProcess(CodeTape * c, MemoryHeap<T> *shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
+	BrainThreadProcess(const CodeTape::Tape &c, MemoryHeap<T> &shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
 	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);
 	~BrainThreadProcess(void);
 
@@ -21,13 +21,12 @@ public:
 	std::ostream& PrintProcessInfo(std::ostream &s);
 
 protected:
-	MemoryTape<T> *memory;
-	MemoryHeap<T> *heap;
-	MemoryHeap<T> *shared_heap;
-
-	FunctionHeap<T> *functions;
-
-	CodeTape * code;
+	MemoryTape<T> memory;
+	MemoryHeap<T> heap;
+	FunctionHeap<T> functions;
+	MemoryHeap<T> &shared_heap;
+	
+	const CodeTape::Tape &code;
 	unsigned int code_pointer;
 	
 	std::vector< HANDLE > child_threads;

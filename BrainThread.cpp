@@ -20,20 +20,20 @@ BrainThread<T>::~BrainThread(void)
 }
 
 template < typename T >
-void BrainThread<T>::Run(CodeTape * c)
+void BrainThread<T>::Run(const CodeTape::Tape &tape)
 {
 	try
 	{
-		main_process = new BrainThreadProcess<T>(c, &shared_heap, mem_size, mem_behavior, eof_behavior);
+		main_process = new BrainThreadProcess<T>(tape, shared_heap, mem_size, mem_behavior, eof_behavior);
 		main_process->Run();
 	}
-	catch(BrainThreadRuntimeException &re)
+	catch(const BrainThreadRuntimeException &re)
 	{
 		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<main> "<< re.what() << std::endl;
 		::LeaveCriticalSection(&cout_critical_section);
 	}
-	catch(std::exception &e)
+	catch(const std::exception &e)
 	{
 		::EnterCriticalSection(&cout_critical_section);
 		std::cerr << "<main> "<< e.what() << std::endl;
