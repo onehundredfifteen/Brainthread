@@ -14,20 +14,20 @@ using namespace CodeTape;
  * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
  * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
 */
-
-Parser::Parser(CodeLang lang, bool debug_instructions_mode)
+template <int OptL>
+Parser<OptL>::Parser(CodeLang lang)
 {
 	language = lang;
-	this->debug_instructions_mode = debug_instructions_mode;
 }
-
-void Parser::Parse(const char * data)
+template <int OptL>
+void Parser<OptL>::Parse(const char * data)
 {
 	std::vector<char> buffer (data, data + strlen(data));
 	Parse(buffer);
 }
 
-void Parser::Parse(std::ifstream &in)
+template <int OptL>
+void Parser<OptL>::Parse(std::ifstream &in)
 {	
 	if(in.fail())
 		throw std::ios_base::failure("File read error");
@@ -39,16 +39,15 @@ void Parser::Parse(std::ifstream &in)
 	Parse(buffer);
 }
 
-
-void Parser::Parse(std::vector<char> &source)
+template <int OptL>
+void Parser<OptL>::Parse(std::vector<char> &source)
 {
   std::stack<unsigned int> loop_call_stack;
   std::stack<unsigned int> func_call_stack;
 
   //optimizer
   std::list<unsigned int> optimizer_entrypoint;
-  bool _optimize = true;
-
+  
   //for loop jumps
   unsigned int ignore_ins = 0;
 
@@ -66,7 +65,7 @@ void Parser::Parse(std::vector<char> &source)
 	  MessageLog::Instance().AddMessage(MessageLog::ecEmptyCode, 0);
 	  return;
   }
-  else if(this->language == Parser::clAuto)
+  else if(this->language == CodeLang::clAuto)
   {
 	  this->language = RecognizeLang(source);
   }
@@ -75,14 +74,13 @@ void Parser::Parse(std::vector<char> &source)
   
   for(std::vector<char>::iterator it = source.begin(); it < source.end(); ++it)
   {
-	if(isValidOperator(*it) || (debug_instructions_mode && isValidDebugOperator(*it)) )
+	if(isValidOperator(*it) || (OptL == -1 && isValidDebugOperator(*it)) )
 	{
 		curr_op = MapCharToOperator(*it);
 		
 		if(curr_op == bt_operation::btoBeginLoop /*|| curr_op == CodeTape::btoInvBeginLoop*/) //slepe wi¹zanie
-		{
-			
-			if (_optimize && (optimizer_entrypoint.empty() ||
+		{		
+			if (OptL > 0 && (optimizer_entrypoint.empty() ||
 				instructions[optimizer_entrypoint.back()].operation != bt_operation::btoBeginLoop)) {
 				
 				_it = (it + 2);
@@ -100,6 +98,10 @@ void Parser::Parse(std::vector<char> &source)
 					optimizer_entrypoint.push_back(instructions.size() - 1);
 				}
 				
+			}
+			else if (OptL > 1) {
+				loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
+				instructions.push_back(bt_instruction(curr_op));
 			}
 			else {
 				loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
@@ -188,7 +190,7 @@ void Parser::Parse(std::vector<char> &source)
 			switchJump = GetValidPos(it, source.begin(), ignore_ins);
 			//instructions.push_back(bt_operation::bt_instruction(curr_op));
 		}
-		else if(_optimize && CodeOptimizer::isOptimizable(curr_op)) {
+		else if(OptL > 0 && CodeOptimizer::isOptimizable(curr_op)) {
 			reps = 1;
 			_it = (it + 1);
 			while (_it < source.end()) {
@@ -231,24 +233,25 @@ void Parser::Parse(std::vector<char> &source)
 	 }
   }
 
-  if (0&&_optimize) {
-	  //CodeOptimizer optimizer(optimizer_entrypoint, &instructions, coLevel::co1);
-	  //optimizer.Optimize();
+  if constexpr (OptL > 1) {
+	  CodeOptimizer optimizer(optimizer_entrypoint, instructions, coLevel::co1);
+	  optimizer.Optimize();
   }
   //koniec
 }
 
-CodeTape::Tape Parser::GetCode()
+template <int OptL>
+CodeTape::Tape Parser<OptL>::GetCode()
 {
 	return std::move(instructions);
 }
- 
-bool Parser::isCodeValid(void) const
+template <int OptL>
+bool Parser<OptL>::isCodeValid(void) const
 {
 	return MessageLog::Instance().ErrorsCount() == 0;
 }
-
-bool Parser::isValidOperator(const char &c) const
+template <int OptL>
+bool Parser<OptL>::isValidOperator(const char &c) const
 {
 	static const char *valid_bt_ops = "<>+-.,[]()*{}!&^%~;:";
 	static const char *valid_bf_ops = "<>+-.,[]";
@@ -257,10 +260,10 @@ bool Parser::isValidOperator(const char &c) const
 	
 	switch(language)
 	{
-		case Parser::clBrainThread: return strchr(valid_bt_ops,c) != 0; 
-		case Parser::clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
-		case Parser::clPBrain:      return strchr(valid_pb_ops,c) != 0;
-		case Parser::clBrainFork:   return strchr(valid_bo_ops,c) != 0;
+		case CodeLang::clBrainThread: return strchr(valid_bt_ops,c) != 0;
+		case CodeLang::clBrainFuck:   return strchr(valid_bf_ops,c) != 0;
+		case CodeLang::clPBrain:      return strchr(valid_pb_ops,c) != 0;
+		case CodeLang::clBrainFork:   return strchr(valid_bo_ops,c) != 0;
 		default:
 			 return strchr(valid_bt_ops,c) != 0;
 	}
@@ -268,21 +271,23 @@ bool Parser::isValidOperator(const char &c) const
 	return false;
 }
 
-bool Parser::isValidDebugOperator(const char &c) const
+template <int OptL>
+bool Parser<OptL>::isValidDebugOperator(const char &c) const
 {
 	static const char *valid_db_ops = "MTFSD";
 	
-	if(language == Parser::clBrainFuck && c == '#')
+	if(language == CodeLang::clBrainFuck && c == '#')
 		return true;
 
 	return strchr(valid_db_ops,c) != 0;
 }
 
-CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
+template <int OptL>
+CodeTape::bt_operation Parser<OptL>::MapCharToOperator(const char &c) const
 {
 	switch(language)	
 	{
-		case Parser::clBrainThread:
+		case CodeLang::clBrainThread:
 		{
 			switch(c)
 			{
@@ -316,7 +321,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 			}
 		}
 		break;
-		case Parser::clBrainFuck:
+		case CodeLang::clBrainFuck:
 		{
 			switch(c)
 			{
@@ -331,7 +336,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 			}
 		}
 		break;
-		case Parser::clPBrain:
+		case CodeLang::clPBrain:
 		{
 			switch(c)
 			{
@@ -349,7 +354,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 			}
 		}
 		break;
-		case Parser::clBrainFork:
+		case CodeLang::clBrainFork:
 		{
 			switch(c)
 			{
@@ -367,11 +372,11 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 		break;
 	}
 
-	if(debug_instructions_mode)
+	if constexpr (OptL == -1) //debug 
 	{
 		switch(language)	
 		{
-			case Parser::clBrainThread:
+			case CodeLang::clBrainThread:
 			{
 				switch(c)
 				{
@@ -385,7 +390,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 				}
 			}
 			break;
-			case Parser::clBrainFuck:
+			case CodeLang::clBrainFuck:
 			{
 				switch(c)
 				{
@@ -395,7 +400,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 				}
 			}
 			break;
-			case Parser::clPBrain:
+			case CodeLang::clPBrain:
 			{
 				switch(c)
 				{
@@ -407,7 +412,7 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 				}
 			}
 			break;
-			case Parser::clBrainFork:
+			case CodeLang::clBrainFork:
 			{
 				switch(c)
 				{
@@ -425,7 +430,8 @@ CodeTape::bt_operation Parser::MapCharToOperator(const char &c) const
 	return bt_operation::btoInvalid;
 }
 
-Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
+template <int OptL>
+CodeLang Parser<OptL>::RecognizeLang(std::vector<char> &source) const
 {
 	std::vector<char>::iterator a, b;
 
@@ -446,11 +452,11 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
 
 		if(a == source.end() && b != source.end()) //mamy call w stylu pb, a nie mamy w stylu bt
 		{
-			return Parser::clPBrain;
+			return CodeLang::clPBrain;
 		}
 		else if(a != source.end() && b != source.end()) //mamy call w stylu bt, i decimal output
 		{
-			return Parser::clBrainThread;
+			return CodeLang::clBrainThread;
 		}
 
 	}
@@ -461,7 +467,7 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
 
 		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
 		{
-			return Parser::clBrainFork;
+			return CodeLang::clBrainFork;
 		}
 
 		//next guess
@@ -470,7 +476,7 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
 
 		if(a != source.end()) //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
 		{
-			return Parser::clBrainThread;
+			return CodeLang::clBrainThread;
 		}
 
 		a = std::find_if(source.begin(), source.end(), 
@@ -478,15 +484,21 @@ Parser::CodeLang Parser::RecognizeLang(std::vector<char> &source) const
 
 		if(a != source.end() && a+1 != source.end() && *(a+1) == '[') //przy rozwidleniu powinno stac otwarcie petli, inaczej to moze byc komentarz
 		{
-			return Parser::clBrainThread;
+			return CodeLang::clBrainThread;
 		}
 	}
 
-	return Parser::clBrainFuck;
+	return CodeLang::clBrainFuck;
 }
-
-unsigned int inline Parser::GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const
+template <int OptL>
+unsigned int inline Parser<OptL>::GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const
 {
 	return pos - begin - not_valid_pos;
 }
+
+// Explicit template instantiation
+template class Parser<-1>; //debug
+template class Parser<0>; //regular
+template class Parser<1>; //opt
+template class Parser<2>; //full opt
 

@@ -5,7 +5,7 @@
 #include <list>
 
 CodeAnalyser::CodeAnalyser(std::vector<CodeTape::bt_instruction> &_instructions)
-	: language(Parser::clBrainThread), typesize(1), instructions(_instructions)
+	: language(CodeLang::clBrainThread), typesize(1), instructions(_instructions)
 {
 	repaired_issues = 0;
 

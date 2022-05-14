@@ -23,7 +23,7 @@ bool OP_debug, OP_repair, OP_optimize, OP_execute, OP_nopause;
 MessageLog::MessageLevel OP_message;
 DebugLogStream::stream_type OP_log;
 std::string OP_source = "";
-Parser::CodeLang OP_language;
+CodeLang OP_language;
 
 MemoryTape<char>::mem_option OP_mem_behavior;
 MemoryTape<char>::eof_option OP_eof_behavior; //reakcja na EOF z wejœcia
@@ -162,7 +162,7 @@ void RunParserAndDebug()
 {
 	try
 	{
-		Parser parser(OP_language, OP_debug);
+		Parser<1> parser(OP_language);
 
 		if(OP_sourcetype == stInput)
 		{
@@ -364,15 +364,15 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	{
         ops >>  GetOpt::Option('l', "language", op_arg);
 		if(op_arg == "bt" || op_arg == "brainthread")
-			OP_language = Parser::clBrainThread;
+			OP_language = CodeLang::clBrainThread;
 		else if(op_arg == "b" || op_arg == "brainfuck")
-			OP_language = Parser::clBrainFuck;
+			OP_language = CodeLang::clBrainFuck;
 		else if(op_arg == "bf" || op_arg == "brainfork")
-			OP_language = Parser::clBrainFork;
+			OP_language = CodeLang::clBrainFork;
 		else if(op_arg == "pb" || op_arg == "pbrain")
-			OP_language = Parser::clPBrain;
+			OP_language = CodeLang::clPBrain;
 		else if(op_arg == "auto")
-			OP_language = Parser::clAuto;
+			OP_language = CodeLang::clAuto;
 		else 
 			throw BrainThreadInvalidOptionException("LANGUAGE", op_arg);
 	}
@@ -471,13 +471,13 @@ void InitArguments(GetOpt::GetOpt_pp &ops)
 	{
 		switch(OP_language)
 		{
-			case Parser::clBrainThread:
-			case Parser::clBrainFork:
+			case CodeLang::clBrainThread:
+			case CodeLang::clBrainFork:
 				OP_eof_behavior = MemoryTape<char>::eoMinusOne; 
 			break;
 
-			case Parser::clPBrain:
-			case Parser::clBrainFuck:
+			case CodeLang::clPBrain:
+			case CodeLang::clBrainFuck:
 			default:
 				OP_eof_behavior = MemoryTape<char>::eoUnchanged;
 				

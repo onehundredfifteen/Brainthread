@@ -30,7 +30,7 @@ class CodeAnalyser
 		bool RepairedSomething();
 
 	protected:
-		const Parser::CodeLang language;
+		const CodeLang language;
 		const short typesize;
 		CodeTape::Tape &instructions;
 		

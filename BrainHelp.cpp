@@ -14,14 +14,14 @@ std::string GetExeName(void)
 
 void PrintBrainThreadInfo(void)
 {
-	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
-				 "(c) by onehundredfifteen 2014-2017\n" << std::endl;
+	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ") "
+				 "(c) by onehundredfifteen\n" << std::endl;
 }
 
 void PrintBrainThreadInfoEx(void)
 {
 	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
-				 "(c) by onehundredfifteen 2014-2017\n"
+				 "(c) by onehundredfifteen 2014-2021\n"
 				 "https://github.com/onehundredfifteen/Brainthread\n"
 				 "Supports BrainThread, BrainFuck, pBrain and BrainFork\n" << std::endl;
 }

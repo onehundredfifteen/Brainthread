@@ -9,22 +9,23 @@
  * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
 */
 
+enum class CodeLang
+{
+	clBrainThread,
+	clBrainFuck,
+	clPBrain,
+	clBrainFork,
+	//clBrainLove,
+	clAuto,
+	clDefault
+};
+
+
+template < int OptL >
 class Parser
 {
 	public:
-		typedef enum
-		{
-			clBrainThread,
-			clBrainFuck,
-			clPBrain,
-			clBrainFork,
-			//clBrainLove,
-			clAuto, 
-			clDefault
-		} CodeLang;
-
-
-		Parser(CodeLang lang, bool debug_instructions_mode = false);
+		Parser(CodeLang lang);
 
 		void Parse(const char * data);
 		void Parse(std::ifstream &in);
@@ -36,7 +37,6 @@ class Parser
 	private:
 		CodeTape::Tape instructions;
 		CodeLang language;
-		bool debug_instructions_mode;
 
 		void Parse(std::vector<char> &source);
 		CodeLang RecognizeLang(std::vector<char> &source) const;
