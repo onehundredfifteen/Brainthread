@@ -7,36 +7,39 @@
  * Pozwala optymalizowaæ kod
 */
 
-typedef enum
-{
-	co1 = 1,
-	co2,
-	none
-} coLevel;
+namespace BT {
 
-class CodeOptimizer : public CodeAnalyser
-{
-public:
+	typedef enum
+	{
+		co1 = 1,
+		co2,
+		none
+	} coLevel;
 
-	CodeOptimizer(std::list<unsigned int>&, std::vector<CodeTape::bt_instruction>&, coLevel lvl);
-	~CodeOptimizer(void);
+	class CodeOptimizer : public CodeAnalyser
+	{
+	public:
 
-	void Optimize();
-	void RelinkCommands(const TapeIterator& start, short n);
-	void RelinkCommands(const TapeIterator& start, const TapeIterator& end, short n);
+		CodeOptimizer(std::list<unsigned int>&, std::vector<bt_instruction>&, coLevel lvl);
+		~CodeOptimizer(void);
 
-	static bool isOptimizable(const CodeTape::bt_operation& ins, bool woLoops = true) {
-		//without loops
-		return (ins == bt_operation::btoMoveLeft || 
-			ins == bt_operation::btoMoveRight ||
-			ins == bt_operation::btoIncrement || 
-			ins == bt_operation::btoDecrement);
-	}
+		void Optimize();
+		void RelinkCommands(const CodeTapeIterator& start, short n);
+		void RelinkCommands(const CodeTapeIterator& start, const CodeTapeIterator& end, short n);
+
+		static bool isOptimizable(const bt_operation& ins, bool woLoops = true) {
+			//without loops
+			return (ins == bt_operation::btoMoveLeft ||
+				ins == bt_operation::btoMoveRight ||
+				ins == bt_operation::btoIncrement ||
+				ins == bt_operation::btoDecrement);
+		}
 
 
-private:
-	coLevel level;
-	std::list<unsigned int>& optimizer_entrypoints;
+	private:
+		coLevel level;
+		std::list<unsigned int>& optimizer_entrypoints;
 
-	bool OptimizeToZeroLoop(TapeIterator &it, const RepairFn2 & = nullptr);
-};
+		bool OptimizeToZeroLoop(CodeTapeIterator& it, const RepairFn2 & = nullptr);
+	};
+}

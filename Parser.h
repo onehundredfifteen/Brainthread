@@ -3,48 +3,52 @@
 #include "CodeTape.h"
 #include <fstream>
 
-/*
- * Klasa Parsera
- * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
- * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
-*/
+namespace BT {
 
-enum class CodeLang
-{
-	clBrainThread,
-	clBrainFuck,
-	clPBrain,
-	clBrainFork,
-	//clBrainLove,
-	clAuto,
-	clDefault
-};
+	/*
+	 * Klasa Parsera
+	 * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje
+	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
+	*/
+
+	enum class CodeLang
+	{
+		clBrainThread,
+		clBrainFuck,
+		clPBrain,
+		clBrainFork,
+		clBrainLove
+	};
 
 
-template < int OptL >
-class Parser
-{
+	class ParserBase {
+	protected:
+		CodeTape instructions;
+
 	public:
-		Parser(CodeLang lang);
+		CodeTape GetInstructions() {
+			return instructions;
+		}
+	};
 
-		void Parse(const char * data);
-		void Parse(std::ifstream &in);
+
+	template <CodeLang Lang, int OLevel>
+	class Parser : public ParserBase {
+	public:
+		Parser(std::string& source);
+
 		
-		bool isCodeValid(void) const;
-		//releases ownerhip
-		CodeTape::Tape GetCode(); 
 
 	private:
-		CodeTape::Tape instructions;
-		CodeLang language;
+		
 
-		void Parse(std::vector<char> &source);
-		CodeLang RecognizeLang(std::vector<char> &source) const;
+		void Parse(std::string& source);
+
+		bool isValidOperator(const char& c) const;
+		bt_operation MapCharToOperator(const char& c) const;
+
+		unsigned int GetValidPos(const std::string::iterator& pos, const std::string::iterator& begin, unsigned int& not_valid_pos) const;
+	};
+
 	
-		bool isValidOperator(const char &c) const;
-		bool isValidDebugOperator(const char &c) const;
-	    CodeTape::bt_operation MapCharToOperator(const char &c) const;
-
-		unsigned int GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const;
-};
-
+}

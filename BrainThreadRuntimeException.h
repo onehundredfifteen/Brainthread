@@ -59,7 +59,7 @@ protected:
 class BFRangeException: public BrainThreadRuntimeException {
 public:
 
-  BFRangeException(__int64 pointer_pos)
+  BFRangeException(unsigned int pointer_pos)
     : BrainThreadRuntimeException(), ppos(pointer_pos)
     {}
 
@@ -72,7 +72,7 @@ public:
   }
 
 protected:
-    __int64 ppos;
+    unsigned int ppos;
 };
 
 class BFUndefinedFunctionException: public BrainThreadRuntimeException {

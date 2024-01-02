@@ -108,6 +108,7 @@ class MessageLog
 		MessageLog() {
 			error_count = 0;
 			warning_count = 0;
+			message_level = mlImportant;
 		}
 		~MessageLog(void){};
 

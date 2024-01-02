@@ -3,9 +3,7 @@
 #include <vector>
 #include <climits> 
 
-namespace CodeTape {
-
-	
+namespace BT {
 	enum class bt_operation
 	{
 		btoDecrement = 1,
@@ -73,7 +71,6 @@ namespace CodeTape {
 		bt_instruction(): bt_instruction(bt_instruction::btoUnkown){};*/
 	};
 	
-
-	typedef std::vector<bt_instruction> Tape;
-	typedef Tape::iterator TapeIterator;
+	typedef std::vector<bt_instruction> CodeTape;
+	typedef CodeTape::iterator CodeTapeIterator;
 }

@@ -3,26 +3,17 @@
 #include <stack>
 #include <ostream>
 
-template < typename T >
-class MemoryTape
-{
-    public:
-		typedef enum 
-		{
-			moLimited,
-			moDynamic,
-			moContinuousTape
-		} mem_option;
+#include "Enumdefs.h"
 
-		typedef enum
-		{
-			eoZero,
-			eoMinusOne,
-			eoUnchanged
-		} eof_option;
 
+namespace BT {
+
+	template < typename T >
+	class MemoryTape
+	{
+	public:		
 		MemoryTape(unsigned int mem_size, eof_option eof_behavior, mem_option option);
-		MemoryTape(const MemoryTape<T> &memory);
+		MemoryTape(const MemoryTape<T>& memory);
 		~MemoryTape(void);
 
 		void Increment(void);
@@ -43,17 +34,17 @@ class MemoryTape
 		unsigned int PointerPosition() const;
 		T* const GetValue() const;
 
-		std::ostream& SimpleMemoryDump(std::ostream &s, unsigned near_cells = 5);
-		std::ostream& MemoryDump(std::ostream &o);
+		std::ostream& SimpleMemoryDump(std::ostream& s, unsigned near_cells = 5);
+		std::ostream& MemoryDump(std::ostream& o);
 
 	protected:
-		T * pointer; //piórko
+		T* pointer; //piórko
 
-		T *mem; //pamiec
+		T* mem; //pamiec
 		unsigned len; //aktualny rozmiar pamieci
 
-		T *max_mem; //ostatnia komórka pamiêci
-		
+		T* max_mem; //ostatnia komórka pamiêci
+
 		mem_option mem_behavior; //zachowanie pamieci
 		eof_option eof_behavior; //reakcja na EOF z wejœcia
 
@@ -65,4 +56,5 @@ class MemoryTape
 
 		unsigned GetNewMemorySize();
 		void Realloc();
-};
+	};
+}
