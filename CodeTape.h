@@ -10,6 +10,10 @@ namespace BT {
 		btoIncrement,
 		btoMoveLeft,
 		btoMoveRight,
+		btoOPT_Decrement, //optimized 
+		btoOPT_Increment,
+		btoOPT_MoveLeft,
+		btoOPT_MoveRight,
 		btoAsciiRead,
 		btoAsciiWrite,
 		btoBeginLoop,
@@ -48,6 +52,7 @@ namespace BT {
 		btoDEBUG_ThreadInfoDump,
 
 		btoInvalid,
+		btoEndProgram,
 		btoUnkown = 0
 	};
 

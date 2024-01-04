@@ -209,8 +209,6 @@ namespace BT {
 
 			//testy
 
-
-
 			if (TestForInfiniteLoops(it,
 				[this](CodeTapeIterator& _it) {
 				_it = instructions.erase(_it, _it + 2);

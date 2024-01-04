@@ -70,28 +70,35 @@ namespace BT {
 	template < typename T >
 	void BrainThreadProcess<T>::Run(void)
 	{
-		bt_instruction current_instruction;
-		int opt = true;
-
 		while (true)
 		{
-			//ProcessMonitor::EnterCriticalSection(code_critical_section);
-			current_instruction = code[this->code_pointer];
-			//ProcessMonitor::LeaveCriticalSection(code_critical_section);
-
+			const bt_instruction & current_instruction = code[this->code_pointer];
+			
 			switch (current_instruction.operation)
 			{
 			case bt_operation::btoIncrement:
-				opt ? memory.Increment(current_instruction.repetitions) : memory.Increment();
+				memory.Increment();
 				break;
 			case bt_operation::btoDecrement:
-				opt ? memory.Decrement(current_instruction.repetitions) : memory.Decrement();
+				memory.Decrement();
 				break;
 			case bt_operation::btoMoveLeft:
-				opt ? memory.MoveLeft(current_instruction.repetitions) : memory.MoveLeft();
+				memory.MoveLeft();
 				break;
 			case bt_operation::btoMoveRight:
-				opt ? memory.MoveRight(current_instruction.repetitions) : memory.MoveRight();
+				memory.MoveRight();
+				break;
+			case bt_operation::btoOPT_Increment:
+				memory.Increment(current_instruction.repetitions);
+				break;
+			case bt_operation::btoOPT_Decrement:
+				memory.Decrement(current_instruction.repetitions);
+				break;
+			case bt_operation::btoOPT_MoveLeft:
+				memory.MoveLeft(current_instruction.repetitions);
+				break;
+			case bt_operation::btoOPT_MoveRight:
+				memory.MoveRight(current_instruction.repetitions);
 				break;
 			case bt_operation::btoAsciiWrite:
 				memory.Write();
@@ -106,14 +113,12 @@ namespace BT {
 				memory.DecimalRead();
 				break;
 			case bt_operation::btoBeginLoop:
-				if (*(this->memory.GetValue()) == 0)
-				{
+				if (*(this->memory.GetValue()) == 0){
 					code_pointer = current_instruction.jump;
 				}
 				break;
 			case bt_operation::btoEndLoop:
-				if (*(this->memory.GetValue()) != 0)
-				{
+				if (*(this->memory.GetValue()) != 0){
 					code_pointer = current_instruction.jump;
 				}
 				break;
@@ -123,13 +128,11 @@ namespace BT {
 				code_pointer = current_instruction.jump;
 				break;
 			case bt_operation::btoEndFunction:
-
 				if (this->functions.Return(&code_pointer) == false && isMain == false)//terminate threads spawned within function
 					return;
 
 				break;
 			case bt_operation::btoCallFunction:
-
 				this->functions.Call(*(this->memory.GetValue()), &code_pointer);
 				--code_pointer; //bo na koñcu pêtli jest ++
 				break;
@@ -140,7 +143,7 @@ namespace BT {
 				this->Join();
 				break;
 			case bt_operation::btoTerminate:
-				return; // :)
+				return; 
 			case bt_operation::btoPush:
 				this->heap.Push(*(this->memory.GetValue()));
 				break;
@@ -227,7 +230,6 @@ namespace BT {
 
 			Sleep(0); // reszta czasu dla innych w¹tków
 		}
-
 	}
 
 	template < typename T >

@@ -27,13 +27,7 @@ namespace BT {
 		void RelinkCommands(const CodeTapeIterator& start, short n);
 		void RelinkCommands(const CodeTapeIterator& start, const CodeTapeIterator& end, short n);
 
-		static bool isOptimizable(const bt_operation& ins, bool woLoops = true) {
-			//without loops
-			return (ins == bt_operation::btoMoveLeft ||
-				ins == bt_operation::btoMoveRight ||
-				ins == bt_operation::btoIncrement ||
-				ins == bt_operation::btoDecrement);
-		}
+		
 
 
 	private:
