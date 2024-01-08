@@ -11,8 +11,6 @@
 
 extern CRITICAL_SECTION pm_critical_section;
 
-unsigned int ProcessMonitor::threads_cnt = 0;
-
 unsigned int __stdcall waitfor_queue_thread(void * arg)
 {
 	DWORD result;
@@ -30,7 +28,6 @@ void ProcessMonitor::AddProcess(HANDLE h)
 	::EnterCriticalSection(&pm_critical_section);
 
 	handles.push_back(h);
-	ProcessMonitor::threads_cnt = handles.size();
 
 	::LeaveCriticalSection(&pm_critical_section);
 }

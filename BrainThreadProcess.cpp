@@ -123,14 +123,12 @@ namespace BT {
 				}
 				break;
 			case bt_operation::btoBeginFunction:
-
 				this->functions.Add(*(this->memory.GetValue()), code_pointer);
 				code_pointer = current_instruction.jump;
 				break;
 			case bt_operation::btoEndFunction:
 				if (this->functions.Return(&code_pointer) == false && isMain == false)//terminate threads spawned within function
 					return;
-
 				break;
 			case bt_operation::btoCallFunction:
 				this->functions.Call(*(this->memory.GetValue()), &code_pointer);

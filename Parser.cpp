@@ -1,9 +1,9 @@
 #include "Parser.h"
 #include "MessageLog.h"
-#include "CodeOptimizer.h"
 
 #include <cstring>
 #include <stack>
+#include <list>
 #include <algorithm>
 #include <iterator>
 
@@ -30,16 +30,13 @@ namespace BT {
 		//optimizer
 		std::list<unsigned int> optimizer_entrypoint;
 
-		//for loop jumps
+		//non-code instruction count
 		unsigned int ignore_ins = 0;
-
-		std::string::iterator _it;
 
 		//next stack op will be executed on shared stack
 		bool switchToSharedHeap = false;
-		unsigned int switchJump = 0;
 
-		//
+		//result
 		bool syntaxOk = true;
 
 		if (source.empty())
@@ -59,27 +56,20 @@ namespace BT {
 				if (curr_op == bt_operation::btoBeginLoop /*|| curr_op == btoInvBeginLoop*/)
 				{
 					if constexpr (OLevel > 1) {
-						if (optimizer_entrypoint.empty() ||
-							instructions[optimizer_entrypoint.back()].operation != bt_operation::btoBeginLoop) {
-
-							_it = (it + 2);
-							if (_it < source.end() &&
-								MapCharToOperator(*_it) == bt_operation::btoEndLoop &&
-								MapCharToOperator(*--_it) == bt_operation::btoDecrement) {
+						//optimize [-] to :=0
+						std::string::iterator _it = (it + 2);
+						if (_it < source.end() &&
+							MapCharToOperator(*_it) == bt_operation::btoEndLoop &&
+							MapCharToOperator(*--_it) == bt_operation::btoDecrement) {
 								instructions.emplace_back(bt_instruction(bt_operation::btoOPT_SetCellToZero));
 								ignore_ins += 2;
 								std::advance(it, 2);
-							}
-							else {
-								loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-								instructions.emplace_back(bt_instruction(curr_op));
-
-								optimizer_entrypoint.push_back(instructions.size() - 1);
-							}
 						}
 						else {
 							loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
 							instructions.emplace_back(bt_instruction(curr_op));
+
+							//optimizer_entrypoint.push_back(instructions.size() - 1);
 						}
 					}				
 					else {
@@ -156,25 +146,20 @@ namespace BT {
 
 					switch (curr_op)
 					{
-					case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush));
-						break;
-					case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop));
-						break;
-					case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap));
-						break;
+						case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
+						case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
+						case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
 					}
-
-					instructions.back().jump = switchJump;
 				}
 				else if (curr_op == bt_operation::btoSwitchHeap)
 				{
-					switchToSharedHeap = true; //non executable operation
-					switchJump = GetValidPos(it, source.begin(), ignore_ins);
+					switchToSharedHeap = true; 
+					++ignore_ins; //non executable operation
 				}			
 				else if constexpr (OLevel > 1) {
 					if (isRepetitionOptimizableOperator(curr_op)) {
 						int reps = 1;
-						_it = (it + 1);
+						std::string::iterator _it = (it + 1);
 						while (_it < source.end()) {
 							if (MapCharToOperator(*_it) == curr_op) {
 								++_it;
@@ -199,30 +184,18 @@ namespace BT {
 		}
 
 		//error analysis
-		if (loop_call_stack.empty() == false) //no matching ]
-		{
-			while (loop_call_stack.empty() == false)
-			{
-				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
-				loop_call_stack.pop();
-				syntaxOk = false;
-			}
+		while (loop_call_stack.empty() == false){
+			MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
+			loop_call_stack.pop();
+			syntaxOk = false;	
 		}
 
-		if (func_call_stack.empty() == false) //no matching )
-		{
-			while (func_call_stack.empty() == false)
-			{
-				MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
-				func_call_stack.pop();
-				syntaxOk = false;
-			}
+		while (func_call_stack.empty() == false){
+			MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
+			func_call_stack.pop();
+			syntaxOk = false;
 		}
 
-		/*if constexpr (OLevel > 1) {
-			CodeOptimizer optimizer(optimizer_entrypoint, instructions, coLevel::co1);
-			optimizer.Optimize();
-		}*/
 		instructions.emplace_back(bt_instruction(bt_operation::btoEndProgram));
 
 		return syntaxOk;

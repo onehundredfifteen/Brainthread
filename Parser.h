@@ -12,6 +12,7 @@ namespace BT {
 	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
 	*/
 	class ParserBase {
+		friend class CodeAnalyser;
 	protected:
 		CodeTape instructions;
 		bool syntaxValid;
@@ -20,7 +21,7 @@ namespace BT {
 			return instructions;
 		}
 		bool IsSyntaxValid() const {
-			return syntaxValid;
+			return syntaxValid && instructions.back().operation == bt_operation::btoEndProgram;
 		}
 	};
 

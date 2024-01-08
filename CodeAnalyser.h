@@ -22,7 +22,7 @@ namespace BT {
 	class CodeAnalyser
 	{
 	public:
-		CodeAnalyser(CodeTape& instructions);
+		CodeAnalyser(ParserBase &parser);
 		~CodeAnalyser(void);
 
 		void Analyse();
@@ -34,7 +34,7 @@ namespace BT {
 	protected:
 		const CodeLang language;
 		const short typesize;
-		CodeTape& instructions;
+		ParserBase& parser;
 
 		unsigned repaired_issues;
 

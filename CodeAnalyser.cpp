@@ -6,8 +6,8 @@
 
 namespace BT {
 
-	CodeAnalyser::CodeAnalyser(std::vector<bt_instruction>& _instructions)
-		: language(CodeLang::clBrainThread), typesize(1), instructions(_instructions)
+	CodeAnalyser::CodeAnalyser(ParserBase& parser)
+		: language(CodeLang::clBrainThread), typesize(1), parser(parser)
 	{
 		repaired_issues = 0;
 
@@ -19,23 +19,27 @@ namespace BT {
 	}
 
 	//Operatory arytmetyczne: + -
-	bool CodeAnalyser::IsArithmeticInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsArithmeticInstruction(const bt_instruction& ins)
 	{
 		return (ins.operation == bt_operation::btoIncrement ||
-			ins.operation == bt_operation::btoDecrement);
+				ins.operation == bt_operation::btoDecrement ||
+				ins.operation == bt_operation::btoOPT_Increment ||
+				ins.operation == bt_operation::btoOPT_Decrement);
 	}
 
 	//Operatory ruchu piórka: < >
-	bool CodeAnalyser::IsMoveInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsMoveInstruction(const bt_instruction& ins)
 	{
 		return (ins.operation == bt_operation::btoMoveLeft ||
-			ins.operation == bt_operation::btoMoveRight);
+				ins.operation == bt_operation::btoMoveRight ||
+				ins.operation == bt_operation::btoOPT_MoveLeft ||
+				ins.operation == bt_operation::btoOPT_MoveRight);
 	}
 
 	//Operatory zmieniaj¹ce przep³yw lub wartoœæ komórek
 	//Wszystkie operatory Brainfuck (bez output) + function Call
 	//Nie ma tutaj definicji funkcji! ()
-	bool CodeAnalyser::IsChangingInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsChangingInstruction(const bt_instruction& ins)
 	{
 		return (IsArithmeticInstruction(ins) ||
 			IsMoveInstruction(ins) ||
@@ -49,7 +53,7 @@ namespace BT {
 	}
 
 	//Operatory ³¹czone parami z innymi: pêtle i funkcje
-	bool CodeAnalyser::IsLinkedInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsLinkedInstruction(const bt_instruction& ins)
 	{
 		return (ins.operation == bt_operation::btoBeginLoop ||
 			ins.operation == bt_operation::btoEndLoop ||
@@ -57,8 +61,8 @@ namespace BT {
 			ins.operation == bt_operation::btoEndFunction);
 	}
 
-	//Operatory dla testu Przed forkiem
-	bool CodeAnalyser::IsChangingCellInstruction(const bt_instruction& ins)
+	//
+	bool inline CodeAnalyser::IsChangingCellInstruction(const bt_instruction& ins)
 	{
 		return (IsArithmeticInstruction(ins) ||
 			ins.operation == bt_operation::btoPop ||
@@ -68,7 +72,7 @@ namespace BT {
 	}
 
 	//Operatory dla testu Przed forkiem
-	bool CodeAnalyser::IsSharedHeapInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsSharedHeapInstruction(const bt_instruction& ins)
 	{
 		return (ins.operation == bt_operation::btoSharedPop ||
 			ins.operation == bt_operation::btoSharedPush ||
@@ -76,7 +80,7 @@ namespace BT {
 	}
 
 	//Operatory ³¹czone parami z innymi: pêtle i funkcje
-	bool CodeAnalyser::IsFlowChangingInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsFlowChangingInstruction(const bt_instruction& ins)
 	{
 		return (IsLinkedInstruction(ins) ||
 			ins.operation == bt_operation::btoCallFunction);
@@ -85,8 +89,8 @@ namespace BT {
 
 	void CodeAnalyser::Analyse(void)
 	{
-		CodeTapeIterator it = instructions.begin();
-
+		CodeTapeIterator it = parser.instructions.begin();
+	
 		function_def = 0;
 		function_calls = 0;
 		forks = 0;
@@ -94,7 +98,7 @@ namespace BT {
 		ignore_arithmetic_test = false;
 		ignore_moves_test = false;
 
-		while (it < instructions.end())
+		while (it < parser.instructions.end())
 		{
 			//reset flag
 			if (IsArithmeticInstruction(*it) == false && ignore_arithmetic_test == true)
@@ -165,7 +169,7 @@ namespace BT {
 
 		/*std::cout << std::endl;
 		int q=0;
-		for(std::vector<bt_operation::bt_instruction>::iterator it = instructions.begin(); it < instructions.end(); ++it)
+		for(std::vector<bt_operation::bt_instruction>::iterator it = parser.instructions.begin(); it < parser.instructions.end(); ++it)
 		{
 			std::cout << q++ << ": " << it->operation << ": " << (it->NullJump() ? 115 : it->jump) << "\n";
 		}
@@ -174,7 +178,7 @@ namespace BT {
 
 	void CodeAnalyser::Repair(void)
 	{
-		CodeTapeIterator it = instructions.begin();
+		CodeTapeIterator it = parser.instructions.begin();
 
 		function_def = 0;
 		function_calls = 0;
@@ -186,19 +190,19 @@ namespace BT {
 		//funkcje naprawcze
 		auto repairRepetition = [this](CodeTapeIterator& _it, CodeTapeIterator& n) {
 			this->RelinkCommands(_it, (n - _it - 1));
-			_it = instructions.erase(_it + 1, n);
+			_it = parser.instructions.erase(_it + 1, n);
 			++repaired_issues;
 			return false;
 		};
 
 		auto repairH = [this](CodeTapeIterator& _it, CodeTapeIterator& n) {
-			_it = instructions.erase(_it);
+			_it = parser.instructions.erase(_it);
 			this->RelinkCommands(_it, (n - _it - 1));
 			++repaired_issues;
 			return true;
 		};
 
-		while (it < instructions.end())
+		while (it < parser.instructions.end())
 		{
 			//reset flag
 			if (IsArithmeticInstruction(*it) == false && ignore_arithmetic_test == true)
@@ -211,31 +215,31 @@ namespace BT {
 
 			if (TestForInfiniteLoops(it,
 				[this](CodeTapeIterator& _it) {
-				_it = instructions.erase(_it, _it + 2);
+				_it = parser.instructions.erase(_it, _it + 2);
 				RelinkCommands(_it, 2);
 				++repaired_issues;
 			},
 				[this](CodeTapeIterator& _it) {
-				instructions.erase(instructions.begin() + (_it->jump));
-				_it = instructions.erase(_it);
-				RelinkCommands(_it, instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
-				RelinkCommands(instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
+				parser.instructions.erase(parser.instructions.begin() + (_it->jump));
+				_it = parser.instructions.erase(_it);
+				RelinkCommands(_it, parser.instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
+				RelinkCommands(parser.instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 				++repaired_issues;
 			}))
 				continue;
 
 			if (TestForFunctionsErrors(it,
 				[this](CodeTapeIterator& _it, CodeTapeIterator& n) {
-				instructions.erase(n);
-				_it = instructions.erase(_it);
+				parser.instructions.erase(n);
+				_it = parser.instructions.erase(_it);
 				this->RelinkCommands(_it, 2);
 				++repaired_issues;
 			},
 				[this](CodeTapeIterator& _it) {
-				instructions.erase(instructions.begin() + (_it->jump));
-				_it = instructions.erase(_it);
-				this->RelinkCommands(_it, instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
-				this->RelinkCommands(instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
+				parser.instructions.erase(parser.instructions.begin() + (_it->jump));
+				_it = parser.instructions.erase(_it);
+				this->RelinkCommands(_it, parser.instructions.begin() + (_it->jump), 1); //œwiadomie uzywam starej pozycji
+				this->RelinkCommands(parser.instructions.begin() + (_it->jump) + 1, 2); //od koñca usuniêtej pêtli juz po dwa
 				++repaired_issues;
 			}))
 				continue;
@@ -261,9 +265,9 @@ namespace BT {
 						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoIncrement; })->operation = bt_operation::btoUnkown;
 					}
 
-					instructions.erase(
-						std::remove_if(_it, instructions.end(), [](const bt_instruction& op) { return op.operation == bt_operation::btoUnkown; }),
-						instructions.end()),
+					parser.instructions.erase(
+						std::remove_if(_it, parser.instructions.end(), [](const bt_instruction& op) { return op.operation == bt_operation::btoUnkown; }),
+						parser.instructions.end()),
 						this->RelinkCommands(_it, (ops - sum));
 
 					++repaired_issues;
@@ -282,9 +286,9 @@ namespace BT {
 						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoMoveRight; })->operation = bt_operation::btoUnkown;
 					}
 
-					instructions.erase(
-						std::remove_if(_it, instructions.end(), [](const bt_instruction& op) { return op.operation == bt_operation::btoUnkown; }),
-						instructions.end()),
+					parser.instructions.erase(
+						std::remove_if(_it, parser.instructions.end(), [](const bt_instruction& op) { return op.operation == bt_operation::btoUnkown; }),
+						parser.instructions.end()),
 						this->RelinkCommands(_it, (ops - sum));
 					++repaired_issues;
 				}))
@@ -341,16 +345,16 @@ namespace BT {
 			//nieskoñczona pêtla []
 			if ((it + 1)->operation == bt_operation::btoEndLoop)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - parser.instructions.begin() + 1);
 				if (infLoopRep)
 				{
 					infLoopRep(it);
 				}
 			}
 			//pusta pêtla [[xxxx]]
-			else if ((it + 1)->operation == bt_operation::btoBeginLoop && (instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndLoop)
+			else if ((it + 1)->operation == bt_operation::btoBeginLoop && (parser.instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndLoop)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - parser.instructions.begin() + 1);
 				if (emptyLoopRep)
 				{
 					emptyLoopRep(it);
@@ -374,36 +378,36 @@ namespace BT {
 		if (it->operation == bt_operation::btoEndFunction)
 		{
 			//szukam nastêpnej funkcji
-			n = std::find_if(it, instructions.end(),
+			n = std::find_if(it, parser.instructions.end(),
 				[](const bt_instruction& op) { return op.operation == bt_operation::btoBeginFunction; });
 
-			if (n != instructions.end()) //jest - sprawdzamy instrukcje pomiedzy ) i (
+			if (n != parser.instructions.end()) //jest - sprawdzamy instrukcje pomiedzy ) i (
 			{
 				m = std::find_if(it, n, IsChangingInstruction);
 				if (m == n || n - it == 1) //nie ma zmieniajacych coœ instrukcji lub w ogóle nie ma nic
 				{
 					//jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami
-					MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinition, n - instructions.begin() + 1);
+					MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinition, n - parser.instructions.begin() + 1);
 				}
 			}
 		}
 		else if (it->operation == bt_operation::btoBeginFunction)
 		{
-			n = instructions.begin() + it->jump;//bierzemy ca³¹ treœæ funkcji
+			n = parser.instructions.begin() + it->jump;//bierzemy ca³¹ treœæ funkcji
 
 			//pusta funkcja  ()
 			if ((it + 1)->operation == bt_operation::btoEndFunction)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - parser.instructions.begin() + 1);
 				if (emptyFunType1Rep) //usuwamy funkcjê
 				{
 					emptyFunType1Rep(it, n);
 				}
 			}
 			//pusta funkcja ((xx))
-			else if ((it + 1)->operation == bt_operation::btoBeginFunction && (instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndFunction)
+			else if ((it + 1)->operation == bt_operation::btoBeginFunction && (parser.instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndFunction)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - parser.instructions.begin() + 1);
 				if (emptyFunType2Rep)
 				{
 					emptyFunType2Rep(it);
@@ -421,7 +425,7 @@ namespace BT {
 					o = std::find_if(it, m, IsChangingInstruction); //szukamy czy dziel¹ je jakies istotne instrukcje
 					if (o == m || m - it == 1) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami (xx( lub pusto ((
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinitionInternal, m - instructions.begin() + 1);
+						MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinitionInternal, m - parser.instructions.begin() + 1);
 					}
 				}
 				else //nie ma funkcji wewnêtrznaj
@@ -432,7 +436,7 @@ namespace BT {
 					o = std::find_if(it + 1, m, IsChangingInstruction); //szukamy zmieniajacych instrukcji do momentu pierwszego call, nastpne calle niewazne
 					if (m != n && o == m)  //jest call i nie ma instrukcji zmieniajacych 
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecInfinityRecurention, m - instructions.begin() + 1);
+						MessageLog::Instance().AddMessage(MessageLog::ecInfinityRecurention, m - parser.instructions.begin() + 1);
 					}
 				}
 
@@ -442,25 +446,25 @@ namespace BT {
 		}
 		else if (it->operation == bt_operation::btoBeginLoop) // funkcja w pêtli
 		{
-			n = instructions.begin() + it->jump;
+			n = parser.instructions.begin() + it->jump;
 
 			m = std::find_if(it + 1, n,
 				[](const bt_instruction& op) { return op.operation == bt_operation::btoBeginFunction; });
 
 			if (m != n)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - parser.instructions.begin() + 1);
 			}
 		}
 		else if (it->operation == bt_operation::btoCallFunction) //undefined call
 		{
 			r = std::vector<bt_instruction>::reverse_iterator(it);
-			s = std::find_if(r, instructions.rend(),
+			s = std::find_if(r, parser.instructions.rend(),
 				[](const bt_instruction& op) { return op.operation == bt_operation::btoBeginFunction; });
 
-			if (s == instructions.rend())
+			if (s == parser.instructions.rend())
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - parser.instructions.begin() + 1);
 			}
 		}
 		return false;
@@ -478,30 +482,30 @@ namespace BT {
 		if (it->operation == bt_operation::btoJoin)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - parser.instructions.begin() + 1);
 
 
 			if (IsWithinFunction(it) == false && forks == 0) //join poza funkcj¹. Mo¿e byc call do póŸniejszej funkcji z fork, ale to trudno stwierdziæ
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecJoinBeforeFork, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecJoinBeforeFork, it - parser.instructions.begin() + 1);
 				if (repairCB) //usuwamy join
 				{
 					repairCB(it, n);
 				}
 			}
 		}
-		else if (it->operation == bt_operation::btoFork && it > instructions.begin())
+		else if (it->operation == bt_operation::btoFork && it > parser.instructions.begin())
 		{
 			r = std::vector<bt_instruction>::reverse_iterator(it);
-			if (r != std::find_if_not(r, instructions.rend(), IsChangingCellInstruction))
+			if (r != std::find_if_not(r, parser.instructions.rend(), IsChangingCellInstruction))
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - parser.instructions.begin() + 1);
 			}
 		}
 		else if (it->operation == bt_operation::btoTerminate)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - parser.instructions.begin() + 1);
 		}
 
 		return false;
@@ -519,13 +523,13 @@ namespace BT {
 		if (it->operation == bt_operation::btoSwitchHeap)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - parser.instructions.begin() + 1);
 
-			n = std::find_if(it + 1, instructions.end(), IsSharedHeapInstruction);
+			n = std::find_if(it + 1, parser.instructions.end(), IsSharedHeapInstruction);
 
-			if (n == instructions.end())
+			if (n == parser.instructions.end())
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - parser.instructions.begin() + 1);
 
 				if (repairCB) //usuwamy switch
 				{
@@ -537,22 +541,22 @@ namespace BT {
 				m = std::find_if(it + 1, n, IsFlowChangingInstruction);
 
 				if (m != n)
-					MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - instructions.begin() + 1);
+					MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - parser.instructions.begin() + 1);
 			}
 		}
 		else if (it->operation == bt_operation::btoSwap)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - parser.instructions.begin() + 1);
 		}
 		else if (it->operation == bt_operation::btoSharedSwap)
 		{   //we have ~ op beetween
-			n = std::find_if(it + 1, instructions.end(),
+			n = std::find_if(it + 1, parser.instructions.end(),
 				[](const bt_instruction& op) { return op.operation == bt_operation::btoSharedSwap; });
 
-			if (n != instructions.end() && n - it == 2) //~%~%
+			if (n != parser.instructions.end() && n - it == 2) //~%~%
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - parser.instructions.begin() + 1);
 			}
 		}
 		return false;
@@ -572,13 +576,13 @@ namespace BT {
 
 			if (lim > 0) //wolna pêtla d¹¿¹ca do nieskoñczonoœci
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecSlowLoop, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecSlowLoop, it - parser.instructions.begin() + 1);
 			}
 
 			//teraz czy przed pêtl¹ s¹ sensowne operacje
-			if (it > instructions.begin()) //ofc tylko dla dalszych instrukcji
+			if (it > parser.instructions.begin()) //ofc tylko dla dalszych instrukcji
 			{
-				for (n = it - 1; n > instructions.begin(); --n)
+				for (n = it - 1; n > parser.instructions.begin(); --n)
 				{
 					if (IsArithmeticInstruction(*n) == false)
 						break; //krêci siê w ty³, a¿ znajdzie inna instrukcje + - albo pocz¹tek ci¹gu
@@ -591,7 +595,7 @@ namespace BT {
 
 					if (lim != 0 && (lim > 0 || (lim < 0 && s < 0))) //je¿eli pêtla jest policzalna, a sekwencja przed ni¹ da¿y inaczej ni¿ pêtla
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - instructions.begin()); // specjalnie bez  + 1
+						MessageLog::Instance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - parser.instructions.begin()); // specjalnie bez  + 1
 					}
 				}
 			}
@@ -609,7 +613,7 @@ namespace BT {
 		if (IsArithmeticInstruction(*it))
 		{
 			ignore_arithmetic_test = true;
-			n = std::find_if_not(it, instructions.end(), IsArithmeticInstruction);
+			n = std::find_if_not(it, parser.instructions.end(), IsArithmeticInstruction);
 			//mamy ci¹g + - 
 			//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla ++ [ops=2] a nie +-+-++ [ops=5]
 
@@ -618,7 +622,7 @@ namespace BT {
 
 			if ((n - it) > 1 && abs(sum) != ops)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantArithmetic, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecRedundantArithmetic, it - parser.instructions.begin() + 1);
 				if (repairCB)
 				{
 					repairCB(it, n, sum, ops);
@@ -639,7 +643,7 @@ namespace BT {
 		if (IsMoveInstruction(*it))
 		{
 			ignore_moves_test = true;
-			n = std::find_if_not(it, instructions.end(), IsMoveInstruction);
+			n = std::find_if_not(it, parser.instructions.end(), IsMoveInstruction);
 			//mamy ci¹g < > 
 			//instrukcji musi byc wiêcej niz jedna i wynik ma byc osi¹gniêty najmniejsza liczba instrukcji, czyli bez np suma = 2 dla >> [ops=2] a nie <><>>> [ops=5]
 
@@ -648,7 +652,7 @@ namespace BT {
 
 			if ((n - it) > 1 && abs(sum) != ops)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantMoves, it - instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ecRedundantMoves, it - parser.instructions.begin() + 1);
 				if (repairCB)
 				{
 					repairCB(it, n, sum, ops);
@@ -664,10 +668,10 @@ namespace BT {
 	{
 		CodeTapeIterator n;
 
-		if (it + 1 < instructions.end())
+		if (it + 1 < parser.instructions.end())
 		{
-			n = std::find_if_not(it + 1, instructions.end(), [&it](const bt_instruction& o) { return o.operation == it->operation; });
-			if (n != instructions.end()) //jest jakies powtórzenie
+			n = std::find_if_not(it + 1, parser.instructions.end(), [&it](const bt_instruction& o) { return o.operation == it->operation; });
+			if (n != parser.instructions.end()) //jest jakies powtórzenie
 			{
 				if (repairCB) //usuwamy wszsytkie bez pierwszego
 				{
@@ -723,7 +727,7 @@ namespace BT {
 		std::list<short> limesii; //wyniki podpêtli w kolejnoœci (to wa¿ne jaka kolejnoœæ)
 		int s = 0;
 
-		a = instructions.begin() + op->jump;
+		a = parser.instructions.begin() + op->jump;
 		m = op + 1;
 
 		if (m == a)
@@ -749,7 +753,7 @@ namespace BT {
 				if (n != a) //oho mamy pêtle w œrodku jak¹œ, dawaj jeszcze jej limes
 				{
 					limesii.push_back(GetLoopLimes(n));
-					m = instructions.begin() + n->jump + 1;
+					m = parser.instructions.begin() + n->jump + 1;
 				}
 				else break; //nie ma pêtli wewnêtrznej
 			}
@@ -774,10 +778,10 @@ namespace BT {
 	{
 		int opening_bracket_cnt, closing_bracket_cnt;
 
-		opening_bracket_cnt = std::count_if(instructions.begin(), op,
+		opening_bracket_cnt = std::count_if(parser.instructions.begin(), op,
 			[](const bt_instruction& op) { return op.operation == bt_operation::btoBeginFunction; });
 
-		closing_bracket_cnt = std::count_if(instructions.begin(), op,
+		closing_bracket_cnt = std::count_if(parser.instructions.begin(), op,
 			[](const bt_instruction& op) { return op.operation == bt_operation::btoEndFunction; });
 
 		return opening_bracket_cnt > closing_bracket_cnt;
@@ -786,7 +790,7 @@ namespace BT {
 	//Funkcje modyfikuj¹ linkowania 
 	void CodeAnalyser::RelinkCommands(const CodeTapeIterator& start, short n)
 	{
-		RelinkCommands(start, instructions.end(), n);
+		RelinkCommands(start, parser.instructions.end(), n);
 	}
 
 	void CodeAnalyser::RelinkCommands(const CodeTapeIterator& start, const CodeTapeIterator& end, short n)
@@ -803,9 +807,9 @@ namespace BT {
 	//Testuje poprawnoœæ linkujacych komend - ka¿da z nich musi linkowaæ do innej, nie mog¹ byc bez par
 	bool CodeAnalyser::TestLinks()
 	{
-		for (CodeTapeIterator it = instructions.begin(); it < instructions.end(); ++it)
+		for (CodeTapeIterator it = parser.instructions.begin(); it < parser.instructions.end(); ++it)
 		{
-			if (IsLinkedInstruction(*it) && IsLinkedInstruction(instructions.at(it->jump)) == false)
+			if (IsLinkedInstruction(*it) && IsLinkedInstruction(parser.instructions.at(it->jump)) == false)
 			{
 				return true;
 			}
@@ -833,7 +837,7 @@ namespace BT {
 		std::list<short> limesii; //wyniki podpêtli w kolejnoœci (to wa¿ne jaka kolejnoœæ)
 		int s = 0;
 
-		a = instructions.begin() + op->jump;
+		a = parser.instructions.begin() + op->jump;
 		m = op + 1;
 
 		if(m == a)
@@ -857,7 +861,7 @@ namespace BT {
 				if(n != a) //oho mamy pêtle w œrodku jak¹œ, dawaj jeszcze jej limes
 				{
 					limesii.push_back(GetLoopLimes(n));
-					m = instructions.begin() + n->jump + 1;
+					m = parser.instructions.begin() + n->jump + 1;
 				}
 				else break; //nie ma pêtli wewnêtrznej
 			}

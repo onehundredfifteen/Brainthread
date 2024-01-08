@@ -40,7 +40,7 @@ bool CtrlHandler(DWORD fdwCtrlType);
 //wrappers
 std::string GetCode();
 ParserBase ParseCode(std::string code);
-void RunAnalyser(const ParserBase& parser);
+void RunAnalyser(ParserBase& parser);
 void RunProgram(const CodeTape &code);
 
 int main(int argc, char* argv[])
@@ -201,17 +201,17 @@ std::unique_ptr<InterpreterBase> ProduceInterpreter()
 	}
 }
 
-void RunAnalyser(const ParserBase& parser)
+void RunAnalyser(ParserBase& parser)
 {
 	try
 	{
 		if (parser.IsSyntaxValid()) //syntax looks fine
 		{
 			MessageLog::Instance().AddInfo("Code is valid");
-			/*
+			
 			if (flags.OP_debug)
 			{
-				CodeAnalyser analyser(parser.GetInstructions());
+				CodeAnalyser analyser(parser);
 				flags.OP_optimize ? analyser.Repair() : analyser.Analyse();
 
 				if (analyser.isCodeValid())
@@ -225,7 +225,7 @@ void RunAnalyser(const ParserBase& parser)
 				{
 					MessageLog::Instance().AddMessage("Code has warnings");
 				}
-			}*/
+			}
 		}
 		else
 		{
