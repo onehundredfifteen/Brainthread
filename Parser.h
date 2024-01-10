@@ -1,50 +1,46 @@
 #pragma once
 
+
 #include "CodeTape.h"
-#include <fstream>
+#include "EnumDefs.h"
 
-/*
- * Klasa Parsera
- * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje 
- * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
-*/
+namespace BT {
 
-enum class CodeLang
-{
-	clBrainThread,
-	clBrainFuck,
-	clPBrain,
-	clBrainFork,
-	//clBrainLove,
-	clAuto,
-	clDefault
-};
-
-
-template < int OptL >
-class Parser
-{
+	/*
+	 * Klasa Parsera
+	 * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje
+	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
+	*/
+	class ParserBase {
+		friend class CodeAnalyser;
+	protected:
+		CodeTape instructions;
+		bool syntaxValid;
 	public:
-		Parser(CodeLang lang);
+		const CodeTape& GetInstructions() const {
+			return instructions;
+		}
+		bool IsSyntaxValid() const {
+			return syntaxValid && instructions.back().operation == bt_operation::btoEndProgram;
+		}
+	};
 
-		void Parse(const char * data);
-		void Parse(std::ifstream &in);
-		
-		bool isCodeValid(void) const;
-		//releases ownerhip
-		CodeTape::Tape GetCode(); 
+	template <CodeLang Lang, int OLevel>
+	class Parser : public ParserBase {
+	public:
+		Parser(std::string& source);
 
 	private:
-		CodeTape::Tape instructions;
-		CodeLang language;
+		bool Parse(std::string& source);
 
-		void Parse(std::vector<char> &source);
-		CodeLang RecognizeLang(std::vector<char> &source) const;
+		bool isValidOperator(const char& c) const;
+		bool isRepetitionOptimizableOperator(const bt_operation& op) const;
+
+		bt_operation MapCharToOperator(const char& c) const;
+		bt_operation MapOperatorToOptimizedOp(const bt_operation& op) const;
+
+		unsigned int GetValidPos(const std::string::iterator& pos, const std::string::iterator& begin, unsigned int not_valid_pos) const;
+	};
+
 	
-		bool isValidOperator(const char &c) const;
-		bool isValidDebugOperator(const char &c) const;
-	    CodeTape::bt_operation MapCharToOperator(const char &c) const;
-
-		unsigned int GetValidPos(const std::vector<char>::iterator &pos, const std::vector<char>::iterator &begin, unsigned int &not_valid_pos) const;
-};
-
+}

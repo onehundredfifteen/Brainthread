@@ -7,34 +7,37 @@
 #include "FunctionHeap.h"
 #include "CodeTape.h"
 
-template < typename T >
-class BrainThreadProcess
-{
-public:
-	BrainThreadProcess(const CodeTape::Tape &c, MemoryHeap<T> &shared_heap, unsigned int mem_size, typename MemoryTape<T>::mem_option mo, typename MemoryTape<T>::eof_option eo);
-	BrainThreadProcess(const BrainThreadProcess<T> &parentProcess);
-	~BrainThreadProcess(void);
+namespace BT {
 
-	void Run(void);
+	template < typename T >
+	class BrainThreadProcess
+	{
+	public:
+		BrainThreadProcess(const CodeTape& c, MemoryHeap<T>& shared_heap, unsigned int mem_size, mem_option mo, eof_option eo);
+		BrainThreadProcess(const BrainThreadProcess<T>& parentProcess);
+		~BrainThreadProcess(void);
 
-	unsigned int GetProcessId(void);
-	std::ostream& PrintProcessInfo(std::ostream &s);
+		void Run(void);
 
-protected:
-	MemoryTape<T> memory;
-	MemoryHeap<T> heap;
-	FunctionHeap<T> functions;
-	MemoryHeap<T> &shared_heap;
-	
-	const CodeTape::Tape &code;
-	unsigned int code_pointer;
-	
-	std::vector< HANDLE > child_threads;
+		unsigned int GetProcessId(void);
+		std::ostream& PrintProcessInfo(std::ostream& s);
 
-	void Fork(void);
-	void Join(void);
+	protected:
+		MemoryTape<T> memory;
+		MemoryHeap<T> heap;
+		FunctionHeap<T> functions;
+		MemoryHeap<T>& shared_heap;
 
-private:
-	bool isMain;
-};
+		const CodeTape& code;
+		unsigned int code_pointer;
+
+		std::vector< HANDLE > child_threads;
+
+		void Fork(void);
+		void Join(void);
+
+	private:
+		bool isMain;
+	};
+}
 

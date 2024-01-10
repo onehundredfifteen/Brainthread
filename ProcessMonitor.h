@@ -17,35 +17,30 @@ class ProcessMonitor
 public:
 	static ProcessMonitor & Instance()
 	{
-		// it **is** thread-safe in C++11.
 		static ProcessMonitor instance;
-
 		return instance;
 	}
 
 private:
 	  std::vector<HANDLE> handles; 
-	  static unsigned int threads_cnt;
 
 	  ProcessMonitor(){ 
 		 handles.reserve(10); 
 	  }
-	  ~ProcessMonitor(void){};
 
-	  ProcessMonitor(ProcessMonitor const&);             
-	  ProcessMonitor& operator=(ProcessMonitor const&); 
+	  ProcessMonitor(ProcessMonitor const&) = delete;
+	  ProcessMonitor& operator=(ProcessMonitor const&) = delete; 
 
 public:
 	  static inline void EnterCriticalSection(CRITICAL_SECTION &cs)
 	  {
-		 if(threads_cnt > 0)
+		 if(Instance().handles.size() > 0)
 			::EnterCriticalSection(&cs);
 	  }
 
 	  static inline void LeaveCriticalSection(CRITICAL_SECTION &cs)
 	  {
-		 if(threads_cnt > 0)
-		 {
+		 if(Instance().handles.size() > 0)		 {
 			::LeaveCriticalSection(&cs);
 		 }
 	  }
