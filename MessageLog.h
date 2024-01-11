@@ -15,6 +15,8 @@ class MessageLog
 			ecBLOutOfFunctionScope,
 			ecELOutOfFunctionScope,
 			ecUnmatchedBreak,
+			ecUnexpectedSwitch,
+			ecUnexpectedPragma,
 
 			ecEmptyCode,
 			ecIntegrityLost,
@@ -46,9 +48,9 @@ class MessageLog
 			ecRedundantMoves,
 			ecRedundantOpBeforeFork,
 
-			ecRedundantSwitch,
-			ecSwitchRepeat,
-			ecSwithOutOfScope,
+			//ecRedundantSwitch,
+			//ecSwitchRepeat,
+			//ecSwithOutOfScope,
 			ecCallButNoFunction,
 
 			ecMessage = 600,

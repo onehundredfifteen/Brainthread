@@ -31,7 +31,7 @@ protected:
 class BrainThreadInvalidOptionException: public BrainThreadException {
 public:
 
-  BrainThreadInvalidOptionException(std::string option, std::string inv_arg)
+  BrainThreadInvalidOptionException(const std::string &option, const std::string &inv_arg)
     : BrainThreadException(), op(option), op_arg(inv_arg)
     {}
 
@@ -44,6 +44,26 @@ public:
   }
 
 protected:
-    std::string op;
-	std::string op_arg;
+    const std::string op;
+    const std::string op_arg;
+    const std::string message;
+};
+
+class BrainThreadOptionNotEligibleException : public BrainThreadInvalidOptionException {
+public:
+
+    BrainThreadOptionNotEligibleException(const std::string& option, const std::string& inv_arg, const std::string& message)
+        : BrainThreadInvalidOptionException(option, inv_arg), message(message)
+    {}
+
+    virtual const char* what() const throw()
+    {
+        cnvt.str("");
+        cnvt << "Cannot apply an option " << op << " [" << op_arg << "]. Reason: " << message;
+        s = cnvt.str();
+        return s.c_str();
+    }
+
+protected:
+    const std::string message;
 };

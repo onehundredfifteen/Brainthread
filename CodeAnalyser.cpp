@@ -53,7 +53,7 @@ namespace BT {
 	}
 
 	//Operatory ³¹czone parami z innymi: pêtle i funkcje
-	bool inline CodeAnalyser::IsLinkedInstruction(const bt_instruction& ins)
+	bool inline CodeAnalyser::IsLinkableInstruction(const bt_instruction& ins)
 	{
 		return (ins.operation == bt_operation::btoBeginLoop ||
 			ins.operation == bt_operation::btoEndLoop ||
@@ -82,7 +82,7 @@ namespace BT {
 	//Operatory ³¹czone parami z innymi: pêtle i funkcje
 	bool inline CodeAnalyser::IsFlowChangingInstruction(const bt_instruction& ins)
 	{
-		return (IsLinkedInstruction(ins) ||
+		return (IsLinkableInstruction(ins) ||
 			ins.operation == bt_operation::btoCallFunction);
 	}
 
@@ -171,7 +171,7 @@ namespace BT {
 		int q=0;
 		for(std::vector<bt_operation::bt_instruction>::iterator it = parser.instructions.begin(); it < parser.instructions.end(); ++it)
 		{
-			std::cout << q++ << ": " << it->operation << ": " << (it->NullJump() ? 115 : it->jump) << "\n";
+			std::cout << q++ << ": " << it->operation << ": " << (it->IsLinked() ? 115 : it->jump) << "\n";
 		}
 		std::cout << std::endl;*/
 	}
@@ -261,8 +261,8 @@ namespace BT {
 
 					for (int i = 0; i < k; ++i)
 					{
-						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoDecrement; })->operation = bt_operation::btoUnkown;
-						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoIncrement; })->operation = bt_operation::btoUnkown;
+						//std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoDecrement; })->operation = bt_operation::btoUnkown;
+						//std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoIncrement; })->operation = bt_operation::btoUnkown;
 					}
 
 					parser.instructions.erase(
@@ -282,8 +282,8 @@ namespace BT {
 					int k = (ops - abs(sum)) / 2;
 					for (int i = 0; i < k; ++i)
 					{
-						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoMoveLeft; })->operation = bt_operation::btoUnkown;
-						std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoMoveRight; })->operation = bt_operation::btoUnkown;
+						//std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoMoveLeft; })->operation = bt_operation::btoUnkown;
+						//std::find_if(_it, n, [](const bt_instruction& op) { return op.operation == bt_operation::btoMoveRight; })->operation = bt_operation::btoUnkown;
 					}
 
 					parser.instructions.erase(
@@ -520,31 +520,7 @@ namespace BT {
 		CodeTapeIterator n, m;
 		std::vector<bt_instruction>::reverse_iterator r;
 
-		if (it->operation == bt_operation::btoSwitchHeap)
-		{
-			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecSwitchRepeat, it - parser.instructions.begin() + 1);
-
-			n = std::find_if(it + 1, parser.instructions.end(), IsSharedHeapInstruction);
-
-			if (n == parser.instructions.end())
-			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantSwitch, it - parser.instructions.begin() + 1);
-
-				if (repairCB) //usuwamy switch
-				{
-					repairCB(it, n);
-				}
-			}
-			else // jest jakas instrukcja shared heapa
-			{
-				m = std::find_if(it + 1, n, IsFlowChangingInstruction);
-
-				if (m != n)
-					MessageLog::Instance().AddMessage(MessageLog::ecSwithOutOfScope, it - parser.instructions.begin() + 1);
-			}
-		}
-		else if (it->operation == bt_operation::btoSwap)
+		if (it->operation == bt_operation::btoSwap)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
 				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - parser.instructions.begin() + 1);
@@ -797,7 +773,7 @@ namespace BT {
 	{
 		for (CodeTapeIterator it = start; it < end; ++it)
 		{
-			if (IsLinkedInstruction(*it) || it->NullJump() == false)
+			if (IsLinkableInstruction(*it) || it->IsLinked())
 			{
 				it->jump -= n;
 			}
@@ -809,7 +785,7 @@ namespace BT {
 	{
 		for (CodeTapeIterator it = parser.instructions.begin(); it < parser.instructions.end(); ++it)
 		{
-			if (IsLinkedInstruction(*it) && IsLinkedInstruction(parser.instructions.at(it->jump)) == false)
+			if (IsLinkableInstruction(*it) && IsLinkableInstruction(parser.instructions.at(it->jump)) == false)
 			{
 				return true;
 			}

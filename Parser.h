@@ -1,8 +1,10 @@
 #pragma once
 
+#include <string>
 
-#include "CodeTape.h"
 #include "EnumDefs.h"
+#include "CodeTape.h"
+
 
 namespace BT {
 
@@ -28,10 +30,10 @@ namespace BT {
 	template <CodeLang Lang, int OLevel>
 	class Parser : public ParserBase {
 	public:
-		Parser(std::string& source);
+		Parser(const std::string& source);
 
 	private:
-		bool Parse(std::string& source);
+		bool Parse(const std::string& source);
 
 		bool isValidOperator(const char& c) const;
 		bool isRepetitionOptimizableOperator(const bt_operation& op) const;
@@ -39,7 +41,9 @@ namespace BT {
 		bt_operation MapCharToOperator(const char& c) const;
 		bt_operation MapOperatorToOptimizedOp(const bt_operation& op) const;
 
-		unsigned int GetValidPos(const std::string::iterator& pos, const std::string::iterator& begin, unsigned int not_valid_pos) const;
+		bool HandlePragma(const std::string::const_iterator& pos, const std::string::const_iterator& end, unsigned int &ignore_ins);
+
+		unsigned int GetValidPos(const std::string::const_iterator& pos, const std::string::const_iterator& begin, unsigned int ignore_ins) const;
 	};
 
 	

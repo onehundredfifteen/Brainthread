@@ -4,7 +4,7 @@
 #include <climits> 
 
 namespace BT {
-	enum class bt_operation
+	enum class bt_operation : uint16_t
 	{
 		btoDecrement = 1,
 		btoIncrement,
@@ -50,6 +50,7 @@ namespace BT {
 		btoDEBUG_FunctionsStackDump,
 		btoDEBUG_FunctionsDefsDump,
 		btoDEBUG_ThreadInfoDump,
+		btoDEBUG_Pragma,
 
 		btoInvalid,
 		btoEndProgram,
@@ -59,21 +60,19 @@ namespace BT {
 	struct bt_instruction
 	{
 		bt_operation operation;
+		unsigned short repetitions;
 		unsigned int jump;
-		unsigned int repetitions;
-
-		bt_instruction(bt_operation op, unsigned int index, unsigned int reps = 1)
+		
+		bt_instruction(bt_operation op, unsigned int index, unsigned short reps)
 			: operation(op), jump(index), repetitions(reps) {};
-		bt_instruction(bt_operation op) 
-			: operation(op), jump(UINT_MAX), repetitions(1) {};
-		bt_instruction() : operation(bt_operation::btoUnkown), jump(UINT_MAX), repetitions(1) {};
+		bt_instruction(bt_operation op, unsigned int index)
+			: bt_instruction(op, index, 1) {};
+		bt_instruction(bt_operation op)
+			: bt_instruction(op, UINT_MAX) {};
+		bt_instruction() 
+			: bt_instruction(bt_operation::btoUnkown) {};
 
-		bool NullJump() { return jump == UINT_MAX; }
-
-		/*bt_instruction(bt_operation op, unsigned int index, unsigned int reps = 0)
-			: operation(op), jump(index), repetitions(reps) {};
-		bt_instruction(bt_operation op): bt_instruction(op, UINT_MAX){};
-		bt_instruction(): bt_instruction(bt_instruction::btoUnkown){};*/
+		bool IsLinked() const { return jump < UINT_MAX; }
 	};
 	
 	typedef std::vector<bt_instruction> CodeTape;

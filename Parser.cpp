@@ -16,13 +16,13 @@ namespace BT {
 	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
 	*/
 	template <CodeLang Lang, int OLevel>
-	Parser<Lang, OLevel>::Parser(std::string& source)
+	Parser<Lang, OLevel>::Parser(const std::string& source)
 	{
 		syntaxValid = Parse(source);
 	}
 
 	template <CodeLang Lang, int OLevel>
-	bool Parser<Lang, OLevel>::Parse(std::string& source)
+	bool Parser<Lang, OLevel>::Parse(const std::string& source)
 	{
 		std::stack<unsigned int> loop_call_stack;
 		std::stack<unsigned int> func_call_stack;
@@ -35,6 +35,8 @@ namespace BT {
 
 		//next stack op will be executed on shared stack
 		bool switchToSharedHeap = false;
+		//# pragma switch
+		bool switchToPragma = false;
 
 		//result
 		bool syntaxOk = true;
@@ -47,17 +49,42 @@ namespace BT {
 
 		instructions.reserve(source.size());
 
-		for (std::string::iterator it = source.begin(); it < source.end(); ++it)
+		for (std::string::const_iterator it = source.begin(); it < source.end(); ++it)
 		{
 			if (isValidOperator(*it))
 			{
 				bt_operation curr_op = MapCharToOperator(*it);
 
-				if (curr_op == bt_operation::btoBeginLoop /*|| curr_op == btoInvBeginLoop*/)
+				if (switchToSharedHeap) {
+					switchToSharedHeap = false;
+					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
+					{
+						switch (curr_op){
+							case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
+							case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
+							case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
+						}
+					}
+					else {
+						MessageLog::Instance().AddMessage(MessageLog::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
+						syntaxOk = false;
+					}
+				}
+				else if constexpr (OLevel == 0) {
+					if (switchToPragma) {
+						switchToPragma = false;
+						int tmp_ignore = ignore_ins;
+						if (!HandlePragma(it, source.end(), ignore_ins)) {
+							MessageLog::Instance().AddMessage(MessageLog::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
+							syntaxOk = false;
+						}
+					}
+				}
+				else if (curr_op == bt_operation::btoBeginLoop /*|| curr_op == btoInvBeginLoop*/)
 				{
 					if constexpr (OLevel > 1) {
 						//optimize [-] to :=0
-						std::string::iterator _it = (it + 2);
+						std::string::const_iterator _it = (it + 2);
 						if (_it < source.end() &&
 							MapCharToOperator(*_it) == bt_operation::btoEndLoop &&
 							MapCharToOperator(*--_it) == bt_operation::btoDecrement) {
@@ -139,27 +166,20 @@ namespace BT {
 						errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), ignore_ins), line_counter);
 					}
 				}*/
-				else if (switchToSharedHeap &&
-					(curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap))
-				{
-					switchToSharedHeap = false;
-
-					switch (curr_op)
-					{
-						case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
-						case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
-						case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
-					}
-				}
 				else if (curr_op == bt_operation::btoSwitchHeap)
 				{
 					switchToSharedHeap = true; 
 					++ignore_ins; //non executable operation
-				}			
+				}
+				else if (curr_op == bt_operation::btoDEBUG_Pragma)
+				{
+					switchToPragma = true;
+					++ignore_ins; //non executable operation
+				}
 				else if constexpr (OLevel > 1) {
 					if (isRepetitionOptimizableOperator(curr_op)) {
 						int reps = 1;
-						std::string::iterator _it = (it + 1);
+						std::string::const_iterator _it = (it + 1);
 						while (_it < source.end()) {
 							if (MapCharToOperator(*_it) == curr_op) {
 								++_it;
@@ -206,15 +226,15 @@ namespace BT {
 	bool inline Parser<Lang, OLevel>::isValidOperator(const char& c) const {
 
 		if constexpr (Lang == CodeLang::clBrainThread) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:MTFSEDH", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:#MTFSEDH", c) != 0;
 			return strchr("<>+-.,[]()*{}!&^%~;:", c) != 0;
 		}
 		else if constexpr (Lang == CodeLang::clPBrain) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:MFED", c) != 0;
-			return strchr("<>+-.,[]()*{}!&^%~;:", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]():#MFED", c) != 0;
+			return strchr("<>+-.,[]():", c) != 0;
 		}
 		else if constexpr (Lang == CodeLang::clBrainFork) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]YMTD", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]#YMTD", c) != 0;
 			return strchr("<>+-.,[]Y", c) != 0;
 		}
 		else {
@@ -314,18 +334,19 @@ namespace BT {
 					case 'S': return bt_operation::btoDEBUG_StackDump;
 					case 'H': return bt_operation::btoDEBUG_SharedStackDump;
 					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
+					case '#': return bt_operation::btoDEBUG_Pragma;
 				}
 			}
 			else if constexpr (Lang == CodeLang::clBrainFuck) {
 				switch (c) {
-					case '#':
+					case '#': //a pragma if applicable
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 				}
 			}
 			else if constexpr (Lang == CodeLang::clPBrain) {
 				switch (c) {
-					case '#':
+					case '#': //a pragma if applicable
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 					case 'F': return bt_operation::btoDEBUG_FunctionsStackDump;
@@ -334,7 +355,7 @@ namespace BT {
 			}
 			else if constexpr (Lang == CodeLang::clBrainFork) {
 				switch (c) {
-					case '#':
+					case '#': //a pragma if applicable
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
@@ -360,9 +381,43 @@ namespace BT {
 	}
 
 	template <CodeLang Lang, int OLevel>
-	unsigned int inline Parser<Lang, OLevel>::GetValidPos(const std::string::iterator& pos, const std::string::iterator& begin, unsigned int not_valid_pos) const
+	bool Parser<Lang, OLevel>::HandlePragma(const std::string::const_iterator& begin, const std::string::const_iterator& end, unsigned int& ignore_ins) {
+		if constexpr (OLevel != 0) {
+			return false;
+		}
+		//[-]#100[-]
+		std::string::const_iterator it = begin;
+		//while (it < end && std::isdigit(static_cast<unsigned char>(it))) {
+			//++it;
+		//}
+
+		int advance = it - begin;
+		if (advance == 0) {
+			//empty pragma
+			return false;
+		}
+
+		std::string s_pragmaval;
+		std::copy(begin, it, std::back_inserter(s_pragmaval));
+
+		int pragmaval = atoi(s_pragmaval.c_str());
+
+		if (++it >= end || MapCharToOperator(*it) == bt_operation::btoInvalid) {
+			//no instruction after pragma
+			return false;
+		}
+
+		while (pragmaval) {
+			instructions.emplace_back(bt_instruction(MapCharToOperator(*it)));
+			++ignore_ins;
+			//std::advance(begin, 1);
+		}
+	}
+
+	template <CodeLang Lang, int OLevel>
+	unsigned int inline Parser<Lang, OLevel>::GetValidPos(const std::string::const_iterator& pos, const std::string::const_iterator& begin, unsigned int ignore_ins) const
 	{
-		return pos - begin - not_valid_pos;
+		return pos - begin - ignore_ins;
 	}
 
 	// Explicit template instantiation
