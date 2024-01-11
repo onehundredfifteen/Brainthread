@@ -14,22 +14,21 @@ std::string GetExeName(void)
 
 void PrintBrainThreadInfo(void)
 {
-	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ") "
-				 "(c) by onehundredfifteen\n" << std::endl;
+	std::cout << "BrainThread Interpreter " << BT_VERSION <<
+				 "(c) by onehundredfifteen 2014-" << BT_DATE << std::endl;
 }
 
 void PrintBrainThreadInfoEx(void)
 {
-	std::cout << "BrainThread Interpreter " << BT_VERSION << " (" << __DATE__ << ")\n"
-				 "(c) by onehundredfifteen 2014-2021\n"
-				 "https://github.com/onehundredfifteen/Brainthread\n"
+	PrintBrainThreadInfo();
+	std::cout << "https://github.com/onehundredfifteen/Brainthread\n"
 				 "Supports BrainThread, BrainFuck, pBrain and BrainFork\n" << std::endl;
 }
 
 void ShowUsage(void)
 {
 	PrintBrainThreadInfoEx();
-	std::cout << "\n++ USAGE ++\n"
+	std::cout << "++ USAGE ++\n"
 			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
 			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
 			  << "\t" << GetExeName() << " --help\n"
@@ -225,7 +224,7 @@ void ShowHelp(std::string help_opt)
 	  std::cout << "Type --help [option] to get option's description (p.ex --help eof).\n"
 		        //<< "Type --help ['exceptions'] to read about listed subjects.\n"
 			    << "\t++ EXECUTION OPTIONS ++\n"
-			    << "-l --language [bt|b|bf|pb|brainthread|brainfuck|brainfork|pbrain|auto] Default: brainthread\n"
+			    << "-l --language [bt|b|bf|pb|brainthread|brainfuck|brainfork|pbrain] Default: brainthread\n"
 				<< "-e --eof [0|255|nochange] Default: 0\n"
 				<< "-m --memorysize <1, 2^32> Default: 30000\n"
 				<< "-b --memorybehavior [constant|tapeloop|dynamic] Default: constant\n"

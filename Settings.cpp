@@ -90,15 +90,15 @@ namespace BT {
 			//opcje œrodowiska
 
 			//debug, repair & execute
-			OP_debug = (ops >> GetOpt::OptionPresent('a', "analyse"));
+			OP_analyse = (ops >> GetOpt::OptionPresent('a', "analyse"));
 
 			OP_optimize = (ops >> GetOpt::OptionPresent('o', "optimize")); //todo o2 o3
 			OP_repair = OP_optimize || (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia³
 			OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamia³
 
 			if (OP_optimize || OP_repair)//aby by³ repair, musi byc debug
-				OP_debug = true;
-			if (OP_debug == false)//nie debugujesz? musi byc execute
+				OP_analyse = true;
+			if (OP_analyse == false)//nie debugujesz? musi byc execute
 				OP_execute = true;
 
 			//--verbose[all|important|none]
@@ -110,18 +110,18 @@ namespace BT {
 				{
 					ops >> GetOpt::Option("verbose", op_arg);
 					if (op_arg == "all")
-						OP_message = MessageLog::mlAll;
+						OP_message = MessageLog::MessageLevel::mlAll;
 					else if (op_arg == "important")
-						OP_message = MessageLog::mlImportant;
+						OP_message = MessageLog::MessageLevel::mlImportant;
 					else if (op_arg == "none")
-						OP_message = MessageLog::mlNone;
+						OP_message = MessageLog::MessageLevel::mlNone;
 					else
 						throw BrainThreadInvalidOptionException("verbose", op_arg);
 				}
 
 				if (ops >> GetOpt::OptionPresent("silent"))
 				{
-					OP_message = MessageLog::mlNone;
+					OP_message = MessageLog::MessageLevel::mlNone;
 				}
 			}
 
@@ -206,17 +206,17 @@ namespace BT {
 			}
 			return true;
 		}
-		catch (GetOpt::TooManyArgumentsEx ex)
+		catch (GetOpt::TooManyArgumentsEx &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, "Too many arguments");
 			return false;
 		}
-		catch (GetOpt::GetOptEx ex)
+		catch (GetOpt::GetOptEx &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, "Error while parsing arguments: " + std::string(ex.what()));
 			return false;
 		}
-		catch (BrainThreadInvalidOptionException ex)
+		catch (BrainThreadInvalidOptionException &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, std::string(ex.what()));
 			return false;

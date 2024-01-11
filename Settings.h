@@ -13,11 +13,11 @@ namespace BT {
 
 	struct Settings
 	{
-		bool OP_debug = false;
+		bool OP_analyse = false;
 		bool OP_repair = false;
 		bool OP_optimize = false;
 		bool OP_execute = true;
-		bool OP_nopause = true;
+		bool OP_nopause = Settings::IsRanFromConsole();
 
 		MessageLog::MessageLevel OP_message = MessageLog::MessageLevel::mlAll;
 		DebugLogStream::stream_type OP_log = DebugLogStream::stream_type::lsConsole;

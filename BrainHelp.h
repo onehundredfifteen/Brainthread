@@ -4,7 +4,10 @@
 #include <string>
 
 #ifndef BT_VERSION
-	#define BT_VERSION "1.4"
+	#define BT_VERSION "2.0"
+#endif
+#ifndef BT_DATE
+	#define BT_DATE "2024"
 #endif
 
 void PrintBrainThreadInfo(void);

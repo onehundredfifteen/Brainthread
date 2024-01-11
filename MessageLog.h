@@ -1,12 +1,13 @@
 #pragma once
 
-#include <vector>
+#include <list>
 #include <string>
 
-class MessageLog
-{
+namespace BT {
+	class MessageLog
+	{
 	public:
-		typedef enum 
+		enum ErrCode
 		{
 			ecUnmatchedLoopBegin = 100,
 			ecUnmatchedLoopEnd,
@@ -29,7 +30,7 @@ class MessageLog
 			ecEmptyLoop,
 			ecEmptyFunction,
 			ecFunctionRedefinition,
-		    ecFunctionRedefinitionInternal,
+			ecFunctionRedefinitionInternal,
 
 			ecFunctionInLoop,
 			ecFunctionLimitExceed,
@@ -55,39 +56,43 @@ class MessageLog
 
 			ecMessage = 600,
 			ecInformation //taka wiadomoœæ bêdzie pomijana
-		} ErrCode;
+		};
 
-		typedef enum 
+		enum class MessageLevel
 		{
 			mlAll,
 			mlImportant,
 			mlNone
-		} MessageLevel;
+		};
 
 		struct Error
 		{
-			unsigned int instruction_pos; 
-			ErrCode error_code; 
+			const unsigned int instruction_pos;
+			const ErrCode error_code;
+			const std::string text;
 
-			std::string text;
+			Error(ErrCode ec, const std::string& t, unsigned int pos)
+				: error_code(ec), instruction_pos(pos), text(t) {}
+			Error(ErrCode ec, const std::string& t)
+				: Error(ec, t, 0) {}
+			Error(ErrCode ec, unsigned int pos)
+				: Error(ec, "", 0) {}
+			Error(ErrCode ec)
+				: Error(ec, "") {}
 
-			Error(ErrCode ec): error_code(ec),instruction_pos(0){}
-			Error(ErrCode ec, unsigned int pos):error_code(ec), instruction_pos(pos){}
-			Error(ErrCode ec, std::string t):error_code(ec), instruction_pos(0), text(t){}
-
-			bool IsWarning(void) { 
+			bool IsWarning(void) const {
 				return (int)error_code >= 200;
 			}
-			bool IsMessage(void) { 
+			bool IsMessage(void) const {
 				return (int)error_code >= 600;
 			}
-			bool IsGeneralError(void) { 
+			bool IsGeneralError(void) const {
 				return (int)error_code >= 190 && (int)error_code < 200;
 			}
 		};
 
 	public:
-		static MessageLog & Instance()
+		static MessageLog& Instance()
 		{
 			static MessageLog instance;
 
@@ -97,31 +102,28 @@ class MessageLog
 		void SetMessageLevel(MessageLevel message_level);
 
 		void AddMessage(ErrCode e_code, unsigned int pos);
-		void AddMessage(ErrCode e_code, std::string t);
-		void AddMessage(std::string t);
-		void AddInfo(std::string t);
-		
-		unsigned ErrorsCount(void);
-		unsigned WarningsCount(void);
-		unsigned MessagesCount(void);
-		void GetMessages(void);
+		void AddMessage(ErrCode e_code, const std::string& text);
+		void AddMessage(const std::string& text);
+		void AddInfo(const std::string& text);
 
-	private: 
+		unsigned int ErrorsCount(void) const;
+		unsigned int WarningsCount(void) const;
+		unsigned int MessagesCount(void) const;
+		void PrintMessages(void) const;
+		void ClearMessages(void);
+
+	private:
 		MessageLog() {
-			error_count = 0;
-			warning_count = 0;
-			message_level = mlImportant;
+			message_level = MessageLevel::mlImportant;
 		}
-		~MessageLog(void){};
 
-		MessageLog(MessageLog const&);            
-		MessageLog& operator=(MessageLog const&);  
+		MessageLog(MessageLog const&) = delete;
+		MessageLog& operator=(MessageLog const&) = delete;
 
 	protected:
-		std::vector<Error> messages;
-		unsigned error_count;
-		unsigned warning_count;
+		std::list<Error> messages;
 		MessageLevel message_level;
 
-		const char * MapMessages(ErrCode &ec) const;
-};
+		const char* MapMessages(const ErrCode& ec) const;
+	};
+}

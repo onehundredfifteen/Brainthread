@@ -3,7 +3,7 @@
 #include <memory>
 #include <chrono>
 #include <sstream>
-
+#include <algorithm>
 
 #include "Settings.h"
 #include "Interpreter.h"
@@ -17,36 +17,41 @@ using namespace BT;
 
 //critical sections
 CRITICAL_SECTION cout_critical_section;
+CRITICAL_SECTION cin_critical_section;
 CRITICAL_SECTION pm_critical_section;
 CRITICAL_SECTION heap_critical_section;
 
 //Reaction to ctrl+break
 bool CtrlHandler(DWORD fdwCtrlType);
 
+//Main methods
+void InteractiveMode();
+void Execute(const Settings& flags);
+
 //Program methods
-ParserBase ParseCode(std::string& code, const Settings& flags);
+ParserBase ParseCode(const std::string& code, const Settings& flags);
 void RunAnalyser(ParserBase& parser, const Settings& flags);
 void RunProgram(const CodeTape& code, const Settings& flags);
 
 int main(int argc, char* argv[])
 {
-	InitializeCriticalSection(&cout_critical_section);
-	InitializeCriticalSection(&pm_critical_section);
-	InitializeCriticalSection(&heap_critical_section);
-
-	//inicjalizacja handlera obs³uguj¹ego zamkniêcie programu sktórem ctrl+break
-	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true);
-
 	//settings
 	Settings settings;
 
-	//parsowanie opcji + deklaracje potrzebnych flag
+	InitializeCriticalSection(&cout_critical_section);
+	InitializeCriticalSection(&cin_critical_section);
+	InitializeCriticalSection(&pm_critical_section);
+	InitializeCriticalSection(&heap_critical_section);
+
+	//ctrl+break termination handler
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true);
+
+	//parse arguments
 	GetOpt::GetOpt_pp ops(argc, argv);
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
 
 	if (ops >> GetOpt::OptionPresent('h',"help"))
 	{
-		settings.OP_nopause = Settings::IsRanFromConsole();
 		if(argc > 2)
 		{
 			std::string help_opt;
@@ -65,75 +70,80 @@ int main(int argc, char* argv[])
 			ShowHelp("");
 	}
 	else if (ops >> GetOpt::OptionPresent("info")){
-		settings.OP_nopause = Settings::IsRanFromConsole();
 		ShowInfo();
 	}
 	else if(argc > 1)
 	{
 		if(settings.InitFromArguments(ops))
 		{
-			if(settings.OP_message != MessageLog::mlNone){
+			if(settings.OP_message != MessageLog::MessageLevel::mlImportant){
 				PrintBrainThreadInfo();
 			}  
 			
-			ParserBase parser = ParseCode(settings.OP_source_code, settings);
-
-			if (parser.IsSyntaxValid() && (settings.OP_debug || settings.OP_optimize)){
-				RunAnalyser(parser, settings);
-			}
-
-			if(parser.IsSyntaxValid() && settings.OP_execute){
-				RunProgram(parser.GetInstructions(), settings);
-			}
+			Execute(settings);
 		}
+		else ShowUsage();
 
-		MessageLog::Instance().GetMessages();
+		MessageLog::Instance().PrintMessages();
 	}
 	else
 	{
-		ShowUsage();
+		PrintBrainThreadInfoEx();
+		InteractiveMode();
+		settings.OP_nopause = true;
 	}
 	
 	if(settings.OP_nopause == false)
 		system("pause");
 	
 	DeleteCriticalSection(&cout_critical_section);
+	DeleteCriticalSection(&cin_critical_section);
 	DeleteCriticalSection(&pm_critical_section);
 	DeleteCriticalSection(&heap_critical_section);
 
 	return 0;
 }
 
+void Execute(const Settings& flags) {
+	ParserBase parser = ParseCode(flags.OP_source_code, flags);
 
+	if (parser.IsSyntaxValid() && (flags.OP_analyse || flags.OP_optimize)) {
+		RunAnalyser(parser, flags);
+	}
 
-ParserBase ParseCode(std::string& code, const Settings& flags)
+	if (parser.IsSyntaxValid() && flags.OP_execute) {
+		RunProgram(parser.GetInstructions(), flags);
+	}
+}
+
+ParserBase ParseCode(const std::string& code, const Settings& flags)
 {
 	switch (flags.OP_language)
 	{
 		case CodeLang::clBrainThread:
 		{
-			if (flags.OP_debug) return Parser<CodeLang::clBrainThread, 0>(code);
+			if (flags.OP_analyse) return Parser<CodeLang::clBrainThread, 0>(code);
 			else if (flags.OP_optimize) return Parser<CodeLang::clBrainThread, 2>(code);
 			else return Parser<CodeLang::clBrainThread, 1>(code);
 		}
 		break;
 		case CodeLang::clPBrain:
 		{
-			if (flags.OP_debug) return Parser<CodeLang::clPBrain, 0>(code);
+			if (flags.OP_analyse) return Parser<CodeLang::clPBrain, 0>(code);
 			else if (flags.OP_optimize) return Parser<CodeLang::clPBrain, 2>(code);
 			else return Parser<CodeLang::clPBrain, 1>(code);
 		}
 		break;
 		case CodeLang::clBrainFork:
 		{
-			if (flags.OP_debug) return Parser<CodeLang::clBrainFork, 0>(code);
+			if (flags.OP_analyse) return Parser<CodeLang::clBrainFork, 0>(code);
 			else if (flags.OP_optimize) return Parser<CodeLang::clBrainFork, 2>(code);
 			else return Parser<CodeLang::clBrainFork, 1>(code);
 		}
 		case CodeLang::clBrainFuck:
 		default:
 		{
-			if (flags.OP_debug) return Parser<CodeLang::clBrainFuck, 0>(code);
+			if (flags.OP_analyse) return Parser<CodeLang::clBrainFuck, 0>(code);
 			else if (flags.OP_optimize) return Parser<CodeLang::clBrainFuck, 2>(code);
 			else return Parser<CodeLang::clBrainFuck, 1>(code);
 		}
@@ -168,7 +178,7 @@ void RunAnalyser(ParserBase& parser, const Settings& flags)
 		{
 			MessageLog::Instance().AddInfo("Code is valid");
 			
-			if (flags.OP_debug)
+			if (flags.OP_analyse)
 			{
 				CodeAnalyser analyser(parser);
 				flags.OP_optimize ? analyser.Repair() : analyser.Analyse();
@@ -212,12 +222,44 @@ void RunProgram(const CodeTape& code, const Settings& flags)
     MessageLog::Instance().AddInfo("Execution completed in " + std::to_string(elapsed) + " miliseconds");
 }
 
+void InteractiveMode() {
+	std::string input;
+	std::cout << "Interactive Mode: Enter your code, type 'exit' to break." << std::endl;
+
+	while (true) {
+		std::cout << "\n>>> " << std::flush;
+		std::cin >> input;
+		if (std::cin.fail())
+		{
+			std::cin.clear();
+			std::cin.ignore(UINT_MAX, '\n');
+			std::cout << "Input failed. Please try again." << std::endl;
+		}
+
+		std::transform(input.begin(), input.end(), input.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		
+		if (input == "exit") {
+			break;
+		}
+		else {
+			Settings s;
+			s.OP_source_code = input;
+			s.OP_analyse = true;
+
+			MessageLog::Instance().ClearMessages();
+			Execute(s);
+			MessageLog::Instance().PrintMessages();
+		}
+	}
+}
+
 bool CtrlHandler(DWORD fdwCtrlType) 
 { 
-  if( fdwCtrlType == CTRL_BREAK_EVENT ) 
+  if(fdwCtrlType == CTRL_BREAK_EVENT ) 
   { 
-	  MessageLog::Instance().AddInfo("Execution interrupted by user");
-	  MessageLog::Instance().GetMessages();
+	  MessageLog::Instance().AddMessage("Execution interrupted by user");
+	  MessageLog::Instance().PrintMessages();
 	  return true; //??
   } 
   return false; //pass all normally

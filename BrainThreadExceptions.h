@@ -59,7 +59,7 @@ public:
     virtual const char* what() const throw()
     {
         cnvt.str("");
-        cnvt << "Cannot apply an option " << op << " [" << op_arg << "]. Reason: " << message;
+        cnvt << "Cannot apply an option '" << op << "'=[" << op_arg << "]. Reason: " << message;
         s = cnvt.str();
         return s.c_str();
     }
