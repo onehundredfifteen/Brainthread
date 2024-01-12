@@ -228,7 +228,9 @@ void RunProgram(const CodeTape& code, const Settings& flags)
 
 void InteractiveMode() {
 	Settings s;
-	s.OP_analyse = true;
+
+	s.OP_analyse = false;
+
 	s.OP_message = MessageLog::MessageLevel::mlAll;
 	//handy reference to source code
 	std::string& input = s.OP_source_code;
