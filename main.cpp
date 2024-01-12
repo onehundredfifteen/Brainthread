@@ -151,7 +151,6 @@ ParserBase ParseCode(const std::string& code, const Settings& flags)
 			else if (flags.OP_optimize) return Parser<CodeLang::clBrainFuck, 2>(code);
 			else return Parser<CodeLang::clBrainFuck, 1>(code);
 		}
-		break;
 	}
 }
 
@@ -229,7 +228,7 @@ void RunProgram(const CodeTape& code, const Settings& flags)
 void InteractiveMode() {
 	Settings s;
 
-	s.OP_analyse = false;
+	s.OP_analyse = true;
 
 	s.OP_message = MessageLog::MessageLevel::mlAll;
 	//handy reference to source code

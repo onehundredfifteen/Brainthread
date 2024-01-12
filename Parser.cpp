@@ -54,33 +54,8 @@ namespace BT {
 			if (isValidOperator(*it))
 			{
 				bt_operation curr_op = MapCharToOperator(*it);
-
-				if (switchToSharedHeap) {
-					switchToSharedHeap = false;
-					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
-					{
-						switch (curr_op){
-							case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
-							case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
-							case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
-						}
-					}
-					else {
-						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
-						syntaxOk = false;
-					}
-				}
-				else if constexpr (OLevel == 0) {
-					if (switchToPragma) {
-						switchToPragma = false;
-						int tmp_ignore = ignore_ins;
-						if (!HandlePragma(it, source.end(), ignore_ins)) {
-							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
-							syntaxOk = false;
-						}
-					}
-				}
-				else if (curr_op == bt_operation::btoBeginLoop /*|| curr_op == btoInvBeginLoop*/)
+				
+				if (curr_op == bt_operation::btoBeginLoop /*|| curr_op == btoInvBeginLoop*/)
 				{
 					if constexpr (OLevel > 1) {
 						//optimize [-] to :=0
@@ -176,6 +151,32 @@ namespace BT {
 					switchToPragma = true;
 					++ignore_ins; //non executable operation
 				}
+				else if (switchToSharedHeap) {
+					switchToSharedHeap = false;
+					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
+					{
+						switch (curr_op) {
+							case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
+							case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
+							case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
+						}
+					}
+					else {
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
+						syntaxOk = false;
+					}
+				}
+				else if constexpr (OLevel == 0) {
+					if (switchToPragma) {
+						switchToPragma = false;
+						int tmp_ignore = ignore_ins;
+						if (!HandlePragma(it, source.end(), ignore_ins)) {
+							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
+							syntaxOk = false;
+						}
+					}
+					else instructions.emplace_back(bt_instruction(curr_op));
+				}
 				else if constexpr (OLevel > 1) {
 					if (isRepetitionOptimizableOperator(curr_op)) {
 						int reps = 1;
@@ -237,10 +238,9 @@ namespace BT {
 			if constexpr (OLevel == 0) return strchr("<>+-.,[]#YMTD", c) != 0;
 			return strchr("<>+-.,[]Y", c) != 0;
 		}
-		else {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]#MD", c) != 0;
-			return strchr("<>+-.,[]", c) != 0;
-		}
+		
+		if constexpr (OLevel == 0) return strchr("<>+-.,[]#MD", c) != 0;
+		return strchr("<>+-.,[]", c) != 0;
 	}
 
 	template <CodeLang Lang, int OLevel>
