@@ -149,22 +149,22 @@ namespace BT {
 		//dodatkowe b³êdy statystyczne
 		if (forks == 0 && joins > 0)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecJoinButNoFork, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinButNoFork, 1);
 		}
 
 		if (function_def > function_limit)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecFunctionLimitExceed, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionLimitExceed, 1);
 		}
 
 		if (function_def > 0 && function_calls == 0)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecFunctionExistsButNoCall, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionExistsButNoCall, 1);
 		}
 
 		if (TestLinks())
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecIntegrityLost, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecIntegrityLost, 1);
 		}
 
 		/*std::cout << std::endl;
@@ -308,22 +308,22 @@ namespace BT {
 		//dodatkowe b³êdy statystyczne
 		if (forks == 0 && joins > 0)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecJoinButNoFork, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinButNoFork, 1);
 		}
 
 		if (function_def > function_limit)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecFunctionLimitExceed, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionLimitExceed, 1);
 		}
 
 		if (function_def > 0 && function_calls == 0)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecFunctionExistsButNoCall, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionExistsButNoCall, 1);
 		}
 
 		if (TestLinks())
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecIntegrityLost, 1);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecIntegrityLost, 1);
 		}
 	}
 
@@ -345,7 +345,7 @@ namespace BT {
 			//nieskoñczona pêtla []
 			if ((it + 1)->operation == bt_operation::btoEndLoop)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecInfiniteLoop, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecInfiniteLoop, it - parser.instructions.begin() + 1);
 				if (infLoopRep)
 				{
 					infLoopRep(it);
@@ -354,7 +354,7 @@ namespace BT {
 			//pusta pêtla [[xxxx]]
 			else if ((it + 1)->operation == bt_operation::btoBeginLoop && (parser.instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndLoop)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyLoop, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecEmptyLoop, it - parser.instructions.begin() + 1);
 				if (emptyLoopRep)
 				{
 					emptyLoopRep(it);
@@ -387,7 +387,7 @@ namespace BT {
 				if (m == n || n - it == 1) //nie ma zmieniajacych coœ instrukcji lub w ogóle nie ma nic
 				{
 					//jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami
-					MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinition, n - parser.instructions.begin() + 1);
+					MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionRedefinition, n - parser.instructions.begin() + 1);
 				}
 			}
 		}
@@ -398,7 +398,7 @@ namespace BT {
 			//pusta funkcja  ()
 			if ((it + 1)->operation == bt_operation::btoEndFunction)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecEmptyFunction, it - parser.instructions.begin() + 1);
 				if (emptyFunType1Rep) //usuwamy funkcjê
 				{
 					emptyFunType1Rep(it, n);
@@ -407,7 +407,7 @@ namespace BT {
 			//pusta funkcja ((xx))
 			else if ((it + 1)->operation == bt_operation::btoBeginFunction && (parser.instructions.begin() + (it->jump) - 1)->operation == bt_operation::btoEndFunction)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecEmptyFunction, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecEmptyFunction, it - parser.instructions.begin() + 1);
 				if (emptyFunType2Rep)
 				{
 					emptyFunType2Rep(it);
@@ -425,7 +425,7 @@ namespace BT {
 					o = std::find_if(it, m, IsChangingInstruction); //szukamy czy dziel¹ je jakies istotne instrukcje
 					if (o == m || m - it == 1) //jest podejrzenie redefinicji, bo nie ma instrukcji zmieniaj¹cych wartoœæ miêdzy funkcjami (xx( lub pusto ((
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecFunctionRedefinitionInternal, m - parser.instructions.begin() + 1);
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionRedefinitionInternal, m - parser.instructions.begin() + 1);
 					}
 				}
 				else //nie ma funkcji wewnêtrznaj
@@ -436,7 +436,7 @@ namespace BT {
 					o = std::find_if(it + 1, m, IsChangingInstruction); //szukamy zmieniajacych instrukcji do momentu pierwszego call, nastpne calle niewazne
 					if (m != n && o == m)  //jest call i nie ma instrukcji zmieniajacych 
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecInfinityRecurention, m - parser.instructions.begin() + 1);
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecInfinityRecurention, m - parser.instructions.begin() + 1);
 					}
 				}
 
@@ -453,7 +453,7 @@ namespace BT {
 
 			if (m != n)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecFunctionInLoop, m - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFunctionInLoop, m - parser.instructions.begin() + 1);
 			}
 		}
 		else if (it->operation == bt_operation::btoCallFunction) //undefined call
@@ -464,7 +464,7 @@ namespace BT {
 
 			if (s == parser.instructions.rend())
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecCallButNoFunction, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecCallButNoFunction, it - parser.instructions.begin() + 1);
 			}
 		}
 		return false;
@@ -482,12 +482,12 @@ namespace BT {
 		if (it->operation == bt_operation::btoJoin)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecJoinRepeat, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinRepeat, it - parser.instructions.begin() + 1);
 
 
 			if (IsWithinFunction(it) == false && forks == 0) //join poza funkcj¹. Mo¿e byc call do póŸniejszej funkcji z fork, ale to trudno stwierdziæ
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecJoinBeforeFork, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinBeforeFork, it - parser.instructions.begin() + 1);
 				if (repairCB) //usuwamy join
 				{
 					repairCB(it, n);
@@ -499,13 +499,13 @@ namespace BT {
 			r = std::vector<bt_instruction>::reverse_iterator(it);
 			if (r != std::find_if_not(r, parser.instructions.rend(), IsChangingCellInstruction))
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantOpBeforeFork, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecRedundantOpBeforeFork, it - parser.instructions.begin() + 1);
 			}
 		}
 		else if (it->operation == bt_operation::btoTerminate)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecTerminateRepeat, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecTerminateRepeat, it - parser.instructions.begin() + 1);
 		}
 
 		return false;
@@ -523,7 +523,7 @@ namespace BT {
 		if (it->operation == bt_operation::btoSwap)
 		{
 			if (TestForRepetition(it, repairRepetitionCB))
-				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecSwapRepeat, it - parser.instructions.begin() + 1);
 		}
 		else if (it->operation == bt_operation::btoSharedSwap)
 		{   //we have ~ op beetween
@@ -532,7 +532,7 @@ namespace BT {
 
 			if (n != parser.instructions.end() && n - it == 2) //~%~%
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecSwapRepeat, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecSwapRepeat, it - parser.instructions.begin() + 1);
 			}
 		}
 		return false;
@@ -552,7 +552,7 @@ namespace BT {
 
 			if (lim > 0) //wolna pêtla d¹¿¹ca do nieskoñczonoœci
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecSlowLoop, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecSlowLoop, it - parser.instructions.begin() + 1);
 			}
 
 			//teraz czy przed pêtl¹ s¹ sensowne operacje
@@ -571,7 +571,7 @@ namespace BT {
 
 					if (lim != 0 && (lim > 0 || (lim < 0 && s < 0))) //je¿eli pêtla jest policzalna, a sekwencja przed ni¹ da¿y inaczej ni¿ pêtla
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecRedundantNearLoopArithmetic, it - parser.instructions.begin()); // specjalnie bez  + 1
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecRedundantNearLoopArithmetic, it - parser.instructions.begin()); // specjalnie bez  + 1
 					}
 				}
 			}
@@ -598,7 +598,7 @@ namespace BT {
 
 			if ((n - it) > 1 && abs(sum) != ops)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantArithmetic, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecRedundantArithmetic, it - parser.instructions.begin() + 1);
 				if (repairCB)
 				{
 					repairCB(it, n, sum, ops);
@@ -628,7 +628,7 @@ namespace BT {
 
 			if ((n - it) > 1 && abs(sum) != ops)
 			{
-				MessageLog::Instance().AddMessage(MessageLog::ecRedundantMoves, it - parser.instructions.begin() + 1);
+				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecRedundantMoves, it - parser.instructions.begin() + 1);
 				if (repairCB)
 				{
 					repairCB(it, n, sum, ops);

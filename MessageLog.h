@@ -7,7 +7,7 @@ namespace BT {
 	class MessageLog
 	{
 	public:
-		enum ErrCode
+		enum class ErrCode
 		{
 			ecUnmatchedLoopBegin = 100,
 			ecUnmatchedLoopEnd,
@@ -20,10 +20,10 @@ namespace BT {
 			ecUnexpectedPragma,
 
 			ecEmptyCode,
-			ecIntegrityLost,
-			ecFatalError = 190,
+			ecIntegrityLost = 190,
+			ecFatalError, 
 			ecArgumentError,
-			ecUnknownError = 199,
+			ecUnknownError,
 
 			//warningi
 			ecInfiniteLoop = 200,
@@ -55,7 +55,7 @@ namespace BT {
 			ecCallButNoFunction,
 
 			ecMessage = 600,
-			ecInformation //taka wiadomoœæ bêdzie pomijana
+			ecInformation = 700
 		};
 
 		enum class MessageLevel
@@ -65,29 +65,36 @@ namespace BT {
 			mlNone
 		};
 
-		struct Error
+		struct Message
 		{
 			const unsigned int instruction_pos;
 			const ErrCode error_code;
 			const std::string text;
 
-			Error(ErrCode ec, const std::string& t, unsigned int pos)
-				: error_code(ec), instruction_pos(pos), text(t) {}
-			Error(ErrCode ec, const std::string& t)
-				: Error(ec, t, 0) {}
-			Error(ErrCode ec, unsigned int pos)
-				: Error(ec, "", 0) {}
-			Error(ErrCode ec)
-				: Error(ec, "") {}
+			Message(ErrCode ec, const std::string& msg, unsigned int pos)
+				: error_code(ec), instruction_pos(pos), text(msg) {}
+			Message(ErrCode ec, const std::string& msg)
+				: Message(ec, msg, 0) {}
+			Message(ErrCode ec, unsigned int pos)
+				: Message(ec, "", pos) {}
+			Message(const std::string& msg)
+				: Message(ErrCode::ecMessage, msg) {}
 
 			bool IsWarning(void) const {
-				return (int)error_code >= 200;
+				return (int)error_code >= 200 && (int)error_code < (int)ErrCode::ecMessage;
 			}
 			bool IsMessage(void) const {
-				return (int)error_code >= 600;
+				return error_code == ErrCode::ecMessage || 
+					error_code == ErrCode::ecInformation;
+			}
+			bool IsError(void) const {
+				return (int)error_code < 200;
 			}
 			bool IsGeneralError(void) const {
-				return (int)error_code >= 190 && (int)error_code < 200;
+				return error_code == ErrCode::ecIntegrityLost || 
+					error_code == ErrCode::ecFatalError ||
+					error_code == ErrCode::ecUnknownError || 
+					error_code == ErrCode::ecArgumentError;
 			}
 		};
 
@@ -121,7 +128,7 @@ namespace BT {
 		MessageLog& operator=(MessageLog const&) = delete;
 
 	protected:
-		std::list<Error> messages;
+		std::list<Message> messages;
 		MessageLevel message_level;
 
 		const char* MapMessages(const ErrCode& ec) const;

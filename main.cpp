@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	{
 		if(settings.InitFromArguments(ops))
 		{
-			if(settings.OP_message != MessageLog::MessageLevel::mlImportant){
+			if(settings.OP_message == MessageLog::MessageLevel::mlAll){
 				PrintBrainThreadInfo();
 			}  
 			
@@ -105,13 +105,17 @@ int main(int argc, char* argv[])
 }
 
 void Execute(const Settings& flags) {
+
+	MessageLog::Instance().SetMessageLevel(flags.OP_message);
 	ParserBase parser = ParseCode(flags.OP_source_code, flags);
 
-	if (parser.IsSyntaxValid() && (flags.OP_analyse || flags.OP_optimize)) {
+	if (!parser.IsSyntaxValid())
+		return;
+
+	if (flags.OP_analyse || flags.OP_optimize) {
 		RunAnalyser(parser, flags);
 	}
-
-	if (parser.IsSyntaxValid() && flags.OP_execute) {
+	if (flags.OP_execute) {
 		RunProgram(parser.GetInstructions(), flags);
 	}
 }
@@ -176,7 +180,7 @@ void RunAnalyser(ParserBase& parser, const Settings& flags)
 	{
 		if (parser.IsSyntaxValid()) //syntax looks fine
 		{
-			MessageLog::Instance().AddInfo("Code is valid");
+			MessageLog::Instance().AddInfo("Parser: Syntax is valid");
 			
 			if (flags.OP_analyse)
 			{
@@ -188,23 +192,23 @@ void RunAnalyser(ParserBase& parser, const Settings& flags)
 					if (analyser.RepairedSomething() == true)
 						MessageLog::Instance().AddInfo("Some bugs have been successfully fixed");
 
-					MessageLog::Instance().AddInfo("Code is sane");
+					MessageLog::Instance().AddInfo("Code Analyser: Code is sane");
 				}
 				else
 				{
-					MessageLog::Instance().AddMessage("Code has warnings");
+					MessageLog::Instance().AddInfo("Code Analyser: Code has warnings");
 				}
 			}
 		}
 		else
 		{
-			MessageLog::Instance().AddMessage("Code has errors");
+			MessageLog::Instance().AddMessage("Parser: Invalid syntax");
 		}
 
 	}
 	catch (...)
 	{
-		MessageLog::Instance().AddMessage(MessageLog::ecUnknownError, "In function RunParserAndDebug()");
+		MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnknownError, "In function RunParserAndDebug()");
 	}
 }
 
@@ -223,7 +227,12 @@ void RunProgram(const CodeTape& code, const Settings& flags)
 }
 
 void InteractiveMode() {
-	std::string input;
+	Settings s;
+	s.OP_analyse = true;
+	s.OP_message = MessageLog::MessageLevel::mlAll;
+	//handy reference to source code
+	std::string& input = s.OP_source_code;
+
 	std::cout << "Interactive Mode: Enter your code, type 'exit' to break." << std::endl;
 
 	while (true) {
@@ -243,10 +252,6 @@ void InteractiveMode() {
 			break;
 		}
 		else {
-			Settings s;
-			s.OP_source_code = input;
-			s.OP_analyse = true;
-
 			MessageLog::Instance().ClearMessages();
 			Execute(s);
 			MessageLog::Instance().PrintMessages();

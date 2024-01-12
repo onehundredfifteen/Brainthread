@@ -125,8 +125,6 @@ namespace BT {
 				}
 			}
 
-			MessageLog::Instance().SetMessageLevel(OP_message);
-
 			// --log [none|console|filename]
 			if (ops >> GetOpt::OptionPresent("log"))
 			{
@@ -208,22 +206,22 @@ namespace BT {
 		}
 		catch (GetOpt::TooManyArgumentsEx &ex)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, "Too many arguments");
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
 			return false;
 		}
 		catch (GetOpt::GetOptEx &ex)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, "Error while parsing arguments: " + std::string(ex.what()));
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, "Error while parsing arguments: " + std::string(ex.what()));
 			return false;
 		}
 		catch (BrainThreadInvalidOptionException &ex)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, std::string(ex.what()));
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
 			return false;
 		}
 		catch (...)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecArgumentError, "Unknown error");
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, "Unknown error");
 			return false;
 		}
 	}

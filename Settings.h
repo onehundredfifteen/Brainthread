@@ -19,7 +19,7 @@ namespace BT {
 		bool OP_execute = true;
 		bool OP_nopause = Settings::IsRanFromConsole();
 
-		MessageLog::MessageLevel OP_message = MessageLog::MessageLevel::mlAll;
+		MessageLog::MessageLevel OP_message = MessageLog::MessageLevel::mlImportant;
 		DebugLogStream::stream_type OP_log = DebugLogStream::stream_type::lsConsole;
 
 		std::string OP_source_code = "";

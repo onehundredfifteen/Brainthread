@@ -43,7 +43,7 @@ namespace BT {
 
 		if (source.empty())
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ecEmptyCode, 0);
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecEmptyCode, 0);
 			return false;
 		}
 
@@ -66,7 +66,7 @@ namespace BT {
 						}
 					}
 					else {
-						MessageLog::Instance().AddMessage(MessageLog::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
 						syntaxOk = false;
 					}
 				}
@@ -75,7 +75,7 @@ namespace BT {
 						switchToPragma = false;
 						int tmp_ignore = ignore_ins;
 						if (!HandlePragma(it, source.end(), ignore_ins)) {
-							MessageLog::Instance().AddMessage(MessageLog::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
+							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
 							syntaxOk = false;
 						}
 					}
@@ -114,7 +114,7 @@ namespace BT {
 						//let's find [ ( ] )
 						if (func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins))
 						{
-							MessageLog::Instance().AddMessage(MessageLog::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
+							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecBLOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
 							syntaxOk = false;
 						}
 
@@ -122,7 +122,7 @@ namespace BT {
 					}
 					else
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), ignore_ins));
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnmatchedLoopBegin, GetValidPos(it, source.begin(), ignore_ins));
 						syntaxOk = false;
 					}
 				}
@@ -141,7 +141,7 @@ namespace BT {
 						//let's find ( [ ) ]
 						if (loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins))
 						{
-							MessageLog::Instance().AddMessage(MessageLog::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
+							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecELOutOfFunctionScope, GetValidPos(it, source.begin(), ignore_ins));
 							syntaxOk = false;
 						}
 
@@ -149,7 +149,7 @@ namespace BT {
 					}
 					else //error, no matching (
 					{
-						MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), ignore_ins));
+						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnmatchedFunBegin, GetValidPos(it, source.begin(), ignore_ins));
 						syntaxOk = false;
 					}
 
@@ -163,7 +163,7 @@ namespace BT {
 					}
 					else
 					{
-						errors->AddMessage(MessageLog::ecUnmatchedBreak, GetValidPos(it, source.begin(), ignore_ins), line_counter);
+						errors->AddMessage(MessageLog::ErrCode::ecUnmatchedBreak, GetValidPos(it, source.begin(), ignore_ins), line_counter);
 					}
 				}*/
 				else if (curr_op == bt_operation::btoSwitchHeap)
@@ -205,13 +205,13 @@ namespace BT {
 
 		//error analysis
 		while (loop_call_stack.empty() == false){
-			MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedLoopEnd, loop_call_stack.top());
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnmatchedLoopEnd, loop_call_stack.top());
 			loop_call_stack.pop();
 			syntaxOk = false;	
 		}
 
 		while (func_call_stack.empty() == false){
-			MessageLog::Instance().AddMessage(MessageLog::ecUnmatchedFunEnd, func_call_stack.top());
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnmatchedFunEnd, func_call_stack.top());
 			func_call_stack.pop();
 			syntaxOk = false;
 		}

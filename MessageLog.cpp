@@ -10,28 +10,28 @@ namespace BT {
 
 	void MessageLog::AddMessage(ErrCode e_code, unsigned int pos)
 	{
-		messages.emplace_back(Error(e_code, pos));
+		messages.emplace_back(Message(e_code, pos));
 	}
 
 	void MessageLog::AddMessage(ErrCode e_code, const std::string& text)
 	{
-		messages.emplace_back(Error(e_code, text));
+		messages.emplace_back(Message(e_code, text));
 	}
 
 	void MessageLog::AddMessage(const std::string& text)
 	{
-		AddMessage(MessageLog::ecMessage, text);
+		messages.emplace_back(Message(text));
 	}
 
 	void MessageLog::AddInfo(const std::string& text)
 	{
-		AddMessage(MessageLog::ecInformation, text);
+		AddMessage(MessageLog::ErrCode::ecInformation, text);
 	}
 
 	unsigned int MessageLog::ErrorsCount(void) const
 	{
 		unsigned int cnt = 0;
-		for (Error msg : messages) {
+		for (const Message &msg : messages) {
 			if (msg.IsWarning() == false && msg.IsMessage() == false)
 				++cnt;
 		}
@@ -40,7 +40,7 @@ namespace BT {
 	unsigned int MessageLog::WarningsCount(void) const
 	{
 		unsigned int cnt = 0;
-		for (Error msg : messages) {
+		for (const Message& msg : messages) {
 			if (msg.IsWarning())
 				++cnt;
 		}
@@ -64,30 +64,28 @@ namespace BT {
 		if (errcnt || warcnt)
 			std::cout << std::endl << errcnt << ((errcnt > 1) ? " errors, " : " error, ") << warcnt << ((warcnt > 1) ? " warnings." : " warning.") << std::endl;
 
-		for (std::list<Error>::const_iterator it = messages.begin(); it != messages.end(); ++it)
+		for (const Message& msg : messages)
 		{
 			if (++msgcnt > max_msgs) {
 				std::cout << "Too many warning or error messages." << std::endl;
 				break;
 			}
 
-			if (it->IsMessage() == false)
-			{
-				std::cout << ((it->IsWarning()) ? "Warning " : "Error ") << (unsigned)it->error_code << ": "
-					<< MapMessages(it->error_code);
+			if (msg.IsMessage() == false) {
+				std::cout << ((msg.IsWarning()) ? "Warning " : "Error ") << (unsigned)msg.error_code << ": "
+					<< MapMessages(msg.error_code);
 
-				if (it->IsGeneralError())
-					std::cout << " " << it->text << std::endl;
+				if (msg.IsGeneralError())
+					std::cout << " " << msg.text << std::endl;
 				else
-					std::cout << " at instruction " << it->instruction_pos << std::endl;
+					std::cout << " at instruction " << msg.instruction_pos << std::endl;
 			}
-			else if (it->error_code == MessageLog::ecMessage)
-			{
-				std::cout << "Message: " << it->text << "." << std::endl;
+			else if (msg.error_code == MessageLog::ErrCode::ecMessage) {
+				std::cout << "Message: " << msg.text << "." << std::endl;
 			}
-			else if (message_level == MessageLevel::mlAll && it->error_code == MessageLog::ecInformation)
-			{
-				std::cout << "Info: " << it->text << "." << std::endl;
+			else if (message_level == MessageLevel::mlAll &&
+				msg.error_code == MessageLog::ErrCode::ecInformation) {
+				std::cout << "Info: " << msg.text << "." << std::endl;
 			}
 		}
 	}
@@ -101,49 +99,49 @@ namespace BT {
 	{
 		switch (ec)
 		{
-		case ecUnmatchedLoopBegin: return "Mismatched loop begin - bracket sign [";
-		case ecUnmatchedLoopEnd: return "Mismatched loop end - bracket sign ]";
-		case ecUnmatchedFunBegin: return "Mismatched function begin - parenthesis sign (";
-		case ecUnmatchedFunEnd: return "Mismatched function end - parenthesis sign )";
+		case ErrCode::ecUnmatchedLoopBegin: return "Mismatched loop begin - bracket sign [";
+		case ErrCode::ecUnmatchedLoopEnd: return "Mismatched loop end - bracket sign ]";
+		case ErrCode::ecUnmatchedFunBegin: return "Mismatched function begin - parenthesis sign (";
+		case ErrCode::ecUnmatchedFunEnd: return "Mismatched function end - parenthesis sign )";
 
-		case ecELOutOfFunctionScope: return "Loop end out of function scope - ( [ ) ]";
-		case ecBLOutOfFunctionScope: return "Loop begin out of function scope - [ ( ] )";
-		case ecUnmatchedBreak: return "Mismatched break";
-		case ecUnexpectedSwitch: return "Expected a heap instruction: &,^,%";
-		case ecUnexpectedPragma: return "Expected an integer value after #";
-		case ecEmptyCode: return "Source code is empty";
+		case ErrCode::ecELOutOfFunctionScope: return "Loop end out of function scope - ( [ ) ]";
+		case ErrCode::ecBLOutOfFunctionScope: return "Loop begin out of function scope - [ ( ] )";
+		case ErrCode::ecUnmatchedBreak: return "Mismatched break";
+		case ErrCode::ecUnexpectedSwitch: return "Expected a heap instruction: &,^,%";
+		case ErrCode::ecUnexpectedPragma: return "Expected an integer value after #";
+		case ErrCode::ecEmptyCode: return "Source code is empty";
 
-		case ecInfiniteLoop: return "Detected an infinite loop like []";
-		case ecEmptyLoop: return "Detected an empty loop like [[xx]]";
+		case ErrCode::ecInfiniteLoop: return "Detected an infinite loop like []";
+		case ErrCode::ecEmptyLoop: return "Detected an empty loop like [[xx]]";
 
-		case ecEmptyFunction: return "Detected an empty function like ()";
-		case ecFunctionRedefinition: return "Suspected function redeclaration";
-		case ecFunctionRedefinitionInternal: return "Suspected internal function redeclaration";
-		case ecFunctionLimitExceed: return "The set of names for the functions can be exceeded";
-		case ecFunctionExistsButNoCall: return "A function was declared but not used";
+		case ErrCode::ecEmptyFunction: return "Detected an empty function like ()";
+		case ErrCode::ecFunctionRedefinition: return "Suspected function redeclaration";
+		case ErrCode::ecFunctionRedefinitionInternal: return "Suspected internal function redeclaration";
+		case ErrCode::ecFunctionLimitExceed: return "The set of names for the functions can be exceeded";
+		case ErrCode::ecFunctionExistsButNoCall: return "A function was declared but not used";
 
-		case ecJoinButNoFork: return "A join command exists but there is no fork";
-		case ecTerminateRepeat: return "Unnecessary terminate instruction repetition";
-		case ecJoinRepeat: return "Unnecessary join instruction repetition";
-		case ecSwapRepeat: return "Unnecessary swap instruction repetition";
-		case ecJoinBeforeFork: return "Join before fork";
+		case ErrCode::ecJoinButNoFork: return "A join command exists but there is no fork";
+		case ErrCode::ecTerminateRepeat: return "Unnecessary terminate instruction repetition";
+		case ErrCode::ecJoinRepeat: return "Unnecessary join instruction repetition";
+		case ErrCode::ecSwapRepeat: return "Unnecessary swap instruction repetition";
+		case ErrCode::ecJoinBeforeFork: return "Join before fork";
 
-		case ecRedundantArithmetic: return "Redundant arithmetics";
-		case ecFunctionInLoop: return "Function declaration in the loop";
-		case ecRedundantNearLoopArithmetic: return "Redundant arithmetics before loop like -[+]";
-		case ecSlowLoop: return "Loop approaches infinity or very slow loop";
+		case ErrCode::ecRedundantArithmetic: return "Redundant arithmetics";
+		case ErrCode::ecFunctionInLoop: return "Function declaration in the loop";
+		case ErrCode::ecRedundantNearLoopArithmetic: return "Redundant arithmetics before loop like -[+]";
+		case ErrCode::ecSlowLoop: return "Loop approaches infinity or very slow loop";
 
-		case ecRedundantMoves: return "Redundant pointer moves like ><><";
-		case ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
-		case ecInfinityRecurention: return "Funcion calls itself recursively";
-		case ecCallButNoFunction: return "Call but no function defined";
+		case ErrCode::ecRedundantMoves: return "Redundant pointer moves like ><><";
+		case ErrCode::ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
+		case ErrCode::ecInfinityRecurention: return "Funcion calls itself recursively";
+		case ErrCode::ecCallButNoFunction: return "Call but no function defined";
 
-		case ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
+		case ErrCode::ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
 
 			//ogolne b³edy
-		case ecFatalError: return "Fatal Error";
-		case ecArgumentError: return "Argument Error";
-		case ecUnknownError: return "Unknown Error";
+		case ErrCode::ecFatalError: return "Fatal Error";
+		case ErrCode::ecArgumentError: return "Argument Error";
+		case ErrCode::ecUnknownError: return "Unknown Error";
 		}
 		return "";
 	}
