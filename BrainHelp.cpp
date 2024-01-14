@@ -29,10 +29,10 @@ void ShowUsage(void)
 {
 	PrintBrainThreadInfoEx();
 	std::cout << "++ USAGE ++\n"
-			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
-			  << "\t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
-			  << "\t" << GetExeName() << " --help\n"
-			  << "\t" << GetExeName() << " --info\n"
+			  << "Show information about Brainthread language \t" << GetExeName() << " --info\n"
+			  << "Run your code with default options: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
+			  << "Run your code: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
+			  << "Show quick help: \t" << GetExeName() << " --help or --help [topic]\n"	  
 			  << std::endl;
 }
 
@@ -245,9 +245,25 @@ void ShowHelp(std::string help_opt)
 	std::cout << std::endl;
 }
 
+std::string AdviseMapping(std::string a) {
+	std::string real_topic = "";
+	if (a == "m")real_topic = "memorysize";
+
+	return real_topic;
+}
+void ShowAdvise(std::string help_opt) {
+	std::string real_topic = AdviseMapping(help_opt);
+
+	if (!real_topic.empty()) {
+		std::cout << "Did you meant " << real_topic << "?" << std::endl;
+		ShowHelp(real_topic);
+	}
+	else ShowHelp(help_opt);
+}
+
 void ShowInfo(void)
 {
-	PrintBrainThreadInfoEx();
+	PrintBrainThreadInfo();
 
 	std::cout << "\n++ DESCRIPTION OF BRAINTHREAD LANGUAGE ++\n"
 			  << "Brainthread is a derivative of Brainfuck, supports functions (from pBrain), threads (like Brainfork) and heaps. "

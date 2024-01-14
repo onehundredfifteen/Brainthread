@@ -1,5 +1,7 @@
+#include <charconv>
 #include <windows.h>
 #include <process.h>
+
 #include "Settings.h"
 #include "BrainThreadExceptions.h"
 
@@ -50,9 +52,9 @@ namespace BT {
 			if (ops >> GetOpt::OptionPresent('m', "memorysize"))
 			{
 				ops >> GetOpt::Option('m', "memorysize", op_arg);
-				op_arg_i = atoi(op_arg.c_str());
+				auto res = std::from_chars(op_arg.data(), op_arg.data() + op_arg.size(), op_arg_i);
 
-				if (op_arg_i < 1 || op_arg_i > UINT_MAX)
+				if (res.ec != std::errc() || op_arg_i < 1 || op_arg_i > UINT_MAX)
 					throw BrainThreadInvalidOptionException("memorysize", op_arg);
 				else
 					OP_mem_size = (unsigned int)op_arg_i;
@@ -216,7 +218,8 @@ namespace BT {
 		}
 		catch (BrainThreadInvalidOptionException &ex)
 		{
-			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
+			help_topic = std::string(ex.what());
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, help_topic);
 			return false;
 		}
 		catch (...)

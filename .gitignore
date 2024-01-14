@@ -59,3 +59,8 @@ Brainthread.vcxproj.user
 Release/Brainthread.exe.recipe
 Release/Brainthread.log
 Brainthread.vcxproj.user
+*.sarif
+*.xml
+Debug/CodeAnalysisResultManifest.txt
+*.log
+Release/Brainthread.vcxproj.FileListAbsolute.txt

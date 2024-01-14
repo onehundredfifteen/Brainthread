@@ -14,4 +14,5 @@ void PrintBrainThreadInfo(void);
 void PrintBrainThreadInfoEx(void);
 void ShowUsage(void);
 void ShowHelp(std::string help_opt);
+void ShowAdvise(std::string help_opt);
 void ShowInfo(void);

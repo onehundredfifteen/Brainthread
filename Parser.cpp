@@ -6,6 +6,7 @@
 #include <list>
 #include <algorithm>
 #include <iterator>
+#include <charconv>
 
 namespace BT {
 
@@ -35,8 +36,6 @@ namespace BT {
 
 		//next stack op will be executed on shared stack
 		bool switchToSharedHeap = false;
-		//# pragma switch
-		bool switchToPragma = false;
 
 		//result
 		bool syntaxOk = true;
@@ -146,11 +145,6 @@ namespace BT {
 					switchToSharedHeap = true; 
 					++ignore_ins; //non executable operation
 				}
-				else if (curr_op == bt_operation::btoDEBUG_Pragma)
-				{
-					switchToPragma = true;
-					++ignore_ins; //non executable operation
-				}
 				else if (switchToSharedHeap) {
 					switchToSharedHeap = false;
 					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
@@ -167,23 +161,32 @@ namespace BT {
 					}
 				}
 				else if constexpr (OLevel == 0) {
-					if (switchToPragma) {
-						switchToPragma = false;
-						int tmp_ignore = ignore_ins;
-						if (!HandlePragma(it, source.end(), ignore_ins)) {
-							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedPragma, GetValidPos(it, source.begin(), tmp_ignore));
+					if (curr_op == bt_operation::btoDEBUG_Pragma) {
+						//look for #115+++ -> #'115'
+						std::string::const_iterator end_pragma_it = it;
+						while (++end_pragma_it < source.end() && std::isdigit(static_cast<unsigned char>(*end_pragma_it)));				
+
+						auto diff = std::distance(it, end_pragma_it);
+						if (diff > 1 && 
+							end_pragma_it < source.end() &&
+							MapCharToOperator(*end_pragma_it) != bt_operation::btoUnkown) {
+							HandlePragma(it, end_pragma_it, GetValidPos(it, source.begin(), ignore_ins));
+						}
+						else {
+							MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedPragma, GetValidPos(it, source.begin(), ignore_ins));
 							syntaxOk = false;
 						}
+						ignore_ins += diff;
+						std::advance(it, end_pragma_it < source.end() ? diff : diff - 1);
 					}
 					else instructions.emplace_back(bt_instruction(curr_op));
 				}
 				else if constexpr (OLevel > 1) {
 					if (isRepetitionOptimizableOperator(curr_op)) {
 						int reps = 1;
-						std::string::const_iterator _it = (it + 1);
-						while (_it < source.end()) {
+						std::string::const_iterator _it = it;
+						while (++_it < source.end()) {
 							if (MapCharToOperator(*_it) == curr_op) {
-								++_it;
 								++reps;
 							}
 							else break;
@@ -225,7 +228,6 @@ namespace BT {
 
 	template <CodeLang Lang, int OLevel>
 	bool inline Parser<Lang, OLevel>::isValidOperator(const char& c) const {
-
 		if constexpr (Lang == CodeLang::clBrainThread) {
 			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:#MTFSEDH", c) != 0;
 			return strchr("<>+-.,[]()*{}!&^%~;:", c) != 0;
@@ -339,14 +341,13 @@ namespace BT {
 			}
 			else if constexpr (Lang == CodeLang::clBrainFuck) {
 				switch (c) {
-					case '#': //a pragma if applicable
+					case '#':
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 				}
 			}
 			else if constexpr (Lang == CodeLang::clPBrain) {
 				switch (c) {
-					case '#': //a pragma if applicable
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 					case 'F': return bt_operation::btoDEBUG_FunctionsStackDump;
@@ -355,7 +356,6 @@ namespace BT {
 			}
 			else if constexpr (Lang == CodeLang::clBrainFork) {
 				switch (c) {
-					case '#': //a pragma if applicable
 					case 'M': return bt_operation::btoDEBUG_SimpleMemoryDump;
 					case 'D': return bt_operation::btoDEBUG_MemoryDump;
 					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
@@ -381,36 +381,37 @@ namespace BT {
 	}
 
 	template <CodeLang Lang, int OLevel>
-	bool Parser<Lang, OLevel>::HandlePragma(const std::string::const_iterator& begin, const std::string::const_iterator& end, unsigned int& ignore_ins) {
-		if constexpr (OLevel != 0) {
-			return false;
+	void Parser<Lang, OLevel>::HandlePragma(const std::string::const_iterator& begin, const std::string::const_iterator& end, const unsigned int err_pos) {
+		//#115+ -> 115x +
+		int value = 0;
+		constexpr int max_value = 256;
+		auto res = std::from_chars(&(*(begin + 1)), &(*end), value);
+
+		if (res.ec != std::errc()) {
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecFatalError, "Pragma value conversion error");
+			return;
 		}
-		//[-]#100[-]
-		std::string::const_iterator it = begin;
-		//while (it < end && std::isdigit(static_cast<unsigned char>(it))) {
-			//++it;
-		//}
-
-		int advance = it - begin;
-		if (advance == 0) {
-			//empty pragma
-			return false;
+		else if (value > max_value) {
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecPragmaValueTooBig, err_pos);
+			value = max_value;
 		}
-
-		std::string s_pragmaval;
-		std::copy(begin, it, std::back_inserter(s_pragmaval));
-
-		int pragmaval = atoi(s_pragmaval.c_str());
-
-		if (++it >= end || MapCharToOperator(*it) == bt_operation::btoInvalid) {
-			//no instruction after pragma
-			return false;
+		else if (value <= 0) {
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecPragmaValueTooSmall, err_pos);
+			return;
 		}
 
-		while (pragmaval) {
-			instructions.emplace_back(bt_instruction(MapCharToOperator(*it)));
-			++ignore_ins;
-			//std::advance(begin, 1);
+		const bt_operation op = MapCharToOperator(*end);
+		if (CodeAnalyser::IsLinkableInstruction(op)) {
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecPragmaUnsupported, err_pos);
+			return;
+		}
+		else if (isRepetitionOptimizableOperator(op)) {
+			instructions.emplace_back(bt_instruction(MapOperatorToOptimizedOp(op), UINT_MAX, value));
+		}
+		else {
+			do {
+				instructions.emplace_back(bt_instruction(op));
+			} while (--value);
 		}
 	}
 

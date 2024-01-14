@@ -73,15 +73,15 @@ int main(int argc, char* argv[])
 		ShowInfo();
 	}
 	else if(argc > 1)
-	{
+	{	
 		if(settings.InitFromArguments(ops))
 		{
 			if(settings.OP_message == MessageLog::MessageLevel::mlAll){
 				PrintBrainThreadInfo();
-			}  
-			
+			}  		
 			Execute(settings);
 		}
+		else if(!settings.help_topic.empty()) ShowHelp(settings.help_topic);
 		else ShowUsage();
 
 		MessageLog::Instance().PrintMessages();

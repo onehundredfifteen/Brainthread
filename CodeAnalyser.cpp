@@ -36,6 +36,13 @@ namespace BT {
 				ins.operation == bt_operation::btoOPT_MoveRight);
 	}
 
+	bool inline CodeAnalyser::IsRepetitionOptimizableOperator(const bt_operation& op) {
+		return (op == bt_operation::btoMoveLeft ||
+			op == bt_operation::btoMoveRight ||
+			op == bt_operation::btoIncrement ||
+			op == bt_operation::btoDecrement);
+	}
+
 	//Operatory zmieniaj¹ce przep³yw lub wartoœæ komórek
 	//Wszystkie operatory Brainfuck (bez output) + function Call
 	//Nie ma tutaj definicji funkcji! ()

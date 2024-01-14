@@ -12,7 +12,7 @@ namespace BT {
 	 * Klasa CodeAnalyser
 	 * Pozwala debugowaæ i optymalizowaæ kod
 	*/
-
+	class ParserBase;
 
 
 	typedef std::function<void(CodeTapeIterator&)> RepairFn;
@@ -69,7 +69,7 @@ namespace BT {
 
 		bool ignore_arithmetic_test;
 		bool ignore_moves_test;
-
+	public:
 		static bool IsChangingInstruction(const bt_instruction& op);
 		static bool IsArithmeticInstruction(const bt_instruction& op);
 		static bool IsMoveInstruction(const bt_instruction& op);
@@ -77,5 +77,6 @@ namespace BT {
 		static bool IsChangingCellInstruction(const bt_instruction& op);
 		static bool IsSharedHeapInstruction(const bt_instruction& op);
 		static bool IsFlowChangingInstruction(const bt_instruction& op);
+		static bool IsRepetitionOptimizableOperator(const bt_operation& op);
 	};
 }

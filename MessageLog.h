@@ -53,6 +53,9 @@ namespace BT {
 			//ecSwitchRepeat,
 			//ecSwithOutOfScope,
 			ecCallButNoFunction,
+			ecPragmaValueTooBig,
+			ecPragmaValueTooSmall,
+			ecPragmaUnsupported,
 
 			ecMessage = 600,
 			ecInformation = 700

@@ -4,7 +4,7 @@
 
 #include "EnumDefs.h"
 #include "CodeTape.h"
-
+#include "CodeAnalyser.h"
 
 namespace BT {
 
@@ -41,7 +41,7 @@ namespace BT {
 		bt_operation MapCharToOperator(const char& c) const;
 		bt_operation MapOperatorToOptimizedOp(const bt_operation& op) const;
 
-		bool HandlePragma(const std::string::const_iterator& pos, const std::string::const_iterator& end, unsigned int &ignore_ins);
+		void HandlePragma(const std::string::const_iterator& begin, const std::string::const_iterator& end, const unsigned int err_pos);
 
 		unsigned int GetValidPos(const std::string::const_iterator& pos, const std::string::const_iterator& begin, unsigned int ignore_ins) const;
 	};

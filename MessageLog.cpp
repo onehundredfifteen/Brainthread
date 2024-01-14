@@ -32,7 +32,7 @@ namespace BT {
 	{
 		unsigned int cnt = 0;
 		for (const Message &msg : messages) {
-			if (msg.IsWarning() == false && msg.IsMessage() == false)
+			if (msg.IsError())
 				++cnt;
 		}
 		return cnt;
@@ -61,8 +61,11 @@ namespace BT {
 		unsigned int errcnt = ErrorsCount();
 		unsigned int warcnt = WarningsCount();
 
+		if (MessagesCount())
+			std::cout << '\n';
+
 		if (errcnt || warcnt)
-			std::cout << std::endl << errcnt << ((errcnt > 1) ? " errors, " : " error, ") << warcnt << ((warcnt > 1) ? " warnings." : " warning.") << std::endl;
+			std::cout << errcnt << ((errcnt == 1) ? " error, " : " errors, ") << warcnt << ((warcnt == 1) ? " warning." : " warnings.") << std::endl;
 
 		for (const Message& msg : messages)
 		{
@@ -107,10 +110,9 @@ namespace BT {
 		case ErrCode::ecELOutOfFunctionScope: return "Loop end out of function scope - ( [ ) ]";
 		case ErrCode::ecBLOutOfFunctionScope: return "Loop begin out of function scope - [ ( ] )";
 		case ErrCode::ecUnmatchedBreak: return "Mismatched break";
-		case ErrCode::ecUnexpectedSwitch: return "Expected a heap instruction: &,^,%";
-		case ErrCode::ecUnexpectedPragma: return "Expected an integer value after #";
-		case ErrCode::ecEmptyCode: return "Source code is empty";
-
+		case ErrCode::ecUnexpectedSwitch: return "Expected a heap instruction (&, ^, %)";
+		case ErrCode::ecUnexpectedPragma: return "Expected an integer value followed by command";
+		
 		case ErrCode::ecInfiniteLoop: return "Detected an infinite loop like []";
 		case ErrCode::ecEmptyLoop: return "Detected an empty loop like [[xx]]";
 
@@ -135,10 +137,13 @@ namespace BT {
 		case ErrCode::ecRedundantOpBeforeFork: return "Operation on cell value before fork has no effect";
 		case ErrCode::ecInfinityRecurention: return "Funcion calls itself recursively";
 		case ErrCode::ecCallButNoFunction: return "Call but no function defined";
+		case ErrCode::ecPragmaValueTooSmall: return "Pragma value less than 1 have no effect";
+		case ErrCode::ecPragmaValueTooBig: return "Pragma value is too big, truncating to 256";
+		case ErrCode::ecPragmaUnsupported: return "This instruction is unsupported by pragmas";
 
+		//other errors
+		case ErrCode::ecEmptyCode: return "Source code is empty";
 		case ErrCode::ecIntegrityLost: return "Code lost integrity. Rerun program with no repair option";
-
-			//ogolne b³edy
 		case ErrCode::ecFatalError: return "Fatal Error";
 		case ErrCode::ecArgumentError: return "Argument Error";
 		case ErrCode::ecUnknownError: return "Unknown Error";
