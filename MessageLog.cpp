@@ -10,17 +10,17 @@ namespace BT {
 
 	void MessageLog::AddMessage(ErrCode e_code, unsigned int pos)
 	{
-		messages.emplace_back(Message(e_code, pos));
+		messages.emplace_back(e_code, pos);
 	}
 
 	void MessageLog::AddMessage(ErrCode e_code, const std::string& text)
 	{
-		messages.emplace_back(Message(e_code, text));
+		messages.emplace_back(e_code, text);
 	}
 
 	void MessageLog::AddMessage(const std::string& text)
 	{
-		messages.emplace_back(Message(text));
+		messages.emplace_back(text);
 	}
 
 	void MessageLog::AddInfo(const std::string& text)
@@ -147,7 +147,7 @@ namespace BT {
 		case ErrCode::ecFatalError: return "Fatal Error";
 		case ErrCode::ecArgumentError: return "Argument Error";
 		case ErrCode::ecUnknownError: return "Unknown Error";
-		}
-		return "";
+		default: return "Unmapped error message";
+		}	
 	}
 }

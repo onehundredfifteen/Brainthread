@@ -7,23 +7,18 @@
 #include "ProcessMonitor.h"
 #include "BrainThreadRuntimeException.h"
 
-extern CRITICAL_SECTION cout_critical_section;
-
 namespace BT {
 
 	template < typename T >
 	MemoryTape<T>::MemoryTape(unsigned int mem_size, eof_option eof_behavior, mem_option mem_behavior)
 	{
-		try
-		{
+		try {
 			mem = new T[mem_size];
 		}
-		catch (std::bad_alloc ba)
-		{
+		catch (const std::bad_alloc&) {
 			throw BFAllocException(mem_size, sizeof(T));
 		}
-		catch (...)
-		{
+		catch (...) {
 			throw BFUnkownException();
 		}
 
@@ -40,22 +35,18 @@ namespace BT {
 	template < typename T >
 	MemoryTape<T>::MemoryTape(const MemoryTape<T>& memory)
 	{
-		try
-		{
+		try {
 			mem = new T[memory.len];
 		}
-		catch (std::bad_alloc ba)
-		{
+		catch (const std::bad_alloc&) {
 			throw BFAllocException(memory.len, sizeof(T));
 		}
-		catch (...)
-		{
+		catch (...) {
 			throw BFUnkownException();
 		}
 
 		len = memory.len;
 		pointer = mem + memory.PointerPosition();
-
 		max_mem = (T*)&mem[len - 1];
 
 		memcpy(mem, memory.mem, sizeof(T) * len);
@@ -107,12 +98,10 @@ namespace BT {
 				return;
 			case mem_option::moDynamic:
 			{
-				try
-				{
+				try	{
 					Realloc();
 				}
-				catch (BrainThreadRuntimeException& e)
-				{
+				catch (const BrainThreadRuntimeException& e) {
 					throw e;
 				}
 			}
@@ -128,9 +117,9 @@ namespace BT {
 	template < typename T >
 	void MemoryTape<T>::MoveRight(int amount)
 	{
-		while (amount--) {
+		do {
 			MoveRight();
-		}
+		} while (--amount);
 	}
 
 	template < typename T >
@@ -155,27 +144,22 @@ namespace BT {
 	template < typename T >
 	void MemoryTape<T>::MoveLeft(int amount)
 	{
-		while (amount--) {
+		do {
 			MoveLeft();
-		}
+		} while (--amount);
 	}
 
 	template < typename T >
 	void MemoryTape<T>::Read(void)
 	{
-		ProcessMonitor::EnterCriticalSection(cout_critical_section);
-
 		if (std::cin.peek() == std::char_traits<char>::eof())
 		{
-			if (eof_behavior == eof_option::eoZero)*pointer = 0;
-			else if (eof_behavior == eof_option::eoMinusOne)*pointer = -1;
-			else //eoUnchanged
-				*pointer = std::cin.get();
-
+			switch (eof_behavior) {
+				case eof_option::eoZero: *pointer = 0; return;
+				case eof_option::eoMinusOne: *pointer = -1; return; 
+			}
 		}
-		else *pointer = std::cin.get();
-
-		ProcessMonitor::LeaveCriticalSection(cout_critical_section);
+		*pointer = std::cin.get();
 	}
 	/*
 	funkcja ma dwie specjalizacje - ascii sa od 0 do 127
@@ -184,60 +168,45 @@ namespace BT {
 	template <>
 	void MemoryTape<char>::Write(void)
 	{
-		ProcessMonitor::EnterCriticalSection(cout_critical_section);
 		std::cout << *pointer << std::flush;
-		ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 	}
 	template < typename T >
 	void MemoryTape<T>::Write(void)
 	{
-		ProcessMonitor::EnterCriticalSection(cout_critical_section);
 		std::cout << static_cast<char>(*pointer) << std::flush;
-		ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 	}
 
 	template < typename T >
 	void MemoryTape<T>::DecimalRead(void)
 	{
 		unsigned int i; //niewa¿ne, czy signed czy unsigned
-
-		ProcessMonitor::EnterCriticalSection(cout_critical_section);
 		std::cin >> i;
 
 		if (std::cin.fail())
 		{
 			std::cin.clear();
 			std::cin.ignore(UINT_MAX, '\n');
-			ProcessMonitor::LeaveCriticalSection(cout_critical_section); //opuœæ sekcjê przed throw, aby nie zakleszczyæ w¹tków
-
 			throw BFInvalidInputStreamException();
 		}
 		*pointer = static_cast<T>(i);
-
-		ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 	}
 
 	template< typename T>
 	void MemoryTape<T>::DecimalWrite(void)
 	{
-		ProcessMonitor::EnterCriticalSection(cout_critical_section);
-
-		if (std::is_signed<T>::value) //!
+		if constexpr (std::is_signed<T>::value)
 			std::cout << static_cast<int>(*pointer) << std::flush;
 		else
 			std::cout << static_cast<unsigned int>(*pointer) << std::flush;
-
-		ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 	}
 
 	/*Funkcje wewntrzne tasmy*/
 
 	template < typename T >//funkcja zwraca nowa iloœæ pamiêci dla procesu
-	unsigned MemoryTape<T>::GetNewMemorySize()
+	unsigned int MemoryTape<T>::GetNewMemorySize()
 	{
 		return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_size;
 	}
-
 
 	template < typename T > //realokuje pamiêæ (zmienia rozmiar pamiêci i kopiuje star¹ zawartoœæ)
 	void MemoryTape<T>::Realloc()
@@ -246,16 +215,13 @@ namespace BT {
 		unsigned int new_mem_size = GetNewMemorySize();
 		unsigned int p_pos = PointerPosition();
 
-		try
-		{
+		try {
 			new_mem = new T[new_mem_size];
 		}
-		catch (std::bad_alloc ba)
-		{
+		catch (const std::bad_alloc&) {
 			throw BFAllocException(new_mem_size, sizeof(T));
 		}
-		catch (...)
-		{
+		catch (...) {
 			throw BFUnkownException();
 		}
 
@@ -263,8 +229,6 @@ namespace BT {
 		ZeroMemory(new_mem + len, sizeof(T) * (new_mem_size - len));
 		memcpy(new_mem, mem, len);
 
-
-		//star¹ kasujemy
 		delete[] mem;
 
 		//ustawiamy co trzeba
@@ -297,14 +261,14 @@ namespace BT {
 		{
 			if (sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255))
 			{
-				if (std::is_signed<T>::value)
+				if constexpr (std::is_signed<T>::value)
 					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
 				else
 					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
 			}
 			else
 			{
-				if (std::is_signed<T>::value)
+				if constexpr (std::is_signed<T>::value)
 					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<int>(mem[i]) << " ";
 				else
 					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<unsigned int>(mem[i]) << " ";
@@ -340,7 +304,7 @@ namespace BT {
 		{
 			if (mem[i] && (sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255)))
 			{
-				if (std::is_signed<T>::value)
+				if constexpr (std::is_signed<T>::value)
 					o << "[" << i << "]" << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
 				else
 					o << "[" << i << "]" << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
@@ -350,7 +314,7 @@ namespace BT {
 			}
 			else if (mem[i])
 			{
-				if (std::is_signed<T>::value)
+				if constexpr (std::is_signed<T>::value)
 					o << "[" << i << "]" << static_cast<int>(mem[i]) << " ";
 				else
 					o << "[" << i << "]" << static_cast<unsigned int>(mem[i]) << " ";

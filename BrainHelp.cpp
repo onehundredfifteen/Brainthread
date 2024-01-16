@@ -29,9 +29,9 @@ void ShowUsage(void)
 {
 	PrintBrainThreadInfoEx();
 	std::cout << "++ USAGE ++\n"
-			  << "Show information about Brainthread language \t" << GetExeName() << " --info\n"
-			  << "Run your code with default options: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
-			  << "Run your code: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
+			  << "Show information about the Brainthread language \t" << GetExeName() << " --info\n"
+			  << "Run your code: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
+			  << "Run your code with some options: \t" << GetExeName() << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
 			  << "Show quick help: \t" << GetExeName() << " --help or --help [topic]\n"	  
 			  << std::endl;
 }

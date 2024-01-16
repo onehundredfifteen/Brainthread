@@ -5,7 +5,6 @@
 
 #include "Enumdefs.h"
 
-
 namespace BT {
 
 	template < typename T >
@@ -54,7 +53,7 @@ namespace BT {
 
 		static const unsigned int mem_grow_size = 104857600; //100 kb
 
-		unsigned GetNewMemorySize();
+		unsigned int GetNewMemorySize();
 		void Realloc();
 	};
 }

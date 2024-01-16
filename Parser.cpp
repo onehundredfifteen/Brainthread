@@ -62,20 +62,20 @@ namespace BT {
 						if (_it < source.end() &&
 							MapCharToOperator(*_it) == bt_operation::btoEndLoop &&
 							MapCharToOperator(*--_it) == bt_operation::btoDecrement) {
-								instructions.emplace_back(bt_instruction(bt_operation::btoOPT_SetCellToZero));
+								instructions.emplace_back(bt_operation::btoOPT_SetCellToZero);
 								ignore_ins += 2;
 								std::advance(it, 2);
 						}
 						else {
 							loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-							instructions.emplace_back(bt_instruction(curr_op));
+							instructions.emplace_back(curr_op);
 
 							//optimizer_entrypoint.push_back(instructions.size() - 1);
 						}
 					}				
 					else {
 						loop_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-						instructions.emplace_back(bt_instruction(curr_op));
+						instructions.emplace_back(curr_op);
 					}					
 				}
 				else if (curr_op == bt_operation::btoEndLoop /*|| curr_op == btoInvEndLoop*/)
@@ -83,7 +83,7 @@ namespace BT {
 					if (loop_call_stack.empty() == false)
 					{
 						instructions[loop_call_stack.top()].jump = GetValidPos(it, source.begin(), ignore_ins);
-						instructions.emplace_back(bt_instruction(curr_op, loop_call_stack.top()));
+						instructions.emplace_back(curr_op, loop_call_stack.top());
 
 						//let's find [ ( ] )
 						if (func_call_stack.empty() == false && loop_call_stack.top() < func_call_stack.top() && func_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins))
@@ -103,14 +103,14 @@ namespace BT {
 				else if (curr_op == bt_operation::btoBeginFunction)
 				{
 					func_call_stack.push(GetValidPos(it, source.begin(), ignore_ins));
-					instructions.emplace_back(bt_instruction(curr_op));
+					instructions.emplace_back(curr_op);
 				}
 				else if (curr_op == bt_operation::btoEndFunction)
 				{
 					if (func_call_stack.empty() == false)
 					{
 						instructions[func_call_stack.top()].jump = GetValidPos(it, source.begin(), ignore_ins);
-						instructions.emplace_back(bt_instruction(curr_op, func_call_stack.top()));
+						instructions.emplace_back(curr_op, func_call_stack.top());
 
 						//let's find ( [ ) ]
 						if (loop_call_stack.empty() == false && func_call_stack.top() < loop_call_stack.top() && loop_call_stack.top() < GetValidPos(it, source.begin(), ignore_ins))
@@ -150,9 +150,9 @@ namespace BT {
 					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
 					{
 						switch (curr_op) {
-							case bt_operation::btoPush: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPush)); break;
-							case bt_operation::btoPop: instructions.emplace_back(bt_instruction(bt_operation::btoSharedPop)); break;
-							case bt_operation::btoSwap: instructions.emplace_back(bt_instruction(bt_operation::btoSharedSwap)); break;
+							case bt_operation::btoPush: instructions.emplace_back(bt_operation::btoSharedPush); break;
+							case bt_operation::btoPop: instructions.emplace_back(bt_operation::btoSharedPop); break;
+							case bt_operation::btoSwap: instructions.emplace_back(bt_operation::btoSharedSwap); break;
 						}
 					}
 					else {
@@ -179,7 +179,7 @@ namespace BT {
 						ignore_ins += diff;
 						std::advance(it, end_pragma_it < source.end() ? diff : diff - 1);
 					}
-					else instructions.emplace_back(bt_instruction(curr_op));
+					else instructions.emplace_back(curr_op);
 				}
 				else if constexpr (OLevel > 1) {
 					if (isRepetitionOptimizableOperator(curr_op)) {
@@ -194,12 +194,12 @@ namespace BT {
 						it = (_it - 1);
 						ignore_ins += (reps - 1);
 
-						instructions.emplace_back(bt_instruction(MapOperatorToOptimizedOp(curr_op), UINT_MAX, reps));
+						instructions.emplace_back(MapOperatorToOptimizedOp(curr_op), UINT_MAX, reps);
 					}
-					else instructions.emplace_back(bt_instruction(curr_op));
+					else instructions.emplace_back(curr_op);
 				}
 				else
-					instructions.emplace_back(bt_instruction(curr_op));
+					instructions.emplace_back(curr_op);
 			}
 			else
 			{
@@ -220,7 +220,7 @@ namespace BT {
 			syntaxOk = false;
 		}
 
-		instructions.emplace_back(bt_instruction(bt_operation::btoEndProgram));
+		instructions.emplace_back(bt_operation::btoEndProgram);
 
 		return syntaxOk;
 	}
@@ -406,11 +406,11 @@ namespace BT {
 			return;
 		}
 		else if (isRepetitionOptimizableOperator(op)) {
-			instructions.emplace_back(bt_instruction(MapOperatorToOptimizedOp(op), UINT_MAX, value));
+			instructions.emplace_back(MapOperatorToOptimizedOp(op), UINT_MAX, value);
 		}
 		else {
 			do {
-				instructions.emplace_back(bt_instruction(op));
+				instructions.emplace_back(op);
 			} while (--value);
 		}
 	}

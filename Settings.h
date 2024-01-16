@@ -24,7 +24,8 @@ namespace BT {
 
 		std::string OP_source_code = "";
 		std::string OP_source_file_path = "";
-		std::string help_topic = "";
+		std::string PAR_help_topic = "";
+		std::string PAR_exe_path = "";
 
 		CodeLang OP_language = CodeLang::clBrainThread;
 
@@ -34,10 +35,10 @@ namespace BT {
 
 		unsigned int OP_mem_size = def_mem_size;
 		
-
 		bool InitFromArguments(GetOpt::GetOpt_pp& ops);
-		bool GetCodeFromFile(const std::string &filepath);
-
+		bool InitFromString(const std::string& args);
+		bool GetCodeFromFile(const std::string& filepath);
+		
 		static bool IsRanFromConsole();
 		static const int def_mem_size = 30000;
 	};

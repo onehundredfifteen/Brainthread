@@ -16,8 +16,6 @@
 using namespace BT;
 
 //critical sections
-CRITICAL_SECTION cout_critical_section;
-CRITICAL_SECTION cin_critical_section;
 CRITICAL_SECTION pm_critical_section;
 CRITICAL_SECTION heap_critical_section;
 
@@ -38,8 +36,6 @@ int main(int argc, char* argv[])
 	//settings
 	Settings settings;
 
-	InitializeCriticalSection(&cout_critical_section);
-	InitializeCriticalSection(&cin_critical_section);
 	InitializeCriticalSection(&pm_critical_section);
 	InitializeCriticalSection(&heap_critical_section);
 
@@ -50,38 +46,34 @@ int main(int argc, char* argv[])
 	GetOpt::GetOpt_pp ops(argc, argv);
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
 
-	if (ops >> GetOpt::OptionPresent('h',"help"))
+	if (ops >> GetOpt::OptionPresent("help"))
 	{
-		if(argc > 2)
-		{
+		if(argc > 2) {
 			std::string help_opt;
-
-			try
-			{
-				ops >>  GetOpt::Option('h',"help", help_opt);
+			try {
+				ops >>  GetOpt::Option("help", help_opt);
 				ShowHelp(help_opt);
 			}
-			catch(...)
-			{
+			catch(...) {
 				ShowHelp("");
 			}
 		}
-		else
-			ShowHelp("");
+		else ShowHelp("");
 	}
-	else if (ops >> GetOpt::OptionPresent("info")){
+	else if (ops >> GetOpt::OptionPresent("info")) {
 		ShowInfo();
 	}
 	else if(argc > 1)
 	{	
 		if(settings.InitFromArguments(ops))
 		{
-			if(settings.OP_message == MessageLog::MessageLevel::mlAll){
+			if(settings.OP_message == MessageLog::MessageLevel::mlAll) {
 				PrintBrainThreadInfo();
 			}  		
 			Execute(settings);
 		}
-		else if(!settings.help_topic.empty()) ShowHelp(settings.help_topic);
+		else if(!settings.PAR_help_topic.empty()) 
+			ShowHelp(settings.PAR_help_topic);
 		else ShowUsage();
 
 		MessageLog::Instance().PrintMessages();
@@ -96,8 +88,6 @@ int main(int argc, char* argv[])
 	if(settings.OP_nopause == false)
 		system("pause");
 	
-	DeleteCriticalSection(&cout_critical_section);
-	DeleteCriticalSection(&cin_critical_section);
 	DeleteCriticalSection(&pm_critical_section);
 	DeleteCriticalSection(&heap_critical_section);
 
@@ -227,9 +217,7 @@ void RunProgram(const CodeTape& code, const Settings& flags)
 
 void InteractiveMode() {
 	Settings s;
-
 	s.OP_analyse = true;
-
 	s.OP_message = MessageLog::MessageLevel::mlAll;
 	//handy reference to source code
 	std::string& input = s.OP_source_code;
@@ -238,12 +226,13 @@ void InteractiveMode() {
 
 	while (true) {
 		std::cout << "\n>>> " << std::flush;
-		std::cin >> input;
+		std::getline(std::cin, input);
 		if (std::cin.fail())
 		{
 			std::cin.clear();
 			std::cin.ignore(UINT_MAX, '\n');
 			std::cout << "Input failed. Please try again." << std::endl;
+			continue;
 		}
 
 		std::transform(input.begin(), input.end(), input.begin(),
@@ -251,6 +240,22 @@ void InteractiveMode() {
 		
 		if (input == "exit") {
 			break;
+		}
+		else if (input._Starts_with("help")) {
+			//todo
+		}
+		else if (input._Starts_with("set ")) {
+			Settings new_settings;
+			if (new_settings.InitFromString(input.substr(4))) {
+				s = new_settings;
+				s.OP_analyse = true;
+				s.OP_message = MessageLog::MessageLevel::mlAll;
+				std::cout << " New settings applied" << std::endl;
+			}
+			else {
+				MessageLog::Instance().PrintMessages();
+				MessageLog::Instance().ClearMessages();
+			}
 		}
 		else {
 			MessageLog::Instance().ClearMessages();
@@ -264,7 +269,7 @@ bool CtrlHandler(DWORD fdwCtrlType)
 { 
   if(fdwCtrlType == CTRL_BREAK_EVENT ) 
   { 
-	  MessageLog::Instance().AddMessage("Execution interrupted by user");
+	  MessageLog::Instance().AddInfo("Execution interrupted by user");
 	  MessageLog::Instance().PrintMessages();
 	  return true; //??
   } 

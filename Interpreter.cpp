@@ -4,10 +4,7 @@
 #include "Interpreter.h"
 #include "BrainThreadRuntimeException.h"
 
-extern CRITICAL_SECTION cout_critical_section;
-
 namespace BT {
-
 
 	template < typename T >
 	Interpreter<T>::Interpreter(mem_option mem_behavior, eof_option eof_behavior, unsigned int mem_size)
@@ -25,21 +22,15 @@ namespace BT {
 		}
 		catch (const BrainThreadRuntimeException& re)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<main> " << re.what() << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
 		catch (const std::exception& e)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<main> " << e.what() << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
 		catch (...)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<main> FATAL ERROR" << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
 	}
 

@@ -14,13 +14,16 @@ namespace BT {
 			std::vector<std::string> op_args;
 			unsigned long long op_arg_i;
 
+			//get the first param
+			PAR_exe_path = ops.app_name();
+
 			// -e --eof [0|255|nochange]
 			if (ops >> GetOpt::OptionPresent('e', "eof"))
 			{
 				ops >> GetOpt::Option('e', "eof", op_arg);
 				if (op_arg == "0")
 					OP_eof_behavior = eof_option::eoZero;
-				else if (op_arg == "255")
+				else if (op_arg == "255" || op_arg == "-1")
 					OP_eof_behavior = eof_option::eoMinusOne;
 				else if (op_arg == "nochange")
 					OP_eof_behavior = eof_option::eoUnchanged;
@@ -206,20 +209,20 @@ namespace BT {
 			}
 			return true;
 		}
-		catch (GetOpt::TooManyArgumentsEx &ex)
+		catch (const GetOpt::TooManyArgumentsEx &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
 			return false;
 		}
-		catch (GetOpt::GetOptEx &ex)
+		catch (const GetOpt::GetOptEx &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, "Error while parsing arguments: " + std::string(ex.what()));
 			return false;
 		}
-		catch (BrainThreadInvalidOptionException &ex)
+		catch (const BrainThreadInvalidOptionException &ex)
 		{
-			help_topic = std::string(ex.what());
-			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, help_topic);
+			PAR_help_topic = ex.getOption();
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
 			return false;
 		}
 		catch (...)
@@ -227,6 +230,29 @@ namespace BT {
 			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, "Unknown error");
 			return false;
 		}
+	}
+
+	bool Settings::InitFromString(const std::string &args) {
+		std::vector<char*> v;
+		std::string buffer = "";
+
+		//insert appname
+		v.push_back("brainthread.exe");
+
+		//split string by whitespaces
+		for (auto c : args) {
+			if (!std::isblank(c)) buffer += c;
+			else if (!buffer.empty()) {
+				char* charStr = new char[buffer.size() + 1];
+				strcpy_s(charStr, buffer.size() + 1, buffer.c_str());
+				v.push_back(charStr);
+				buffer = "";
+			}
+		}
+		if (!buffer.empty()) {
+			v.push_back(const_cast<char*>(buffer.c_str()));
+		}
+		return InitFromArguments(GetOpt::GetOpt_pp(v.size(), v.data()));
 	}
 
 	bool Settings::GetCodeFromFile(const std::string& filepath)

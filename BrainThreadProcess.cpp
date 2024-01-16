@@ -5,7 +5,6 @@
 #include "BrainThreadRuntimeException.h"
 #include "DebugLogStream.h"
 
-extern CRITICAL_SECTION cout_critical_section;
 extern CRITICAL_SECTION heap_critical_section;
 
 namespace BT {
@@ -18,23 +17,17 @@ namespace BT {
 		{
 			process->Run();
 		}
-		catch (BrainThreadRuntimeException& re)
+		catch (const BrainThreadRuntimeException& re)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<t" << GetCurrentThreadId() << "> " << re.what() << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
-		catch (std::exception& e)
+		catch (const std::exception& e)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<t" << GetCurrentThreadId() << "> " << e.what() << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
 		catch (...)
 		{
-			::EnterCriticalSection(&cout_critical_section);
 			std::cerr << "<t" << GetCurrentThreadId() << "> FATAL ERROR" << std::endl;
-			::LeaveCriticalSection(&cout_critical_section);
 		}
 
 		_endthreadex(0);
@@ -174,39 +167,25 @@ namespace BT {
 				debug instructions
 				************************/
 			case bt_operation::btoDEBUG_SimpleMemoryDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->memory.SimpleMemoryDump(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_MemoryDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->memory.MemoryDump(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_StackDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->heap.PrintStack(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_SharedStackDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->shared_heap.PrintStack(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_FunctionsStackDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->functions.PrintStackTrace(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_FunctionsDefsDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->functions.PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 			case bt_operation::btoDEBUG_ThreadInfoDump:
-				ProcessMonitor::EnterCriticalSection(cout_critical_section);
 				this->PrintProcessInfo(DebugLogStream::Instance().GetStream());
-				ProcessMonitor::LeaveCriticalSection(cout_critical_section);
 				break;
 
 				// Optimizer
@@ -225,7 +204,6 @@ namespace BT {
 			}
 
 			++code_pointer;
-
 			Sleep(0); // reszta czasu dla innych w¹tków
 		}
 	}
@@ -241,8 +219,6 @@ namespace BT {
 			*(this->memory.GetValue()) = 0;
 
 			child = new BrainThreadProcess<T>(*this);
-			//*(this->memory->GetValue()) = 0;
-			//*(child->memory->GetValue()) = 0;
 
 			child->memory.MoveRight();
 			*(child->memory.GetValue()) = 1;

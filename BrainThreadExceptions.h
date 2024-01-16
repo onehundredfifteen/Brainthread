@@ -43,6 +43,10 @@ public:
     return s.c_str();
   }
 
+  virtual const std::string& getOption() const {
+      return op;
+  }
+
 protected:
     const std::string op;
     const std::string op_arg;
