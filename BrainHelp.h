@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 
 #ifndef BT_VERSION
@@ -12,7 +11,5 @@
 
 void PrintBrainThreadInfo(void);
 void PrintBrainThreadInfoEx(void);
-void ShowUsage(void);
-void ShowHelp(std::string help_opt);
-void ShowAdvise(std::string help_opt);
+void ShowUsage(const std::string& exe_name);
 void ShowInfo(void);

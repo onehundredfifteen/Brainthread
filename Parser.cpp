@@ -384,7 +384,7 @@ namespace BT {
 	void Parser<Lang, OLevel>::HandlePragma(const std::string::const_iterator& begin, const std::string::const_iterator& end, const unsigned int err_pos) {
 		//#115+ -> 115x +
 		int value = 0;
-		constexpr int max_value = 256;
+		const int max_value = 256;
 		auto res = std::from_chars(&(*(begin + 1)), &(*end), value);
 
 		if (res.ec != std::errc()) {

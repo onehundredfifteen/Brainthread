@@ -24,7 +24,6 @@ namespace BT {
 
 		std::string OP_source_code = "";
 		std::string OP_source_file_path = "";
-		std::string PAR_help_topic = "";
 		std::string PAR_exe_path = "";
 
 		CodeLang OP_language = CodeLang::clBrainThread;

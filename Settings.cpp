@@ -221,7 +221,6 @@ namespace BT {
 		}
 		catch (const BrainThreadInvalidOptionException &ex)
 		{
-			PAR_help_topic = ex.getOption();
 			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
 			return false;
 		}

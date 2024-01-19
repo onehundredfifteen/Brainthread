@@ -45,23 +45,13 @@ int main(int argc, char* argv[])
 	//parse arguments
 	GetOpt::GetOpt_pp ops(argc, argv);
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
-
-	if (ops >> GetOpt::OptionPresent("help"))
-	{
-		if(argc > 2) {
-			std::string help_opt;
-			try {
-				ops >>  GetOpt::Option("help", help_opt);
-				ShowHelp(help_opt);
-			}
-			catch(...) {
-				ShowHelp("");
-			}
-		}
-		else ShowHelp("");
-	}
-	else if (ops >> GetOpt::OptionPresent("info")) {
+	
+	if (ops >> GetOpt::OptionPresent("info")) {
 		ShowInfo();
+	}
+	else if (ops >> GetOpt::OptionPresent("help") ||
+			 ops >> GetOpt::OptionPresent("usage")) {
+		ShowUsage(std::string(argv[0]));
 	}
 	else if(argc > 1)
 	{	
@@ -72,9 +62,7 @@ int main(int argc, char* argv[])
 			}  		
 			Execute(settings);
 		}
-		else if(!settings.PAR_help_topic.empty()) 
-			ShowHelp(settings.PAR_help_topic);
-		else ShowUsage();
+		else ShowUsage(settings.PAR_exe_path);
 
 		MessageLog::Instance().PrintMessages();
 	}
@@ -238,11 +226,10 @@ void InteractiveMode() {
 		std::transform(input.begin(), input.end(), input.begin(),
 			[](unsigned char c) { return std::tolower(c); });
 		
-		if (input == "exit") {
-			break;
-		}
-		else if (input._Starts_with("help")) {
-			//todo
+		if (input == "exit") break;
+		else if (input == "info") ShowInfo();
+		else if (input == "help" || input == "usage" || input == "?") {
+			ShowUsage(s.PAR_exe_path);
 		}
 		else if (input._Starts_with("set ")) {
 			Settings new_settings;
