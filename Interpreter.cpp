@@ -15,23 +15,8 @@ namespace BT {
 	template < typename T >
 	void Interpreter<T>::Run(const CodeTape& tape)
 	{
-		try
-		{
-			main_process = std::make_unique<BrainThreadProcess<T>>(tape, shared_heap, mem_size, mem_behavior, eof_behavior);
-			main_process->Run();
-		}
-		catch (const BrainThreadRuntimeException& re)
-		{
-			std::cerr << "<main> " << re.what() << std::endl;
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "<main> " << e.what() << std::endl;
-		}
-		catch (...)
-		{
-			std::cerr << "<main> FATAL ERROR" << std::endl;
-		}
+		main_process = std::make_unique<BrainThreadProcess<T>>(tape, mem_size, mem_behavior, eof_behavior);
+		main_process->Run();
 	}
 
 	// Explicit template instantiation

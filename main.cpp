@@ -5,22 +5,23 @@
 #include <sstream>
 #include <algorithm>
 
+#ifdef _WIN32
+ #include <windows.h>
+#endif
+
 #include "Settings.h"
 #include "Interpreter.h"
 #include "Parser.h"
 #include "CodeAnalyser.h"
-#include "ProcessMonitor.h"
 #include "BrainThreadExceptions.h"
 #include "BrainHelp.h"
 
 using namespace BT;
 
-//critical sections
-CRITICAL_SECTION pm_critical_section;
-CRITICAL_SECTION heap_critical_section;
-
-//Reaction to ctrl+break
-bool CtrlHandler(DWORD fdwCtrlType);
+#ifdef _WIN32
+ //Reaction to ctrl+break
+ bool CtrlHandler(DWORD fdwCtrlType);
+#endif
 
 //Main methods
 void InteractiveMode();
@@ -36,11 +37,10 @@ int main(int argc, char* argv[])
 	//settings
 	Settings settings;
 
-	InitializeCriticalSection(&pm_critical_section);
-	InitializeCriticalSection(&heap_critical_section);
-
+#ifdef _WIN32
 	//ctrl+break termination handler
-	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, true);
+#endif
 
 	//parse arguments
 	GetOpt::GetOpt_pp ops(argc, argv);
@@ -76,9 +76,6 @@ int main(int argc, char* argv[])
 	if(settings.OP_nopause == false)
 		system("pause");
 	
-	DeleteCriticalSection(&pm_critical_section);
-	DeleteCriticalSection(&heap_critical_section);
-
 	return 0;
 }
 
@@ -96,7 +93,7 @@ void Execute(const Settings& flags) {
 	if (flags.OP_execute) {
 		RunProgram(parser.GetInstructions(), flags);
 	}
-}
+} 
 
 ParserBase ParseCode(const std::string& code, const Settings& flags)
 {
@@ -195,8 +192,7 @@ void RunProgram(const CodeTape& code, const Settings& flags)
 
 	auto interpreter = ProduceInterpreter(flags);
 	interpreter->Run(code);
-	ProcessMonitor::Instance().WaitForWorkingProcesses();
-	
+
 	auto end = std::chrono::system_clock::now();
 	auto elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (end - start).count();
 
@@ -252,14 +248,15 @@ void InteractiveMode() {
 	}
 }
 
-bool CtrlHandler(DWORD fdwCtrlType) 
-{ 
-  if(fdwCtrlType == CTRL_BREAK_EVENT ) 
-  { 
-	  MessageLog::Instance().AddInfo("Execution interrupted by user");
-	  MessageLog::Instance().PrintMessages();
-	  return true; //??
-  } 
-  return false; //pass all normally
-} 
-
+#ifdef _WIN32
+bool CtrlHandler(DWORD fdwCtrlType)
+{
+	if (fdwCtrlType == CTRL_BREAK_EVENT)
+	{
+		MessageLog::Instance().AddInfo("Execution interrupted by user");
+		MessageLog::Instance().PrintMessages();
+		return true; //??
+	}
+	return false; //pass all normally
+}
+#endif

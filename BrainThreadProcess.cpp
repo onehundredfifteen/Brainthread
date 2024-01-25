@@ -1,68 +1,49 @@
-#include <process.h>
+#include <mutex>
 
-#include "ProcessMonitor.h"
 #include "BrainThreadProcess.h"
 #include "BrainThreadRuntimeException.h"
 #include "DebugLogStream.h"
 
-extern CRITICAL_SECTION heap_critical_section;
-
 namespace BT {
-
+	
 	template < typename T >
-	unsigned int __stdcall run_bt_thread(void* arg)
-	{
-		BrainThreadProcess<T>* process = reinterpret_cast<BrainThreadProcess<T>*>(arg);
-		try
-		{
-			process->Run();
-		}
-		catch (const BrainThreadRuntimeException& re)
-		{
-			std::cerr << "<t" << GetCurrentThreadId() << "> " << re.what() << std::endl;
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "<t" << GetCurrentThreadId() << "> " << e.what() << std::endl;
-		}
-		catch (...)
-		{
-			std::cerr << "<t" << GetCurrentThreadId() << "> FATAL ERROR" << std::endl;
-		}
-
-		_endthreadex(0);
-
-		delete process;
-		process = nullptr;
-
-		return 0;
-	}
-
-	template < typename T >
-	BrainThreadProcess<T>::BrainThreadProcess(const CodeTape& ctape, MemoryHeap<T>& _shared_heap, unsigned int mem_size, mem_option mo, eof_option eo)
-		: isMain(true), code(ctape), shared_heap(_shared_heap), memory(mem_size, eo, mo)
+	BrainThreadProcess<T>::BrainThreadProcess(const CodeTape& ctape, unsigned int mem_size, mem_option mo, eof_option eo)
+		: isMain(true), code(ctape), memory(mem_size, eo, mo)
 	{
 		code_pointer = 0;
-		child_threads.reserve(4);
+		shared_heap = std::make_shared<MemoryHeap<T>>();
 	}
 
 	template < typename T >
 	BrainThreadProcess<T>::BrainThreadProcess(const BrainThreadProcess<T>& parentProcess)
-		: isMain(false), code(parentProcess.code), shared_heap(parentProcess.shared_heap), memory(parentProcess.memory)
+		: isMain(false), code(parentProcess.code), memory(parentProcess.memory)
 	{
 		code_pointer = parentProcess.code_pointer;
-		child_threads.reserve(4);
+		shared_heap = parentProcess.shared_heap;
 	}
 
 	template < typename T >
-	BrainThreadProcess<T>::~BrainThreadProcess(void)
+	void BrainThreadProcess<T>::Run()
 	{
-
+		try {
+			ExecInstructions();
+			Join();
+		}
+		catch (const BrainThreadRuntimeException& re) {
+			std::cerr << "<t" << std::this_thread::get_id() << "> " << re.what() << std::endl;
+		}
+		catch (const std::exception& e) {
+			std::cerr << "<t" << std::this_thread::get_id() << "> " << e.what() << std::endl;
+		}
+		catch (...)	{
+			std::cerr << "<t" << std::this_thread::get_id() << "> FATAL ERROR" << std::endl;
+		}
 	}
 
 	template < typename T >
-	void BrainThreadProcess<T>::Run(void)
+	void BrainThreadProcess<T>::ExecInstructions(void)
 	{
+		std::mutex sheap_mutex;
 		while (true)
 		{
 			const bt_instruction & current_instruction = code[this->code_pointer];
@@ -145,27 +126,26 @@ namespace BT {
 				this->heap.Swap();
 				break;
 			case bt_operation::btoSharedPush:
-
-				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				this->shared_heap.Push(*(this->memory.GetValue()));
-				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
+				{
+					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					shared_heap->Push(*(this->memory.GetValue()));
+				}
 				break;
 			case bt_operation::btoSharedPop:
-
-				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				*(this->memory.GetValue()) = this->shared_heap.Pop();
-				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
+				{
+					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					*(this->memory.GetValue()) = shared_heap->Pop();
+				}
 				break;
 			case bt_operation::btoSharedSwap:
-
-				ProcessMonitor::EnterCriticalSection(heap_critical_section);
-				this->shared_heap.Swap();
-				ProcessMonitor::LeaveCriticalSection(heap_critical_section);
+				{
+					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					shared_heap->Swap();
+				}
 				break;
 
-				/***********************
-				debug instructions
-				************************/
+				/**debug instructions
+				**/
 			case bt_operation::btoDEBUG_SimpleMemoryDump:
 				this->memory.SimpleMemoryDump(DebugLogStream::Instance().GetStream());
 				break;
@@ -176,7 +156,10 @@ namespace BT {
 				this->heap.PrintStack(DebugLogStream::Instance().GetStream());
 				break;
 			case bt_operation::btoDEBUG_SharedStackDump:
-				this->shared_heap.PrintStack(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					shared_heap->PrintStack(DebugLogStream::Instance().GetStream());
+				}	
 				break;
 			case bt_operation::btoDEBUG_FunctionsStackDump:
 				this->functions.PrintStackTrace(DebugLogStream::Instance().GetStream());
@@ -204,93 +187,59 @@ namespace BT {
 			}
 
 			++code_pointer;
-			Sleep(0); // reszta czasu dla innych w¹tków
+			std::this_thread::yield(); // reszta czasu dla innych w¹tków
 		}
 	}
 
 	template < typename T >
 	void BrainThreadProcess<T>::Fork()
 	{
-		HANDLE hThread;
-		BrainThreadProcess<T>* child = nullptr;
-
 		try
 		{
+			BrainThreadProcess<T> child(*this);
+
 			*(this->memory.GetValue()) = 0;
+			child.memory.MoveRight();
+			*(child.memory.GetValue()) = 1;
+			++child.code_pointer;
 
-			child = new BrainThreadProcess<T>(*this);
-
-			child->memory.MoveRight();
-			*(child->memory.GetValue()) = 1;
-			++child->code_pointer;
+			child_threads.emplace_back([](BrainThreadProcess<T>& process) {
+				process.Run();
+			}, std::move(child));
 		}
 		catch (const BFRangeException& re)
 		{
-			delete child;
 			throw re;
 		}
 		catch (const std::bad_alloc&)
 		{
-			//delete child;
 			throw BFForkThreadException(ERROR_CODE_NOTENOUGHMEMORY);
 		}
-		catch (...)
+		catch (const std::system_error& se)
 		{
-			delete child;
-			throw BFForkThreadException(::GetLastError());
-		}
-
-		hThread = (HANDLE)_beginthreadex(NULL, 64000, run_bt_thread<T>, child, 0, NULL);//mozna dac najmniej 64kb 64*1024
-
-		if (hThread <= (HANDLE)0L)
-		{
-			delete child;
-			throw BFForkThreadException(::GetLastError());
-		}
-
-		try
-		{
-			child_threads.push_back(hThread);
-
-			ProcessMonitor::Instance().AddProcess(hThread);
+			throw BFForkThreadException(se.code().value());
 		}
 		catch (...)
 		{
-			throw BFCannotMonitorThreadsException();
+			throw BFForkThreadException(-1);
 		}
 	}
 
 	template < typename T >
 	void BrainThreadProcess<T>::Join(void)
 	{
-		DWORD result;
-
-		if (child_threads.size())
-		{
-			if (child_threads.size() > MAXIMUM_WAIT_OBJECTS)
-				throw BFJoinThreadException(ERROR_CODE_TOOMANYTHREADSTOWAIT);
-
-			result = WaitForMultipleObjects(child_threads.size(),
-				&child_threads[0],
-				true, //wait all
-				INFINITE
-			);
-
-			if (result == WAIT_FAILED)
-				throw BFJoinThreadException(::GetLastError());
-
-			child_threads.erase(child_threads.begin(), child_threads.end());
+		for (std::thread& t : child_threads) {
+			t.join();
 		}
+		child_threads.clear();
 	}
 
 	template < typename T >
 	std::ostream& BrainThreadProcess<T>::PrintProcessInfo(std::ostream& s)
 	{
-		std::vector<HANDLE>::iterator it;
+		/*std::vector<HANDLE>::iterator it;
 		int i = 0;
-		int pid = ProcessMonitor::Instance().GetProcessId(GetCurrentThread());
-
-
+	
 		s << "\n>Thread id/sys_id: " << pid << "/" << GetCurrentThreadId();
 
 		if (pid == 1)
@@ -305,15 +254,9 @@ namespace BT {
 				<< " sys_id: " << ::GetThreadId(*it)
 				<< " state: " << (WaitForSingleObject(*it, 0) == WAIT_FAILED ? "error" : "running") << "\n";
 			//WaitForSingleObject z zerem w 2gim parametrze s³u¿y odczytaniu stanu - nie czeka
-		}
+		}*/
 
 		return s << std::flush;
-	}
-
-	template < typename T >
-	unsigned int BrainThreadProcess<T>::GetProcessId(void)
-	{
-		return ProcessMonitor::Instance().GetProcessId(GetCurrentThread());
 	}
 
 

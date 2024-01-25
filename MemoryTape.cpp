@@ -1,16 +1,15 @@
 #include <new>
 #include <iostream>
 #include <limits>
-#include <windows.h>
 
 #include "MemoryTape.h"
-#include "ProcessMonitor.h"
 #include "BrainThreadRuntimeException.h"
 
 namespace BT {
 
 	template < typename T >
 	MemoryTape<T>::MemoryTape(unsigned int mem_size, eof_option eof_behavior, mem_option mem_behavior)
+		: eof_behavior(eof_behavior), mem_behavior(mem_behavior)
 	{
 		try {
 			mem = new T[mem_size];
@@ -26,14 +25,12 @@ namespace BT {
 		pointer = mem;
 		max_mem = (T*)&mem[len - 1];
 
-		ZeroMemory(mem, sizeof(T) * len);   //inicjujemy zerami
-
-		this->eof_behavior = eof_behavior;
-		this->mem_behavior = mem_behavior;
+		std::memset(mem, 0, sizeof(T) * len);   //inicjujemy zerami
 	}
 
 	template < typename T >
 	MemoryTape<T>::MemoryTape(const MemoryTape<T>& memory)
+		: eof_behavior(memory.eof_behavior), mem_behavior(memory.mem_behavior)
 	{
 		try {
 			mem = new T[memory.len];
@@ -50,9 +47,6 @@ namespace BT {
 		max_mem = (T*)&mem[len - 1];
 
 		memcpy(mem, memory.mem, sizeof(T) * len);
-
-		eof_behavior = memory.eof_behavior;
-		mem_behavior = memory.mem_behavior;
 	}
 
 	template < typename T >
@@ -225,20 +219,18 @@ namespace BT {
 			throw BFUnkownException();
 		}
 
-		//wszystko ok - to kopiujemy, now¹ pamiêæ zerujemy
-		ZeroMemory(new_mem + len, sizeof(T) * (new_mem_size - len));
-		memcpy(new_mem, mem, len);
+		//copy and zero the new chunk
+		std::memset(new_mem + len, 0, sizeof(T) * (new_mem_size - len));
+		std::memcpy(new_mem, mem, len);
 
 		delete[] mem;
 
-		//ustawiamy co trzeba
 		mem = new_mem;
 		pointer = mem + p_pos;
 		len = new_mem_size;
 		max_mem = (T*)&mem[len - 1];
 	}
 
-	//Zwraca pozycjê piórka
 	template < typename T >
 	inline unsigned int MemoryTape<T>::PointerPosition() const
 	{

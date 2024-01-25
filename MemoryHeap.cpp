@@ -9,7 +9,7 @@
 
 //Funkcja odk³ada wartoœæ na stos. Limit = stack_limit
 template <typename T>
-void MemoryHeap<T>::Push(T const& n)
+void MemoryHeap<T>::Push(const T& n)
 {
 	if(mem_stack.size() > stack_limit)
 		throw BFMemoryStackOverflowException();

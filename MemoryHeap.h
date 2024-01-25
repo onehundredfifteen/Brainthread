@@ -14,9 +14,8 @@ class MemoryHeap
 {
 	public:
 		MemoryHeap(void){};
-		~MemoryHeap(void){};
 
-		void Push(T const&);
+		void Push(const T&);
 		T Pop(void);
 		void Swap(void);
 

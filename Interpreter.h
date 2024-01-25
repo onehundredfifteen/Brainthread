@@ -1,7 +1,6 @@
 #pragma once
 
 #include <list>
-#include <windows.h>
 
 #include "BrainThreadProcess.h"
 
@@ -30,7 +29,6 @@ namespace BT {
 		void Run(const CodeTape &);
 
 	protected:
-		MemoryHeap<T> shared_heap;
 		std::unique_ptr<BrainThreadProcess<T>> main_process;
 	};
 }

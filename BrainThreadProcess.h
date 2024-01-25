@@ -1,6 +1,7 @@
 #pragma once
 
-#include <windows.h>
+#include <list>
+#include <thread>
 
 #include "MemoryTape.h"
 #include "MemoryHeap.h"
@@ -13,28 +14,27 @@ namespace BT {
 	class BrainThreadProcess
 	{
 	public:
-		BrainThreadProcess(const CodeTape& c, MemoryHeap<T>& shared_heap, unsigned int mem_size, mem_option mo, eof_option eo);
+		BrainThreadProcess(const CodeTape& c, unsigned int mem_size, mem_option mo, eof_option eo);
 		BrainThreadProcess(const BrainThreadProcess<T>& parentProcess);
-		~BrainThreadProcess(void);
 
 		void Run(void);
-
-		unsigned int GetProcessId(void);
+		
 		std::ostream& PrintProcessInfo(std::ostream& s);
 
-	protected:
+	private:
 		MemoryTape<T> memory;
 		MemoryHeap<T> heap;
 		FunctionHeap<T> functions;
-		MemoryHeap<T>& shared_heap;
-
+		
+		std::shared_ptr<MemoryHeap<T>> shared_heap;
 		const CodeTape& code;
 		unsigned int code_pointer;
 
-		std::vector< HANDLE > child_threads;
+		std::list<std::thread> child_threads;
 
 		void Fork(void);
 		void Join(void);
+		void ExecInstructions(void);
 
 	private:
 		bool isMain;

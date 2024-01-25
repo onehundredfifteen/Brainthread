@@ -5,8 +5,6 @@
 #include <sstream>
 #include <string>
 
-#include <windows.h>
-
 /*
  * Klasy Wyj¹tków.
  * Definiuja rózne wyj¹tki, które interpreter rzuca podczas wykonywnaia kodu. 
@@ -161,12 +159,10 @@ public:
 	{
 		case ERROR_CODE_NOTENOUGHMEMORY:
 			cnvt << "out of memory"; break;
-	    case ERROR_MAX_THRDS_REACHED:
-			cnvt << "too many threads"; break;
-		case ERROR_NOT_ENOUGH_MEMORY:
-			cnvt << "not enough system memory"; break;
-		case ERROR_INVALID_HANDLE:
-			cnvt << "invalid handle"; break;
+	    //////case ERROR_MAX_THRDS_REACHED:
+			////cnvt << "too many threads"; break;
+		//case ERROR_NOT_ENOUGH_MEMORY:
+			//cnvt << "not enough system memory"; break;
 		default:
 			cnvt << "unknown. System error code: " << err_no;
 	}
@@ -218,22 +214,6 @@ public:
   {
     cnvt.str( "" );
 	cnvt << BrainThreadRuntimeException::what() << "Invalid input stream.";
-    s = cnvt.str();
-    return s.c_str();
-  }
-};
-
-class BFCannotMonitorThreadsException: public BrainThreadRuntimeException {
-public:
-
-  BFCannotMonitorThreadsException()
-    : BrainThreadRuntimeException()
-    {}
-
-  virtual const char* what() const throw()
-  {
-    cnvt.str( "" );
-    cnvt << BrainThreadRuntimeException::what() << "Cannot monitor child threads: out of memory.";
     s = cnvt.str();
     return s.c_str();
   }

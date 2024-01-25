@@ -1,6 +1,9 @@
 #include <charconv>
-#include <windows.h>
-#include <process.h>
+
+#ifdef _WIN32
+ #include <windows.h>
+ #include <process.h>
+#endif
 
 #include "Settings.h"
 #include "BrainThreadExceptions.h"
@@ -271,10 +274,15 @@ namespace BT {
 
 	bool Settings::IsRanFromConsole()
 	{
+#ifdef _WIN32
 		HWND consoleWnd = GetConsoleWindow();
 		DWORD dwProcessId;
 		GetWindowThreadProcessId(consoleWnd, &dwProcessId);
 
 		return (!(GetCurrentProcessId() == dwProcessId));
+#else
+		return false;
+#endif
+
 	}
 }

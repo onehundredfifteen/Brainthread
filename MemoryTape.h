@@ -44,8 +44,8 @@ namespace BT {
 
 		T* max_mem; //ostatnia komórka pamiêci
 
-		mem_option mem_behavior; //zachowanie pamieci
-		eof_option eof_behavior; //reakcja na EOF z wejœcia
+		const mem_option mem_behavior; //zachowanie pamieci
+		const eof_option eof_behavior; //reakcja na EOF z wejœcia
 
 		static const unsigned int double_mem_grow_limit = 2147483648; //2 Mb 
 		//ten limit oznacza, ze do tej liczby objêtoœæ pamiêci siê dubluje,
