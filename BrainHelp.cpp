@@ -52,6 +52,9 @@ void ShowInfo(void)
 		<< "\n++ Heap commands ++\n"
 		<< " & - push\t^ - pop\t % - swap\n"
 		<< " ~ - the next heap command refers to shared heap\n"
-		<< " : - decimal write\t; - decimal read"
+		<< " : - decimal write\t; - decimal read\n"
+		<< "\n++ mode=Debug commands ++\n"
+		<< " M, D, # - memory dumps\n"
+		<< " F, E, S, H , T  - function/heap/thread dumps\n"
 		<< std::endl;
 }

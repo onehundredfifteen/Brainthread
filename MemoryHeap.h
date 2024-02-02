@@ -9,20 +9,23 @@
  * ze sob¹ dwie ostatnie wartoœci. Wielkoœc stosu ogranicza zmienna 'stack_limit'.
 */
 
-template < typename T >
-class MemoryHeap
-{
+namespace BT {
+
+	template < typename T >
+	class MemoryHeap
+	{
 	public:
-		MemoryHeap(void){};
+		MemoryHeap(void) {};
 
 		void Push(const T&);
 		T Pop(void);
 		void Swap(void);
 
-		std::ostream& PrintStack(std::ostream &s);
+		std::ostream& PrintStack(std::ostream& s);
 
 	protected:
 		std::stack<T> mem_stack;
 
 		static const unsigned int stack_limit = 65536;
-};
+	};
+}

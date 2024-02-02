@@ -14,7 +14,6 @@ namespace BT {
 		try
 		{
 			std::string op_arg;
-			std::vector<std::string> op_args;
 			unsigned long long op_arg_i;
 
 			//get the first param
@@ -108,6 +107,9 @@ namespace BT {
 				OP_analyse = true;
 			if (OP_analyse == false)//nie debugujesz? musi byc execute
 				OP_execute = true;
+			else {
+				DebugLogStream::Instance().Init(DebugLogStream::stream_type::lsConsole, "");
+			}
 
 			//--verbose[all|important|none]
 			//--wall
@@ -139,19 +141,15 @@ namespace BT {
 				ops >> GetOpt::Option("log", op_arg);
 
 				if (op_arg.find(".") != std::string::npos) //rozpoznajemy ¿e wpisano plik
-					OP_log = DebugLogStream::lsFile;
+					OP_log = DebugLogStream::stream_type::lsFile;
 				else if (op_arg == "none")
-					OP_log = DebugLogStream::lsNone;
+					OP_log = DebugLogStream::stream_type::lsNone;
 				else if (op_arg == "console")
-					OP_log = DebugLogStream::lsConsole;
+					OP_log = DebugLogStream::stream_type::lsConsole;
 				else
 					throw BrainThreadInvalidOptionException("log", op_arg);
 
 				DebugLogStream::Instance().Init(OP_log, op_arg);
-			}
-			else
-			{
-				DebugLogStream::Instance().Init(OP_log, "");
 			}
 
 			//-s --sourcefile [filename]
@@ -202,10 +200,13 @@ namespace BT {
 			//reszta opcji, w³aœciwie spodziewany sie jednej tylko
 			if (ops.options_remain())
 			{
+				std::vector<std::string> op_args;
 				ops >> GetOpt::GlobalOption(op_args);
 
 				if (op_args.size() > 1)
 					throw GetOpt::TooManyArgumentsEx();
+				else if (op_args.size() < 1)
+					throw GetOpt::InvalidFormatEx();
 				else if (!GetCodeFromFile(op_args[0])) {
 					throw GetOpt::InvalidFormatEx();
 				}
@@ -215,6 +216,11 @@ namespace BT {
 		catch (const GetOpt::TooManyArgumentsEx &ex)
 		{
 			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, std::string(ex.what()));
+			return false;
+		}
+		catch (const GetOpt::InvalidFormatEx&)
+		{
+			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecArgumentError, "Error while parsing arguments: Invalid format");
 			return false;
 		}
 		catch (const GetOpt::GetOptEx &ex)

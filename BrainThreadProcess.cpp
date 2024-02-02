@@ -43,7 +43,7 @@ namespace BT {
 	template < typename T >
 	void BrainThreadProcess<T>::ExecInstructions(void)
 	{
-		std::mutex sheap_mutex;
+		std::mutex _mutex;
 		while (true)
 		{
 			const bt_instruction & current_instruction = code[this->code_pointer];
@@ -127,19 +127,19 @@ namespace BT {
 				break;
 			case bt_operation::btoSharedPush:
 				{
-					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					const std::lock_guard<std::mutex> lock(_mutex);
 					shared_heap->Push(*(this->memory.GetValue()));
 				}
 				break;
 			case bt_operation::btoSharedPop:
 				{
-					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					const std::lock_guard<std::mutex> lock(_mutex);
 					*(this->memory.GetValue()) = shared_heap->Pop();
 				}
 				break;
 			case bt_operation::btoSharedSwap:
 				{
-					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					const std::lock_guard<std::mutex> lock(_mutex);
 					shared_heap->Swap();
 				}
 				break;
@@ -147,28 +147,46 @@ namespace BT {
 				/**debug instructions
 				**/
 			case bt_operation::btoDEBUG_SimpleMemoryDump:
-				this->memory.SimpleMemoryDump(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					memory.SimpleMemoryDump(DebugLogStream::Instance().GetStream());
+				}
 				break;
 			case bt_operation::btoDEBUG_MemoryDump:
-				this->memory.MemoryDump(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					memory.MemoryDump(DebugLogStream::Instance().GetStream());
+				}
 				break;
 			case bt_operation::btoDEBUG_StackDump:
-				this->heap.PrintStack(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					heap.PrintStack(DebugLogStream::Instance().GetStream());
+				}
 				break;
 			case bt_operation::btoDEBUG_SharedStackDump:
 				{
-					const std::lock_guard<std::mutex> lock(sheap_mutex);
+					const std::lock_guard<std::mutex> lock(_mutex);
 					shared_heap->PrintStack(DebugLogStream::Instance().GetStream());
 				}	
 				break;
 			case bt_operation::btoDEBUG_FunctionsStackDump:
-				this->functions.PrintStackTrace(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					functions.PrintStackTrace(DebugLogStream::Instance().GetStream());
+				}
 				break;
 			case bt_operation::btoDEBUG_FunctionsDefsDump:
-				this->functions.PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					functions.PrintDeclaredFunctions(DebugLogStream::Instance().GetStream());
+				}
 				break;
 			case bt_operation::btoDEBUG_ThreadInfoDump:
-				this->PrintProcessInfo(DebugLogStream::Instance().GetStream());
+				{
+					const std::lock_guard<std::mutex> lock(_mutex);
+					PrintProcessInfo(DebugLogStream::Instance().GetStream());
+				}
 				break;
 
 				// Optimizer
@@ -235,28 +253,28 @@ namespace BT {
 	}
 
 	template < typename T >
-	std::ostream& BrainThreadProcess<T>::PrintProcessInfo(std::ostream& s)
+	void BrainThreadProcess<T>::PrintProcessInfo(std::ostream& s)
 	{
-		/*std::vector<HANDLE>::iterator it;
 		int i = 0;
-	
-		s << "\n>Thread id/sys_id: " << pid << "/" << GetCurrentThreadId();
+		s << "\n>Current thread id: " << std::this_thread::get_id() << " ";
 
-		if (pid == 1)
-			s << "(main)";
+		if (isMain)
+			s << "(main)";  
 
-		s << ".\nActive child threads: " << child_threads.size() << ", in order of apperance:\n";
+		if (child_threads.size() == 0) {
+			s << std::flush;
+			return;
+		}
 
-		for (it = child_threads.begin(); it < child_threads.end(); ++it)
+		s << "\nChild threads: " << child_threads.size() << ", in order of apperance:";
+
+		for (std::list<std::thread>::const_iterator it = child_threads.begin(); it != child_threads.end(); ++it)
 		{
-			s << (++i)
-				<< ". id: " << ProcessMonitor::Instance().GetProcessId(*it)
-				<< " sys_id: " << ::GetThreadId(*it)
-				<< " state: " << (WaitForSingleObject(*it, 0) == WAIT_FAILED ? "error" : "running") << "\n";
-			//WaitForSingleObject z zerem w 2gim parametrze s³u¿y odczytaniu stanu - nie czeka
-		}*/
-
-		return s << std::flush;
+			s << '\n' << (++i)
+			  << ". id: " << it->get_id()
+			  << " state: " << (it->joinable() ? "running" : "joined");
+		}
+		s << std::flush;
 	}
 
 

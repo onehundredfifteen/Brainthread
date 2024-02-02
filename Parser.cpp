@@ -10,7 +10,6 @@
 
 namespace BT {
 
-
 	/*
 	 * Klasa Parsera
 	 * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje
@@ -229,15 +228,15 @@ namespace BT {
 	template <CodeLang Lang, int OLevel>
 	bool inline Parser<Lang, OLevel>::isValidOperator(const char& c) const {
 		if constexpr (Lang == CodeLang::clBrainThread) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:#MTFSEDH", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]()*{}!&^%~;:#MDFESHT", c) != 0;
 			return strchr("<>+-.,[]()*{}!&^%~;:", c) != 0;
 		}
 		else if constexpr (Lang == CodeLang::clPBrain) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]():#MFED", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]():#MDFE", c) != 0;
 			return strchr("<>+-.,[]():", c) != 0;
 		}
 		else if constexpr (Lang == CodeLang::clBrainFork) {
-			if constexpr (OLevel == 0) return strchr("<>+-.,[]#YMTD", c) != 0;
+			if constexpr (OLevel == 0) return strchr("<>+-.,[]#YMDT", c) != 0;
 			return strchr("<>+-.,[]Y", c) != 0;
 		}
 		

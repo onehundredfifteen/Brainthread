@@ -19,7 +19,7 @@ namespace BT {
 
 		void Run(void);
 		
-		std::ostream& PrintProcessInfo(std::ostream& s);
+		void PrintProcessInfo(std::ostream& s);
 
 	private:
 		MemoryTape<T> memory;

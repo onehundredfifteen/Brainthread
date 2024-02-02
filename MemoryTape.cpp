@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "MemoryTape.h"
+#include "DebugLogStream.h"
 #include "BrainThreadRuntimeException.h"
 
 namespace BT {
@@ -244,42 +245,30 @@ namespace BT {
 	}
 
 	template < typename T > //pokazuje n komórek w lewo i w prawo ze wskaŸnikiem mozliwie poœrodku
-	std::ostream& MemoryTape<T>::SimpleMemoryDump(std::ostream& s, unsigned near_cells)
+	void MemoryTape<T>::SimpleMemoryDump(std::ostream& s, unsigned near_cells)
 	{
 		unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);
+		const unsigned int end = near_cells * 2 + start;
 
-		s << "\n>Memory Dump (near " << near_cells << " cells)";
-		for (unsigned int i = start; i < len && i < near_cells * 2 + start; ++i)
+		auto isprintable = [](unsigned char c) { return !(c == 8 || c == 10 || c == 13 || c == 27 || c == 255); };
+
+		s << "\n>Memory Dump (cells " << start << " " << end << ")\t";
+		for (unsigned int i = start; i < len && i < end; ++i)
 		{
-			if (sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255))
-			{
-				if constexpr (std::is_signed<T>::value)
-					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
-				else
-					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
-			}
-			else
-			{
-				if constexpr (std::is_signed<T>::value)
-					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<int>(mem[i]) << " ";
-				else
-					s << (PointerPosition() == i ? "<" : "[") << i << (PointerPosition() == i ? ">" : "]") << static_cast<unsigned int>(mem[i]) << " ";
-			}
+			s << (PointerPosition() == i ? "<" : "") << i << (PointerPosition() == i ? ">" : ":");
+			PrintCellValue<T>(s, mem[i]);
+			s << " ";
 		}
-
-		return s << std::endl;
+		s << std::flush;
 	}
 
 	template < typename T >
-	std::ostream& MemoryTape<T>::MemoryDump(std::ostream& o)
+	void MemoryTape<T>::MemoryDump(std::ostream& o)
 	{
-		unsigned int nz_cells = 0, last_nz = 0;
-
 		o << "BRAINTHREAD MEMORY DUMP (shows only nonzero cells)\n"
-			<< "Pointer at:" << PointerPosition() << "\n"
-			<< "Memory length [cells]: " << len << "\n"
+			<< "Pointer at: " << PointerPosition() << "\n"
 			<< "Memory cell size [bytes]: " << sizeof(T) << "\n"
-			<< "Total memory used [bytes]: " << sizeof(T) * len << "\n"
+			<< "Memory size [cells], [bytes]: " << len << ", " << sizeof(T) * len << "\n"
 			<< "Memory tape mode: ";
 
 		switch (mem_behavior)
@@ -290,40 +279,32 @@ namespace BT {
 			default: o << "limited";
 		}
 
-		o << "\n***" << std::endl;
-
-		for (unsigned int i = 0; i < len; ++i)
-		{
-			if (mem[i] && (sizeof(T) == 1 || (sizeof(T) > 1 && mem[i] <= 255)))
-			{
-				if constexpr (std::is_signed<T>::value)
-					o << "[" << i << "]" << static_cast<char>(mem[i]) << "," << static_cast<signed>(mem[i]) << " ";
-				else
-					o << "[" << i << "]" << static_cast<char>(mem[i]) << "," << static_cast<unsigned>(mem[i]) << " ";
-
+		unsigned int nz_cells = 0, last_nz = 0;
+		for (unsigned int i = 0; i < len; ++i) {
+			if (mem[i]) {
 				++nz_cells;
 				last_nz = i;
 			}
-			else if (mem[i])
-			{
-				if constexpr (std::is_signed<T>::value)
-					o << "[" << i << "]" << static_cast<int>(mem[i]) << " ";
-				else
-					o << "[" << i << "]" << static_cast<unsigned int>(mem[i]) << " ";
-
-				++nz_cells;
-				last_nz = i;
-
-			}
-
-			if (nz_cells % 5 == 0) o << "\n";
 		}
 
 		o << "\nLast nonzero cell at: " << last_nz
-			<< "\nNonzero cells: " << nz_cells << "/" << len;
-		o << std::endl;
+		  << "\nNonzero cells count: " << nz_cells;
 
-		return o;
+		o << "\n" << std::endl;
+
+		auto isprintable = [](unsigned char c) { return !(c == 8 || c == 10 || c == 13 || c == 27 || c == 255); };
+
+		for (unsigned int i = 0; i < len || i < last_nz; ++i)
+		{
+			if (mem[i])
+			{
+				o << "[" << i << "]";
+				PrintCellValue<T>(o, mem[i]);
+				o << " ";
+			}
+		}
+		
+		o << std::endl;
 	}
 
 

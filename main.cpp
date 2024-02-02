@@ -203,8 +203,8 @@ void InteractiveMode() {
 	Settings s;
 	s.OP_analyse = true;
 	s.OP_message = MessageLog::MessageLevel::mlAll;
-	//handy reference to source code
-	std::string& input = s.OP_source_code;
+
+	std::string input;
 
 	std::cout << "Interactive Mode: Enter your code, type 'exit' to break." << std::endl;
 
@@ -219,6 +219,7 @@ void InteractiveMode() {
 			continue;
 		}
 
+		s.OP_source_code = input;
 		std::transform(input.begin(), input.end(), input.begin(),
 			[](unsigned char c) { return std::tolower(c); });
 		
@@ -233,9 +234,10 @@ void InteractiveMode() {
 				s = new_settings;
 				s.OP_analyse = true;
 				s.OP_message = MessageLog::MessageLevel::mlAll;
-				std::cout << " New settings applied" << std::endl;
+				std::cout << "> New settings applied" << std::endl;
 			}
 			else {
+				std::cout << "> Cannot apply this setting" << std::endl;
 				MessageLog::Instance().PrintMessages();
 				MessageLog::Instance().ClearMessages();
 			}

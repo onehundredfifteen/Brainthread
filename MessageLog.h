@@ -4,6 +4,7 @@
 #include <string>
 
 namespace BT {
+
 	class MessageLog
 	{
 	public:
