@@ -21,7 +21,7 @@ namespace BT {
 		T Pop(void);
 		void Swap(void);
 
-		std::ostream& PrintStack(std::ostream& s);
+		void PrintStack(std::ostream& s);
 
 	protected:
 		std::stack<T> mem_stack;

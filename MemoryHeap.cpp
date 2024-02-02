@@ -49,20 +49,18 @@ namespace BT {
 	}
 
 	template < typename T >
-	std::ostream& MemoryHeap<T>::PrintStack(std::ostream& s)
+	void MemoryHeap<T>::PrintStack(std::ostream& s)
 	{
-		std::stack<T> st = mem_stack; //wyœwietlenie go niszczy
-		auto isprintable = [](unsigned char c) { return !(c == 8 || c == 10 || c == 13 || c == 27 || c == 255); };
+		std::stack<T> st = mem_stack;
 
 		s << "\n>Memory stack (fifo, " << st.size() << ")\n";
 		while (!st.empty())
 		{
 			PrintCellValue<T>(s, st.top());
 			st.pop();
-			s << (st.empty() ? ';' : ',');
+			s << (st.empty() ? '\n' : ',');
 		}
-
-		return s;
+		s << std::flush;
 	}
 
 	// Explicit template instantiation

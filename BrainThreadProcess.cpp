@@ -262,7 +262,7 @@ namespace BT {
 			s << "(main)";  
 
 		if (child_threads.size() == 0) {
-			s << std::flush;
+			s << std::endl;
 			return;
 		}
 
@@ -274,7 +274,7 @@ namespace BT {
 			  << ". id: " << it->get_id()
 			  << " state: " << (it->joinable() ? "running" : "joined");
 		}
-		s << std::flush;
+		s << std::endl;
 	}
 
 

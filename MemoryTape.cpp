@@ -250,26 +250,24 @@ namespace BT {
 		unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);
 		const unsigned int end = near_cells * 2 + start;
 
-		auto isprintable = [](unsigned char c) { return !(c == 8 || c == 10 || c == 13 || c == 27 || c == 255); };
-
-		s << "\n>Memory Dump (cells " << start << " " << end << ")\t";
+		s << "\n>Memory Dump (cells " << start << "-" << end << ")\t";
 		for (unsigned int i = start; i < len && i < end; ++i)
 		{
 			s << (PointerPosition() == i ? "<" : "") << i << (PointerPosition() == i ? ">" : ":");
 			PrintCellValue<T>(s, mem[i]);
 			s << " ";
 		}
-		s << std::flush;
+		s << std::endl;
 	}
 
 	template < typename T >
 	void MemoryTape<T>::MemoryDump(std::ostream& o)
 	{
-		o << "BRAINTHREAD MEMORY DUMP (shows only nonzero cells)\n"
-			<< "Pointer at: " << PointerPosition() << "\n"
-			<< "Memory cell size [bytes]: " << sizeof(T) << "\n"
-			<< "Memory size [cells], [bytes]: " << len << ", " << sizeof(T) * len << "\n"
-			<< "Memory tape mode: ";
+		o << "\nBRAINTHREAD MEMORY DUMP (shows only nonzero cells)\n"
+		  << "Pointer at: " << PointerPosition() << "\n"
+		  << "Memory cell size [bytes]: " << sizeof(T) << "\n"
+	      << "Memory size [cells], [bytes]: " << len << ", " << sizeof(T) * len << "\n"
+		  << "Memory tape mode: ";
 
 		switch (mem_behavior)
 		{
@@ -292,21 +290,19 @@ namespace BT {
 
 		o << "\n" << std::endl;
 
-		auto isprintable = [](unsigned char c) { return !(c == 8 || c == 10 || c == 13 || c == 27 || c == 255); };
-
 		for (unsigned int i = 0; i < len || i < last_nz; ++i)
 		{
 			if (mem[i])
 			{
 				o << "[" << i << "]";
 				PrintCellValue<T>(o, mem[i]);
-				o << " ";
+				
+				o << ((--nz_cells % 10 == 0) ? '\n' : ' ');
 			}
 		}
 		
 		o << std::endl;
 	}
-
 
 	// Explicit template instantiation
 	template class MemoryTape<char>;
@@ -315,5 +311,4 @@ namespace BT {
 	template class MemoryTape<unsigned int>;
 	template class MemoryTape<short>;
 	template class MemoryTape<int>;
-
 }

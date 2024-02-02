@@ -6,14 +6,12 @@ namespace BT {
 
 	template < typename T >
 	FunctionHeap<T>::FunctionHeap() 
-		: callingFunction(0)
 	{
 	}
 
 	template < typename T >
 	FunctionHeap<T>::FunctionHeap(const FunctionHeap<T>& fun)
 	{
-		callingFunction = 0;
 		functions = fun.functions;
 	}
 
@@ -23,9 +21,7 @@ namespace BT {
 	{
 		if (functions.find(index) != functions.end())
 			throw BFExistantFunctionException(index);  //funkcja istnieje
-		else if (call_stack.size() > stack_limit)
-			throw BFFunctionStackOverflowException(); //stack overflow
-
+	
 		functions[index] = code_ptr + 1;
 	}
 
@@ -35,11 +31,11 @@ namespace BT {
 	{
 		if (functions.find(index) == functions.end())
 			throw BFUndefinedFunctionException(index);  //funkcja nie istnieje
+		else if (call_stack.size() > stack_limit)
+			throw BFFunctionStackOverflowException(); //stack overflow
 
 		call_stack.push(std::make_pair(*code_ptr, index));
 		*code_ptr = functions[index];
-
-		++callingFunction;
 	}
 
 	//return a function - pop calling code position from call stack
@@ -50,11 +46,8 @@ namespace BT {
 		{
 			*code_ptr = call_stack.top().first;
 			call_stack.pop();
-
-			--callingFunction;
 			return true;
 		}
-
 		return false;
 	}
 
@@ -62,27 +55,23 @@ namespace BT {
 	template < typename T >
 	unsigned FunctionHeap<T>::Calls() const
 	{
-		return callingFunction;
+		return call_stack.size();
 	}
 
 	//stacktrace
 	template < typename T >
 	void FunctionHeap<T>::PrintStackTrace(std::ostream& s)
 	{
-		std::stack< std::pair< unsigned int, T > > call_stack_trace = call_stack; //wyœwietlenie go niszczy
+		std::stack<std::pair<unsigned int, T>> call_stack_trace = call_stack;
 
-		if (callingFunction)
+		s << "\n>Stack trace (" << Calls() << " " << ((Calls() > 1) ? "calls" : "call") << "):\n";
+		while (!call_stack_trace.empty())
 		{
-			s << "\n>Stack trace (" << callingFunction << " " << ((callingFunction > 1) ? "calls" : "call") << "):\n";
-			while (call_stack_trace.size() > 1)
-			{
-				s << ">\tat function #" << call_stack_trace.top().second << " (call from cell " << call_stack_trace.top().first << ")\n";
-
-				call_stack_trace.pop();
-			}
-			s << ">\tat function #" << call_stack_trace.top().second << " (call from cell " << call_stack_trace.top().first << ")";
+			s << ">\tat function #";
+			PrintCellValue<T>(s, call_stack_trace.top().second);
+			s << " (call from position " << call_stack_trace.top().first << ")\n";
+			call_stack_trace.pop();
 		}
-		else s << "\n>Stack trace: empty;" << std::endl;
 
 		s << std::flush;
 	}
@@ -90,18 +79,14 @@ namespace BT {
 	template < typename T >
 	void FunctionHeap<T>::PrintDeclaredFunctions(std::ostream& s)
 	{
-		std::map< T, unsigned int >::iterator mit;
-
 		s << "\n>List of already defined functions (" << functions.size() << ")";
-		for (mit = functions.begin(); mit != functions.end(); ++mit)
+		for (std::map<T, unsigned int>::const_iterator mit = functions.begin(); mit != functions.end(); ++mit)
 		{
 			s << "\n>Id: [";
 			PrintCellValue<T>(s, mit->first);
-
 			s << "] Start point: " << mit->second;
 		}
-
-		s << std::flush;
+		s << std::endl;
 	}
 
 	// Explicit template instantiation

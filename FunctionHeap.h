@@ -29,9 +29,6 @@ namespace BT {
 		std::stack< std::pair< unsigned int, T > > call_stack;
 		//stos funkcji - zapisujemy wskaźnik oraz id funkcji, podczas wywolania funkcji
 
-		unsigned callingFunction;
-		//teraz wywołujemy  przy okazji 'licznik stosu'
-
 		static constexpr unsigned int stack_limit = 65536;
 	};
 }

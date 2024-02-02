@@ -367,9 +367,9 @@ namespace BT {
 
 	template <CodeLang Lang, int OLevel>
 	bt_operation Parser<Lang, OLevel>::MapOperatorToOptimizedOp(const bt_operation& op) const {
-		if constexpr (OLevel <= 1) {
+		/*if constexpr (OLevel <= 1) {
 			return op;
-		}
+		}*/
 		switch (op) {
 			case bt_operation::btoMoveLeft: return bt_operation::btoOPT_MoveLeft;
 			case bt_operation::btoMoveRight: return bt_operation::btoOPT_MoveRight;

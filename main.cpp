@@ -25,12 +25,12 @@ using namespace BT;
 
 //Main methods
 void InteractiveMode();
-void Execute(const Settings& flags);
+void RunProgram(const Settings& flags);
 
 //Program methods
 ParserBase ParseCode(const std::string& code, const Settings& flags);
 void RunAnalyser(ParserBase& parser, const Settings& flags);
-void RunProgram(const CodeTape& code, const Settings& flags);
+std::unique_ptr<InterpreterBase> ProduceInterpreter(const Settings& flags);
 
 int main(int argc, char* argv[])
 {
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 			if(settings.OP_message == MessageLog::MessageLevel::mlAll) {
 				PrintBrainThreadInfo();
 			}  		
-			Execute(settings);
+			RunProgram(settings);
 		}
 		else ShowUsage(settings.PAR_exe_path);
 
@@ -79,19 +79,29 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void Execute(const Settings& flags) {
-
+void RunProgram(const Settings& flags) {
 	MessageLog::Instance().SetMessageLevel(flags.OP_message);
-	ParserBase parser = ParseCode(flags.OP_source_code, flags);
+	auto start = std::chrono::system_clock::now();
 
-	if (!parser.IsSyntaxValid())
-		return;
+	ParserBase parser = ParseCode(flags.OP_source_code, flags);
 
 	if (flags.OP_analyse || flags.OP_optimize) {
 		RunAnalyser(parser, flags);
 	}
-	if (flags.OP_execute) {
-		RunProgram(parser.GetInstructions(), flags);
+
+	auto exec_start = std::chrono::system_clock::now();
+	if (parser.IsSyntaxValid() && flags.OP_execute) {
+		auto interpreter = ProduceInterpreter(flags);
+		interpreter->Run(parser.GetInstructions());
+	}
+
+	if (flags.OP_message == MessageLog::MessageLevel::mlAll) {
+		auto end = std::chrono::system_clock::now();
+		auto elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (exec_start - start).count();
+		auto exec_elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (end - exec_start).count();
+
+		MessageLog::Instance().AddInfo("Parsing completed in " + std::to_string(elapsed) + " miliseconds");
+		MessageLog::Instance().AddInfo("Execution completed in " + std::to_string(exec_elapsed) + " miliseconds");
 	}
 } 
 
@@ -186,19 +196,6 @@ void RunAnalyser(ParserBase& parser, const Settings& flags)
 	}
 }
 
-void RunProgram(const CodeTape& code, const Settings& flags)
-{
-	auto start = std::chrono::system_clock::now();
-
-	auto interpreter = ProduceInterpreter(flags);
-	interpreter->Run(code);
-
-	auto end = std::chrono::system_clock::now();
-	auto elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (end - start).count();
-
-    MessageLog::Instance().AddInfo("Execution completed in " + std::to_string(elapsed) + " miliseconds");
-}
-
 void InteractiveMode() {
 	Settings s;
 	s.OP_analyse = true;
@@ -244,7 +241,7 @@ void InteractiveMode() {
 		}
 		else {
 			MessageLog::Instance().ClearMessages();
-			Execute(s);
+			RunProgram(s);
 			MessageLog::Instance().PrintMessages();
 		}
 	}
