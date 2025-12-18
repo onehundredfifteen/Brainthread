@@ -80,7 +80,7 @@ namespace BT {
 	void FunctionHeap<T>::PrintDeclaredFunctions(std::ostream& s)
 	{
 		s << "\n>List of already defined functions (" << functions.size() << ")";
-		for (std::map<T, unsigned int>::const_iterator mit = functions.begin(); mit != functions.end(); ++mit)
+		for (typename std::map<T, unsigned int>::const_iterator mit = functions.begin(); mit != functions.end(); ++mit)
 		{
 			s << "\n>Id: [";
 			PrintCellValue<T>(s, mit->first);

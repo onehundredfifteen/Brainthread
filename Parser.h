@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "EnumDefs.h"
+#include "Enumdefs.h"
 #include "CodeTape.h"
 #include "CodeAnalyser.h"
 
@@ -10,8 +10,8 @@ namespace BT {
 
 	/*
 	 * Klasa Parsera
-	 * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje
-	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków).
+	 * Parser analizuje kod, odrzuca zbï¿½dne znaki i przygotowuje go do interpretacji (np. ï¿½aczy intrukcje
+	 * poczï¿½tku i koï¿½ca pï¿½tli, aby szybiej dokonywaï¿½ skokï¿½w).
 	*/
 	class ParserBase {
 		friend class CodeAnalyser;

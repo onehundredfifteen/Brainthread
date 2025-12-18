@@ -225,7 +225,7 @@ void InteractiveMode() {
 		else if (input == "help" || input == "usage" || input == "?") {
 			ShowUsage(s.PAR_exe_path);
 		}
-		else if (input._Starts_with("set ")) {
+		else if (input.size() > 4 && input.substr(4) == "set ") {
 			Settings new_settings;
 			if (new_settings.InitFromString(input.substr(4))) {
 				s = new_settings;

@@ -4,7 +4,7 @@
 #include <climits> 
 
 namespace BT {
-	enum class bt_operation : uint16_t
+	enum class bt_operation
 	{
 		btoDecrement = 1,
 		btoIncrement,

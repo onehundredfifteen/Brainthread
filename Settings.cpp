@@ -1,4 +1,8 @@
 #include <charconv>
+#include <climits>
+#include <iterator>
+#define __STDC_WANT_LIB_EXT1__ 0
+#include <string.h>
 
 #ifdef _WIN32
  #include <windows.h>
@@ -94,16 +98,16 @@ namespace BT {
 				else
 					throw BrainThreadInvalidOptionException("language", op_arg);
 			}
-			//opcje œrodowiska
+			//opcje ï¿½rodowiska
 
 			//debug, repair & execute
 			OP_analyse = (ops >> GetOpt::OptionPresent('a', "analyse"));
 
 			OP_optimize = (ops >> GetOpt::OptionPresent('o', "optimize")); //todo o2 o3
-			OP_repair = OP_optimize || (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia³
-			OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamia³
+			OP_repair = OP_optimize || (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawiaï¿½
+			OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamiaï¿½
 
-			if (OP_optimize || OP_repair)//aby by³ repair, musi byc debug
+			if (OP_optimize || OP_repair)//aby byï¿½ repair, musi byc debug
 				OP_analyse = true;
 			if (OP_analyse == false)//nie debugujesz? musi byc execute
 				OP_execute = true;
@@ -140,7 +144,7 @@ namespace BT {
 			{
 				ops >> GetOpt::Option("log", op_arg);
 
-				if (op_arg.find(".") != std::string::npos) //rozpoznajemy ¿e wpisano plik
+				if (op_arg.find(".") != std::string::npos) //rozpoznajemy ï¿½e wpisano plik
 					OP_log = DebugLogStream::stream_type::lsFile;
 				else if (op_arg == "none")
 					OP_log = DebugLogStream::stream_type::lsNone;
@@ -191,13 +195,13 @@ namespace BT {
 				OP_mem_behavior = mem_option::moLimited;
 			}
 
-			//--nopause //czy chcesz zatrzymaæ program po wykonaniu
+			//--nopause //czy chcesz zatrzymaï¿½ program po wykonaniu
 			if (ops >> GetOpt::OptionPresent("nopause") == false)
 			{
-				OP_nopause = IsRanFromConsole(); //nie ma opcji - pozwól samemu wykminic czy jest potrzeba
+				OP_nopause = IsRanFromConsole(); //nie ma opcji - pozwï¿½l samemu wykminic czy jest potrzeba
 			}
 
-			//reszta opcji, w³aœciwie spodziewany sie jednej tylko
+			//reszta opcji, wï¿½aï¿½ciwie spodziewany sie jednej tylko
 			if (ops.options_remain())
 			{
 				std::vector<std::string> op_args;
@@ -241,18 +245,24 @@ namespace BT {
 	}
 
 	bool Settings::InitFromString(const std::string &args) {
-		std::vector<char*> v;
+		std::vector<const char*> v;
 		std::string buffer = "";
 
 		//insert appname
-		v.push_back("brainthread.exe");
+		char * appn = new char[16];
+		strcpy(appn, "brainthread.exe");
+		v.push_back(appn);
 
 		//split string by whitespaces
 		for (auto c : args) {
 			if (!std::isblank(c)) buffer += c;
 			else if (!buffer.empty()) {
 				char* charStr = new char[buffer.size() + 1];
-				strcpy_s(charStr, buffer.size() + 1, buffer.c_str());
+				#ifdef __STDC_LIB_EXT1__
+					strcpy_s(charStr, buffer.size() + 1, buffer.c_str());
+				#else
+					strcpy(charStr, buffer.c_str());
+				#endif
 				v.push_back(charStr);
 				buffer = "";
 			}
@@ -260,7 +270,9 @@ namespace BT {
 		if (!buffer.empty()) {
 			v.push_back(const_cast<char*>(buffer.c_str()));
 		}
-		return InitFromArguments(GetOpt::GetOpt_pp(v.size(), v.data()));
+
+		GetOpt::GetOpt_pp _params(v.size(), v.data());
+		return InitFromArguments(_params);
 	}
 
 	bool Settings::GetCodeFromFile(const std::string& filepath)

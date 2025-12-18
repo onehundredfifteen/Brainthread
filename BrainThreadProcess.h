@@ -2,6 +2,7 @@
 
 #include <list>
 #include <thread>
+#include <memory>
 
 #include "MemoryTape.h"
 #include "MemoryHeap.h"
