@@ -214,16 +214,16 @@ namespace BT {
 	{
 		try
 		{
-			/*BrainThreadProcess<T> child(*this);
+			BrainThreadProcess<T> child(*this);
 
 			*(this->memory.GetValue()) = 0;
 			child.memory.MoveRight();
 			*(child.memory.GetValue()) = 1;
 			++child.code_pointer;
 
-			child_threads.emplace_back([](BrainThreadProcess<T>& process) {
+			child_threads.emplace_back([](BrainThreadProcess<T> process) {
 				process.Run();
-			}, std::move(child));*/
+			}, std::move(child));
 		}
 		catch (const BFRangeException& re)
 		{
@@ -247,7 +247,8 @@ namespace BT {
 	void BrainThreadProcess<T>::Join(void)
 	{
 		for (std::thread& t : child_threads) {
-			t.join();
+			if(t.joinable())
+				t.join();
 		}
 		child_threads.clear();
 	}
