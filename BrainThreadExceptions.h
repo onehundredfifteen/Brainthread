@@ -6,15 +6,15 @@
 #include <string>
 
 /*
- * Klasy Wyj¹tków.
- * Definiuja rózne wyj¹tki, które uzywa program.
+ * Klasy Wyjï¿½tkï¿½w.
+ * Definiuja rï¿½zne wyjï¿½tki, ktï¿½re uzywa program.
 */
 
 class BrainThreadException: public std::exception {
 public:
 
   BrainThreadException()
-    : exception("")
+    : exception()
     {}
 
   virtual const char* what() const throw()

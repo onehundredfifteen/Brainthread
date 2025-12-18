@@ -1,6 +1,7 @@
 #include <new>
+#include <cstring> //memcpy, memset
 #include <iostream>
-#include <limits>
+#include <climits>
 
 #include "MemoryTape.h"
 #include "DebugLogStream.h"
@@ -158,7 +159,7 @@ namespace BT {
 	}
 	/*
 	funkcja ma dwie specjalizacje - ascii sa od 0 do 127
-	Resztê trzeba konwertowac na char
+	Resztï¿½ trzeba konwertowac na char
 	*/
 	template <>
 	void MemoryTape<char>::Write(void)
@@ -174,7 +175,7 @@ namespace BT {
 	template < typename T >
 	void MemoryTape<T>::DecimalRead(void)
 	{
-		unsigned int i; //niewa¿ne, czy signed czy unsigned
+		unsigned int i; //niewaï¿½ne, czy signed czy unsigned
 		std::cin >> i;
 
 		if (std::cin.fail())
@@ -197,13 +198,13 @@ namespace BT {
 
 	/*Funkcje wewntrzne tasmy*/
 
-	template < typename T >//funkcja zwraca nowa iloœæ pamiêci dla procesu
+	template < typename T >//funkcja zwraca nowa iloï¿½ï¿½ pamiï¿½ci dla procesu
 	unsigned int MemoryTape<T>::GetNewMemorySize()
 	{
 		return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_size;
 	}
 
-	template < typename T > //realokuje pamiêæ (zmienia rozmiar pamiêci i kopiuje star¹ zawartoœæ)
+	template < typename T > //realokuje pamiï¿½ï¿½ (zmienia rozmiar pamiï¿½ci i kopiuje starï¿½ zawartoï¿½ï¿½)
 	void MemoryTape<T>::Realloc()
 	{
 		T* new_mem;
@@ -244,7 +245,7 @@ namespace BT {
 		return pointer;
 	}
 
-	template < typename T > //pokazuje n komórek w lewo i w prawo ze wskaŸnikiem mozliwie poœrodku
+	template < typename T > //pokazuje n komï¿½rek w lewo i w prawo ze wskaï¿½nikiem mozliwie poï¿½rodku
 	void MemoryTape<T>::SimpleMemoryDump(std::ostream& s, unsigned near_cells)
 	{
 		unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);

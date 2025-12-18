@@ -106,7 +106,7 @@ namespace BT {
 				break;
 			case bt_operation::btoCallFunction:
 				this->functions.Call(*(this->memory.GetValue()), &code_pointer);
-				--code_pointer; //bo na koñcu pêtli jest ++
+				--code_pointer; //bo na koï¿½cu pï¿½tli jest ++
 				break;
 			case bt_operation::btoFork:
 				this->Fork();
@@ -205,7 +205,7 @@ namespace BT {
 			}
 
 			++code_pointer;
-			std::this_thread::yield(); // reszta czasu dla innych w¹tków
+			std::this_thread::yield(); // reszta czasu dla innych wï¿½tkï¿½w
 		}
 	}
 
@@ -221,7 +221,7 @@ namespace BT {
 			*(child.memory.GetValue()) = 1;
 			++child.code_pointer;
 
-			child_threads.emplace_back([](BrainThreadProcess<T>& process) {
+			child_threads.emplace_back([](BrainThreadProcess<T> process) {
 				process.Run();
 			}, std::move(child));
 		}
@@ -247,7 +247,8 @@ namespace BT {
 	void BrainThreadProcess<T>::Join(void)
 	{
 		for (std::thread& t : child_threads) {
-			t.join();
+			if(t.joinable())
+				t.join();
 		}
 		child_threads.clear();
 	}
@@ -279,6 +280,7 @@ namespace BT {
 
 
 	// Explicit template instantiation
+	
 	template class BrainThreadProcess<char>;
 	template class BrainThreadProcess<unsigned char>;
 	template class BrainThreadProcess<unsigned short>;
