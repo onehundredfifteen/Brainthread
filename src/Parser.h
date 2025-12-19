@@ -9,9 +9,7 @@
 namespace BT {
 
 	/*
-	 * Klasa Parsera
-	 * Parser analizuje kod, odrzuca zb�dne znaki i przygotowuje go do interpretacji (np. �aczy intrukcje
-	 * pocz�tku i ko�ca p�tli, aby szybiej dokonywa� skok�w).
+	 * Parser
 	*/
 	class ParserBase {
 		friend class CodeAnalyser;

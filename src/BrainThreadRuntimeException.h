@@ -6,9 +6,7 @@
 #include <string>
 
 /*
- * Klasy Wyj¹tków.
- * Definiuja rózne wyj¹tki, które interpreter rzuca podczas wykonywnaia kodu. 
- * (nie s¹ to b³êdy, które mozna wykryæ na etapie kompilacji)
+ * Exceptions used during BrainThread runtime.
 */
 
 #define ERROR_CODE_NOTENOUGHMEMORY 0x3E1C
@@ -25,13 +23,13 @@ public:
 
   virtual const char* what() const throw()
   {
-	s = "Runtime Exception: ";
-    return s.c_str();
+      s = "Runtime Exception: ";
+      return s.c_str();
   }
 
 protected:
     static std::ostringstream cnvt;
-	static std::string s;
+	  static std::string s;
 };
 
 class BFAllocException: public BrainThreadRuntimeException {
@@ -83,7 +81,7 @@ public:
   virtual const char* what() const throw()
   {
     cnvt.str( "" );
-	cnvt << "Call to undefined function '" << fname << "'.";
+	  cnvt << "Call to undefined function '" << fname << "'.";
     s = cnvt.str();
     return s.c_str();
   }

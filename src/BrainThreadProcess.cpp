@@ -229,6 +229,8 @@ namespace BT {
 		{
 			throw re;
 		}
+
+		
 		catch (const std::bad_alloc&)
 		{
 			throw BFForkThreadException(ERROR_CODE_NOTENOUGHMEMORY);
