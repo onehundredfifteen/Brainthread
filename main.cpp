@@ -7,8 +7,8 @@
  #include <windows.h>
 #endif
 
-#include "BrainThread.h"
-#include "BrainHelp.h"
+#include "src/BrainThread.h"
+#include "infoAndHelp.h"
 
 void InteractiveMode();
 #ifdef _WIN32
@@ -58,7 +58,11 @@ int main(int argc, char* argv[])
 	}
 	
 	if(settings.OP_nopause == false)
+	#ifdef _WIN32
 		system("pause");
+	#else
+		std::cout << std::endl;
+	#endif	
 	
 	return 0;
 }

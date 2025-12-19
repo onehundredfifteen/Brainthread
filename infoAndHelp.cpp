@@ -1,5 +1,5 @@
 #include <iostream>
-#include "BrainHelp.h"
+#include "infoAndHelp.h"
 
 void PrintBrainThreadInfo(void)
 {
@@ -54,7 +54,7 @@ void ShowInfo(void)
 		<< " ~ - the next heap command refers to shared heap\n"
 		<< " : - decimal write\t; - decimal read\n"
 		<< "\n++ mode=Debug commands ++\n"
-		<< " M, D, # - memory dumps\n"
-		<< " F, E, S, H , T  - function/heap/thread dumps\n"
+		<< " M, D, # - memory dumps (#-brainfuck only)\n"
+		<< " F, E, S, H, T  - function/heap/thread dumps\n"
 		<< std::endl;
 }
