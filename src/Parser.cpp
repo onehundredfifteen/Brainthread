@@ -11,9 +11,7 @@
 namespace BT {
 
 	/*
-	 * Klasa Parsera
-	 * Parser analizuje kod, odrzuca zbêdne znaki i przygotowuje go do interpretacji (np. ³aczy intrukcje
-	 * pocz¹tku i koñca pêtli, aby szybiej dokonywaæ skoków). Mo¿e tez debugowaæ i optymalizowaæ kod
+	 * Parser
 	*/
 	template <CodeLang Lang, int OLevel>
 	Parser<Lang, OLevel>::Parser(const std::string& source)
