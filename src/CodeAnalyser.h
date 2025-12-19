@@ -10,7 +10,7 @@ namespace BT {
 
 	/*
 	 * Klasa CodeAnalyser
-	 * Pozwala debugowaæ i optymalizowaæ kod
+	 * Pozwala debugowaï¿½ i optymalizowaï¿½ kod
 	*/
 	class ParserBase;
 
@@ -52,7 +52,7 @@ namespace BT {
 		int Evaluate(const CodeTapeIterator& begin, const CodeTapeIterator& end) const;
 		int EvaluateMoves(const CodeTapeIterator& begin, const CodeTapeIterator& end) const;
 
-		short CodeAnalyser::GetLoopLimes(const CodeTapeIterator& op) const;
+		short GetLoopLimes(const CodeTapeIterator& op) const;
 
 		void RelinkCommands(const CodeTapeIterator& start, short n = 1);
 		void RelinkCommands(const CodeTapeIterator& start, const CodeTapeIterator& end, short n = 1);

@@ -42,7 +42,7 @@ namespace BT {
 		char time_buf[40];
 		struct tm now;
 		time_t t = time(0);   // get time now
-		localtime_s(&now, &t);
+		//localtime_s(&now, &t);
 		strftime(time_buf, sizeof(time_buf), "%Y-%m-%d.%X", &now);
 
 		return time_buf;

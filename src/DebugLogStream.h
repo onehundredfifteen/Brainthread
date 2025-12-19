@@ -23,7 +23,7 @@ namespace BT {
 		}
 	private:
 		DebugLogStream() : StreamType(stream_type::lsNone) {}
-		DebugLogStream::~DebugLogStream();
+		~DebugLogStream();
 
 		DebugLogStream(DebugLogStream const&) = delete;
 		DebugLogStream& operator=(DebugLogStream const&) = delete;
