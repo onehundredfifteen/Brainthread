@@ -20,7 +20,11 @@ void ShowUsage(const std::string& exe_path)
 	std::size_t found = exe_path.rfind('\\');
 	std::string exe_name = (found == std::string::npos) ? exe_path : exe_path.substr(found + 1);
 	std::cout << "\t++ From command line ++\n"
+	#ifdef _WIN32
 		<< "Run your code: \t" << exe_name << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
+	#else
+		<< "Run your code: \t" << exe_name << " [-s \"sourcefile.ext\"|i- \"sourcecode\"]\n"
+	#endif	
 		<< "Run your code with options: \t" << exe_name << " [\"sourcefile.ext\"|\"sourcecode\"] [options]\n"
 		<< "Show information about the Brainthread language: \t" << exe_name << " --info\n"
 		<< "\n\t++ Main parameters ++\n"
@@ -28,7 +32,8 @@ void ShowUsage(const std::string& exe_path)
 		<< "-m --memorysize <1, 2^32> Default: 30000\n"
 		<< "-c --cellsize [8|16|32|u8|u16|u32] Default: 8\n"
 		<< "\n\t++ Interpreter options ++\n"
-		<< "-a --analyse  \tDefault: flag is not set\n"
+		<< "-a --analyze  \tDefault: flag is not set\n"
+		<< "-o --optimize \tDefault: flag is not set\n"
 		<< "-r --repair   \tDefault: flag is not set\n"
 		<< "--nopause     \tDefault: flag is not set\n"
 		<< "--verbose [all|important|none]\tDefault: important\n"
@@ -53,8 +58,10 @@ void ShowInfo(void)
 		<< " & - push\t^ - pop\t % - swap\n"
 		<< " ~ - the next heap command refers to shared heap\n"
 		<< " : - decimal write\t; - decimal read\n"
-		<< "\n++ mode=Debug commands ++\n"
+		<< "\n++ Additional 'Analyse mode' commands ++\n"
 		<< " M, D, # - memory dumps (#-brainfuck only)\n"
 		<< " F, E, S, H, T  - function/heap/thread dumps\n"
+		<< "\n++ Interactive mode ++\n"
+		<< " #_num - repeat _ instruction num times i.e \"#21+\"\n"
 		<< std::endl;
 }

@@ -31,7 +31,8 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -64,3 +65,4 @@ Brainthread.vcxproj.user
 Debug/CodeAnalysisResultManifest.txt
 *.log
 Release/Brainthread.vcxproj.FileListAbsolute.txt
+out/

@@ -1,0 +1,11 @@
+This brainfuck example that normally outputs "Just another brainfuck hacker" 
+
+Y{[-<]
++++[>+++++<-]>[>+>+++>+>++>+++++>++<[++<]>---]>->-.[>++>+<<--]>--.--.+.
+>>>++.<<.<------.+.+++++.>>-.<++++.<--.>>>.<<---.<.-->-.>+.[+++++.---<]>>[.--->]<<.<+.++.++>+++[.<][.]<++.
+
+instead outputs "JJusutst a anonoththere r brbraiainnffuucckk hahcackekrer" 
+If the parent had paused a couple cycles, the execution would have been back in sync 
+and the output would have consisted of unjumbled double characters.
+
+Run this file as brainthread or brainfork code to see async in action.

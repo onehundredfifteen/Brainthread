@@ -98,21 +98,26 @@ namespace BT {
 				else
 					throw BrainThreadInvalidOptionException("language", op_arg);
 			}
-			//opcje �rodowiska
 
-			//debug, repair & execute
-			OP_analyse = (ops >> GetOpt::OptionPresent('a', "analyse"));
+
+			//analuse repair & execute
+			OP_analyse = (ops >> GetOpt::OptionPresent('a', "analyze"));
 
 			OP_optimize = (ops >> GetOpt::OptionPresent('o', "optimize")); //todo o2 o3
-			OP_repair = OP_optimize || (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia�
+			OP_repair = (ops >> GetOpt::OptionPresent('r', "repair")); //niekoniecznie chce, aby debug naprawia�
 			OP_execute = (ops >> GetOpt::OptionPresent('x', "execute"));  //niekoniecznie chce, aby po debugu uruchamia�
 
-			if (OP_optimize || OP_repair)//aby by� repair, musi byc debug
+			if (OP_optimize || OP_repair)
 				OP_analyse = true;
-			if (OP_analyse == false)//nie debugujesz? musi byc execute
+			if (OP_analyse == false)
 				OP_execute = true;
 			else {
 				DebugLogStream::Instance().Init(DebugLogStream::stream_type::lsConsole, "");
+			}
+
+			//output some info
+			if(OP_analyse == true && OP_execute == false) {
+				OP_message = MessageLog::MessageLevel::mlAll;
 			}
 
 			//--verbose[all|important|none]

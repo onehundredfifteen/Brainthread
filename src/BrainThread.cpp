@@ -30,8 +30,13 @@ using namespace BT;
             auto elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (exec_start - start).count();
             auto exec_elapsed = std::chrono::duration_cast <std::chrono::milliseconds> (end - exec_start).count();
 
-            MessageLog::Instance().AddInfo("Parsing completed in " + std::to_string(elapsed) + " miliseconds");
-            MessageLog::Instance().AddInfo("Execution completed in " + std::to_string(exec_elapsed) + " miliseconds");
+            if (flags.OP_analyse || flags.OP_optimize)
+                MessageLog::Instance().AddInfo("Analyze completed in " + std::to_string(elapsed) + " miliseconds");
+            else 
+                MessageLog::Instance().AddInfo("Parsing completed in " + std::to_string(elapsed) + " miliseconds");
+            
+            if (flags.OP_execute)
+                MessageLog::Instance().AddInfo("Execution completed in " + std::to_string(exec_elapsed) + " miliseconds");
         }
     } 
 namespace BT
