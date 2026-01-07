@@ -2,18 +2,18 @@
 ***A brainfuck derivative interpreter***
 
 Features:
-* **Brainfuck**, pBrain, Brainfork and Brainthread code
+* Runs **Brainfuck**, pBrain, Brainfork and Brainthread code
 * **Interactive mode**
 * Cells can be either 8, 16 or 32 bits in size
 * Memory tape can grow automatically or be looped
 * Can parse and **analyze** the code for flaws
 
-# Brainthread language:
+# Brainthread language
 * is Brainfuck compatible
-* has functions from pBrain (function call command is *, not : )
-* has threading from Brainfork: { 'fork' inhanced by control commands } 'join' and ! 'terminate' 
-* has heaps: the command & is 'push', ^ 'pop' and % 'swap'. A heap command preceded by ~ causes the shared heap to be used. Threads can commnicate this way.
-* introduces integer input and output ( ; and : commands)
+* has functions from pBrain (function call command is __*__, not __:__)
+* has threading from Brainfork: __{__ 'fork' inhanced by control commands __}__ 'join' and __!__ 'terminate' 
+* has heaps: the command __&__ is 'push', __^__ 'pop' and __%__ 'swap'. A heap command preceded by __~__ causes the shared heap to be used. Threads can commnicate this way.
+* introduces integer input and output (__;__ and __:__ commands)
 
 ## More about the Analyzer & Optimizer
  The Analyzer can perform various tests on the code to identify potential issues and optimizations such as:
@@ -25,7 +25,9 @@ and more. *brainthread, pBrain only.*
 
 The **Optimizer** can wrap up repetitions (4 consecutive plus commands ++++ use 1 cycle to add 4)
 and interptering '[-]' as ':=0'. 
-Saving loop positions is default and always done. However optimiser itself need to be truned on.
+
+Saving loop positions is default and always done. However optimiser itself needs to be turned on.
+
 Only one level of optimization is available.
 
 
