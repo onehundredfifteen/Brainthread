@@ -1,25 +1,24 @@
-#include <iostream>
 #include "infoAndHelp.h"
 
-void PrintBrainThreadInfo(void)
+void PrintBrainThreadInfo(std::ostream& out)
 {
-	std::cout << "BrainThread Interpreter " << BT_VERSION <<
+	out << "BrainThread Interpreter " << BT_VERSION <<
 				 " (c) by onehundredfifteen 2014-" << BT_DATE << std::endl;
 }
 
-void PrintBrainThreadInfoEx(void)
+void PrintBrainThreadInfoEx(std::ostream& out)
 {
-	PrintBrainThreadInfo();
-	std::cout << "https://github.com/onehundredfifteen/Brainthread\n"
+	PrintBrainThreadInfo(out);
+	out << "https://github.com/onehundredfifteen/Brainthread\n"
 				 "Supports BrainThread, BrainFuck, pBrain and BrainFork\n" << std::endl;
 }
 
-void ShowUsage(const std::string& exe_path)
+void ShowUsage(std::ostream& out, const std::string& exe_path)
 {
-	PrintBrainThreadInfoEx();
+	PrintBrainThreadInfoEx(out);
 	std::size_t found = exe_path.rfind('\\');
 	std::string exe_name = (found == std::string::npos) ? exe_path : exe_path.substr(found + 1);
-	std::cout << "\t++ From command line ++\n"
+	out << "\t++ From command line ++\n"
 	#ifdef _WIN32
 		<< "Run your code: \t" << exe_name << " [\"sourcefile.ext\"|\"sourcecode\"]\n"
 	#else
@@ -42,11 +41,11 @@ void ShowUsage(const std::string& exe_path)
 		<< std::endl;
 }
 
-void ShowInfo(void)
+void ShowInfo(std::ostream& out)
 {
-	PrintBrainThreadInfo();
+	PrintBrainThreadInfo(out);
 
-	std::cout << "\n++ Quick dive into Brainthread language ++\n"
+	out << "\n++ Quick dive into Brainthread language ++\n"
 		<< "Brainthread is a derivative of Brainfuck. Supports functions (like pBrain), threads (like Brainfork) and heaps. "
 		<< "Each thread has it's own separate memory and heap. Threads can use and communicate each other by the shared heap.\n"
 		<< "\n++ Threading commands ++\n"

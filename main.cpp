@@ -1,5 +1,6 @@
 // Defines the entry point for the console application.
 //
+#include <iostream>
 #include <sstream>
 #include <algorithm>
 
@@ -21,6 +22,9 @@ int main(int argc, char* argv[])
 	//settings
 	BT::Settings settings;
 
+	//stream
+	std::ostream& outStr = std::cout;
+
 #ifdef _WIN32
 	//ctrl+break termination handler
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, true);
@@ -31,28 +35,28 @@ int main(int argc, char* argv[])
 	ops.exceptions(std::ios::failbit | std::ios::eofbit);
 	
 	if (ops >> GetOpt::OptionPresent("info")) {
-		ShowInfo();
+		ShowInfo(outStr);
 	}
 	else if (ops >> GetOpt::OptionPresent("help") ||
 			 ops >> GetOpt::OptionPresent("usage")) {
-		ShowUsage(std::string(argv[0]));
+		ShowUsage(outStr, std::string(argv[0]));
 	}
 	else if(argc > 1)
 	{	
 		if(settings.InitFromArguments(ops))
 		{
 			if(settings.OP_message == BT::MessageLog::MessageLevel::mlAll) {
-				PrintBrainThreadInfo();
+				PrintBrainThreadInfo(outStr);
 			}  		
 			RunProgram(settings);
 		}
-		else ShowUsage(settings.PAR_exe_path);
+		else ShowUsage(outStr, settings.PAR_exe_path);
 
 		BT::MessageLog::Instance().PrintMessages();
 	}
 	else
 	{
-		PrintBrainThreadInfoEx();
+		PrintBrainThreadInfoEx(outStr);
 		InteractiveMode();
 		settings.OP_nopause = true;
 	}
@@ -92,9 +96,9 @@ void InteractiveMode() {
 			[](unsigned char c) { return std::tolower(c); });
 		
 		if (input == "exit") break;
-		else if (input == "info") ShowInfo();
+		else if (input == "info") ShowInfo(std::cout);
 		else if (input == "help" || input == "usage" || input == "?") {
-			ShowUsage(s.PAR_exe_path);
+			ShowUsage(std::cout, s.PAR_exe_path);
 		}
 		else if (input.size() > 4 && input.substr(4) == "set ") {
 			BT::Settings new_settings;

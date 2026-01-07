@@ -157,7 +157,7 @@ namespace BT {
 						syntaxOk = false;
 					}
 				}
-				else if constexpr (OLevel == 0) {
+				else if constexpr (OLevel == 0) { //
 					if (curr_op == bt_operation::btoDEBUG_Pragma) {
 						//look for #115+++ -> #'115'
 						std::string::const_iterator end_pragma_it = it;
