@@ -8,5 +8,24 @@ add_executable(Brainthread src/BrainThread.cpp src/BrainThreadExceptions.cpp src
 include(CTest)
 enable_testing()
 
-add_executable(bttest tests/basic_tests.cpp src/BrainThread.cpp src/BrainThreadExceptions.cpp src/BrainThreadProcess.cpp src/BrainThreadRuntimeException.cpp src/CodeAnalyser.cpp src/DebugLogStream.cpp src/FunctionHeap.cpp src/Interpreter.cpp src/MemoryHeap.cpp src/MemoryTape.cpp src/MessageLog.cpp src/Parser.cpp src/Settings.cpp)
+add_executable(bttest
+	tests/basic_tests.cpp
+	tests/parser_tests.cpp
+	tests/memory_tests.cpp
+	tests/settings_tests.cpp
+	tests/interpreter_tests.cpp
+	src/BrainThread.cpp
+	src/BrainThreadExceptions.cpp
+	src/BrainThreadProcess.cpp
+	src/BrainThreadRuntimeException.cpp
+	src/CodeAnalyser.cpp
+	src/DebugLogStream.cpp
+	src/FunctionHeap.cpp
+	src/Interpreter.cpp
+	src/MemoryHeap.cpp
+	src/MemoryTape.cpp
+	src/MessageLog.cpp
+	src/Parser.cpp
+	src/Settings.cpp
+)
 add_test(NAME basics COMMAND bttest)
