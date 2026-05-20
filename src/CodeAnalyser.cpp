@@ -503,7 +503,7 @@ namespace BT {
 		return false;
 	}
 
-	//Funkcja testuje sprawy zwi�zane z heap
+	//Funkcja testuje sprawy zwi�zane z stack
 	//Szczegolnie switche [sa dystalne]
 	//1. Switch scope and repeat
 	//2. swap repeat

@@ -46,21 +46,20 @@ void ShowInfo(std::ostream& out)
 	PrintBrainThreadInfo(out);
 
 	out << "\n++ Quick dive into Brainthread language ++\n"
-		<< "Brainthread is a derivative of Brainfuck. Supports functions (like pBrain), threads (like Brainfork) and heaps. "
-		<< "Each thread has it's own separate memory and heap. Threads can use and communicate each other by the shared heap.\n"
+		<< "Brainthread is a derivative of Brainfuck. Supports functions (like pBrain), threads (like Brainfork) and stack. "
+		<< "Each thread has it's own separate memory. Threads can use and communicate each other by the stack.\n"
 		<< "\n++ Threading commands ++\n"
-		<< " { - fork\t} - join\t! - terminate\n"
+		<< " { - fork\t} - join or terminate if cell = 0\n"
 		<< "\n++ Function commands ++\n"
 		<< " ( - begin\t) - end of function definition\n"
 		<< " * - invoke the function of which the identifier is equal to the current cell value.\n"
-		<< "\n++ Heap commands ++\n"
-		<< " & - push\t^ - pop\t % - swap\n"
-		<< " ~ - the next heap command refers to shared heap\n"
+		<< "\n++ Stack commands ++\n"
+		<< " ! - push\t^ - pop\t % - swap\n"
 		<< " : - decimal write\t; - decimal read\n"
 		<< "\n++ Additional 'Analyse mode' commands ++\n"
 		<< " M, D, # - memory dumps (#-brainfuck only)\n"
-		<< " F, E, S, H, T  - function/heap/thread dumps\n"
+		<< " F, E, S, T  - function/stack/thread dumps\n"
 		<< "\n++ Interactive mode ++\n"
-		<< " #_num - repeat _ instruction num times i.e \"#21+\"\n"
+		<< " #Xnum - repeat X instruction num times i.e \"#21+\"\n"
 		<< std::endl;
 }

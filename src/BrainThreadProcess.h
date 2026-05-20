@@ -24,10 +24,9 @@ namespace BT {
 
 	private:
 		MemoryTape<T> memory;
-		MemoryStack<T> heap;
 		FunctionStack<T> functions;
 		
-		std::shared_ptr<MemoryStack<T>> shared_heap;
+		std::shared_ptr<MemoryStack<T>> stack;
 		const CodeTape& code;
 		unsigned int code_pointer;
 

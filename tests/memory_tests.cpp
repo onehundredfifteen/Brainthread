@@ -83,7 +83,7 @@ void TestMemoryTapeDynamicGrowth() {
 }
 
 // ============================================================================
-// Memory Heap Tests
+// Memory Stack Tests
 // ============================================================================
 
 void TestMemoryStack() {

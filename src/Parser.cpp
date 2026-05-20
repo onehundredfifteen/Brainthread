@@ -306,7 +306,6 @@ namespace BT {
 					case 'F': return bt_operation::btoDEBUG_FunctionsStackDump;
 					case 'E': return bt_operation::btoDEBUG_FunctionsDefsDump;
 					case 'S': return bt_operation::btoDEBUG_StackDump;
-					case 'H': return bt_operation::btoDEBUG_SharedStackDump;
 					case 'T': return bt_operation::btoDEBUG_ThreadInfoDump;
 					case '#': return bt_operation::btoDEBUG_Pragma;
 				}

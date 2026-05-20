@@ -26,7 +26,7 @@ namespace BT {
 		btoFork,
 		btoJoin,
 		/* [obsolete] btoTerminate, */
-		//heap
+		//stack
 		btoPush,
 		btoPop,
 		btoSwap,
@@ -34,7 +34,7 @@ namespace BT {
 		btoSharedPop,
 		btoSharedPush,
 		btoSharedSwap,
-		btoSwitchHeap */
+		btoSwitchStack */
 
 		//other
 		btoDecimalRead,
@@ -48,7 +48,6 @@ namespace BT {
 		btoDEBUG_SimpleMemoryDump = 100,
 		btoDEBUG_MemoryDump,
 		btoDEBUG_StackDump,
-		btoDEBUG_SharedStackDump,
 		btoDEBUG_FunctionsStackDump,
 		btoDEBUG_FunctionsDefsDump,
 		btoDEBUG_ThreadInfoDump,

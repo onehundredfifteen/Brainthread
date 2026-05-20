@@ -4,10 +4,10 @@
 #include <ostream>
 
 #ifndef BT_VERSION
-	#define BT_VERSION "2.0"
+	#define BT_VERSION "2.1.115"
 #endif
 #ifndef BT_DATE
-	#define BT_DATE "2024"
+	#define BT_DATE "2026"
 #endif
 
 void PrintBrainThreadInfo(std::ostream& out);

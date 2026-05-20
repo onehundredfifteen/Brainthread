@@ -11,7 +11,7 @@ namespace BT {
 		: isMain(true), code(ctape), memory(mem_size, eo, mo)
 	{
 		code_pointer = 0;
-		shared_heap = std::make_shared<MemoryStack<T>>();
+		stack = std::make_shared<MemoryStack<T>>();
 	}
 
 	template < typename T >
@@ -19,7 +19,7 @@ namespace BT {
 		: isMain(false), code(parentProcess.code), memory(parentProcess.memory)
 	{
 		code_pointer = parentProcess.code_pointer;
-		shared_heap = parentProcess.shared_heap;
+		stack = parentProcess.stack;
 	}
 
 	template < typename T >
@@ -118,13 +118,13 @@ namespace BT {
 				this->Join();
 				break;
 			case bt_operation::btoPush:
-				this->heap.Push(*(this->memory.GetValue()));
+				this->stack->Push(*(this->memory.GetValue()));
 				break;
 			case bt_operation::btoPop:
-				*(this->memory.GetValue()) = this->heap.Pop();
+				*(this->memory.GetValue()) = this->stack->Pop();
 				break;
 			case bt_operation::btoSwap:
-				this->heap.Swap();
+				this->stack->Swap();
 				break;
 				/**debug instructions
 				**/
@@ -143,14 +143,8 @@ namespace BT {
 			case bt_operation::btoDEBUG_StackDump:
 				{
 					const std::lock_guard<std::mutex> lock(_mutex);
-					heap.PrintStack(DebugLogStream::Instance().GetStream());
+					stack->PrintStack(DebugLogStream::Instance().GetStream());
 				}
-				break;
-			case bt_operation::btoDEBUG_SharedStackDump:
-				{
-					const std::lock_guard<std::mutex> lock(_mutex);
-					shared_heap->PrintStack(DebugLogStream::Instance().GetStream());
-				}	
 				break;
 			case bt_operation::btoDEBUG_FunctionsStackDump:
 				{
