@@ -43,7 +43,7 @@ namespace BT {
 	template < typename T >
 	void BrainThreadProcess<T>::ExecInstructions(void)
 	{
-		std::mutex _mutex;
+		std::mutex _mutex; //test to move it as class member
 		while (true)
 		{
 			const bt_instruction & current_instruction = code[this->code_pointer];
@@ -106,7 +106,7 @@ namespace BT {
 				break;
 			case bt_operation::btoCallFunction:
 				this->functions.Call(*(this->memory.GetValue()), &code_pointer);
-				--code_pointer; //bo na ko�cu p�tli jest ++
+				--code_pointer;
 				break;
 			case bt_operation::btoFork:
 				this->Fork();

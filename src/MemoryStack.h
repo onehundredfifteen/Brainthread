@@ -1,12 +1,12 @@
 #pragma once
 
 #include <stack>
+#include <mutex>
 #include <ostream>
 
 /*
- * Klasa Stosu Pami�ci.
- * Pe�ni rol� pomocnicz� dla ta�my pami�ci. Dotatkowo pozwala zamienia�
- * ze sob� dwie ostatnie warto�ci. Wielko�c stosu ogranicza zmienna 'stack_limit'.
+ * Stack - stack to be used by language instructions. 
+ It is shared between threads, so it must be thread-safe.
 */
 
 namespace BT {
@@ -25,6 +25,9 @@ namespace BT {
 
 	protected:
 		std::stack<T> mem_stack;
+
+	private:
+		mutable std::mutex my_mutex;
 
 		static const unsigned int stack_limit = 65536;
 	};

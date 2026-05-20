@@ -4,12 +4,12 @@
 
 namespace BT {
 
-	//Funkcja odk�ada warto�� na stos. Limit = stack_limit
 	template <typename T>
 	void MemoryStack<T>::Push(const T& n)
 	{
-		if (mem_stack.size() > stack_limit)
-			throw BFMemoryStackOverflowException();
+		//if (mem_stack.size() > stack_limit)
+		///	throw BFMemoryStackOverflowException();
+		const std::lock_guard<std::mutex> lock(my_mutex);
 
 		mem_stack.push(n);
 	}
@@ -18,6 +18,7 @@ namespace BT {
 	template <typename T>
 	T MemoryStack<T>::Pop(void)
 	{
+		const std::lock_guard<std::mutex> lock(my_mutex);
 		if (mem_stack.empty())
 			return 0;
 
@@ -28,11 +29,12 @@ namespace BT {
 		return tmp;
 	}
 
-	//Funkcja zamienia szczytowe dwie waro�ci ze sob�. 
-	//Gdy stos ma mniej ni� 2 elementy, nic si� nie dzieje.
+	//Swap two top elements of the stack. If there are less than 2 elements, do nothing.
 	template <typename T>
 	void MemoryStack<T>::Swap(void)
 	{
+		const std::lock_guard<std::mutex> lock(my_mutex);
+
 		if (mem_stack.size() < 2)
 			return;
 
@@ -51,11 +53,13 @@ namespace BT {
 	template < typename T >
 	void MemoryStack<T>::PrintStack(std::ostream& s)
 	{
+		const std::lock_guard<std::mutex> lock(my_mutex);
 		std::stack<T> st = mem_stack;
 
 		s << "\n>Memory stack (fifo, " << st.size() << ")\n";
 		while (!st.empty())
 		{
+			const std::lock_guard<std::mutex> lock(my_mutex);
 			PrintCellValue<T>(s, st.top());
 			st.pop();
 			s << (st.empty() ? '\n' : ',');
