@@ -20,7 +20,7 @@ int main()
         TestMemoryTapeMovement();
         TestMemoryTapeByteWrapping();
         TestMemoryTapeDynamicGrowth();
-        TestMemoryHeap();
+        TestMemoryStack();
 
         // Interpreter tests
         TestInterpreterBasicExecution();

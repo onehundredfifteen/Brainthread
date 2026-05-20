@@ -7,11 +7,11 @@
 namespace BT {
 
 	template < typename T >
-	class FunctionHeap
+	class FunctionStack
 	{
 	public:
-		FunctionHeap(void);
-		FunctionHeap(const FunctionHeap<T>& fun);
+		FunctionStack(void);
+		FunctionStack(const FunctionStack<T>& fun);
 
 		void Add(T const& index, unsigned int const& code_ptr);
 		void Call(T const& index, unsigned int* code_ptr);

@@ -5,7 +5,7 @@
 #include "tests_declarations.h"
 #include "../src/Settings.h"
 #include "../src/MemoryTape.h"
-#include "../src/MemoryHeap.h"
+#include "../src/MemoryStack.h"
 
 using namespace BT;
 
@@ -86,10 +86,10 @@ void TestMemoryTapeDynamicGrowth() {
 // Memory Heap Tests
 // ============================================================================
 
-void TestMemoryHeap() {
-    std::cout << "Testing MemoryHeap operations..." << std::endl;
+void TestMemoryStack() {
+    std::cout << "Testing MemoryStack operations..." << std::endl;
 
-    MemoryHeap<int> heap;
+    MemoryStack<int> heap;
 
     // Pop on empty returns 0
     assert(heap.Pop() == 0);
@@ -114,5 +114,5 @@ void TestMemoryHeap() {
     std::string out = ss.str();
     (void)out; // just ensure it compiles; content inspected by human if needed
 
-    std::cout << "✓ MemoryHeap tests passed" << std::endl;
+    std::cout << "✓ MemoryStack tests passed" << std::endl;
 }

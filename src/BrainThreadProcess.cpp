@@ -11,7 +11,7 @@ namespace BT {
 		: isMain(true), code(ctape), memory(mem_size, eo, mo)
 	{
 		code_pointer = 0;
-		shared_heap = std::make_shared<MemoryHeap<T>>();
+		shared_heap = std::make_shared<MemoryStack<T>>();
 	}
 
 	template < typename T >

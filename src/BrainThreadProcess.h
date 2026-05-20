@@ -5,8 +5,8 @@
 #include <memory>
 
 #include "MemoryTape.h"
-#include "MemoryHeap.h"
-#include "FunctionHeap.h"
+#include "MemoryStack.h"
+#include "FunctionStack.h"
 #include "CodeTape.h"
 
 namespace BT {
@@ -24,10 +24,10 @@ namespace BT {
 
 	private:
 		MemoryTape<T> memory;
-		MemoryHeap<T> heap;
-		FunctionHeap<T> functions;
+		MemoryStack<T> heap;
+		FunctionStack<T> functions;
 		
-		std::shared_ptr<MemoryHeap<T>> shared_heap;
+		std::shared_ptr<MemoryStack<T>> shared_heap;
 		const CodeTape& code;
 		unsigned int code_pointer;
 

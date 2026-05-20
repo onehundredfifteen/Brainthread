@@ -1,12 +1,12 @@
-#include "MemoryHeap.h"
+#include "MemoryStack.h"
 #include "DebugLogStream.h"
 #include "BrainThreadRuntimeException.h"
 
 namespace BT {
 
-	//Funkcja odk³ada wartoœæ na stos. Limit = stack_limit
+	//Funkcja odkï¿½ada wartoï¿½ï¿½ na stos. Limit = stack_limit
 	template <typename T>
-	void MemoryHeap<T>::Push(const T& n)
+	void MemoryStack<T>::Push(const T& n)
 	{
 		if (mem_stack.size() > stack_limit)
 			throw BFMemoryStackOverflowException();
@@ -14,9 +14,9 @@ namespace BT {
 		mem_stack.push(n);
 	}
 
-	//Funkcja zdejmuje i zwraca wartoœæ ze stosu. Gdy stos jest pusty, zwraca zero
+	//Funkcja zdejmuje i zwraca wartoï¿½ï¿½ ze stosu. Gdy stos jest pusty, zwraca zero
 	template <typename T>
-	T MemoryHeap<T>::Pop(void)
+	T MemoryStack<T>::Pop(void)
 	{
 		if (mem_stack.empty())
 			return 0;
@@ -28,10 +28,10 @@ namespace BT {
 		return tmp;
 	}
 
-	//Funkcja zamienia szczytowe dwie waroœci ze sob¹. 
-	//Gdy stos ma mniej ni¿ 2 elementy, nic siê nie dzieje.
+	//Funkcja zamienia szczytowe dwie waroï¿½ci ze sobï¿½. 
+	//Gdy stos ma mniej niï¿½ 2 elementy, nic siï¿½ nie dzieje.
 	template <typename T>
-	void MemoryHeap<T>::Swap(void)
+	void MemoryStack<T>::Swap(void)
 	{
 		if (mem_stack.size() < 2)
 			return;
@@ -49,7 +49,7 @@ namespace BT {
 	}
 
 	template < typename T >
-	void MemoryHeap<T>::PrintStack(std::ostream& s)
+	void MemoryStack<T>::PrintStack(std::ostream& s)
 	{
 		std::stack<T> st = mem_stack;
 
@@ -64,10 +64,10 @@ namespace BT {
 	}
 
 	// Explicit template instantiation
-	template class MemoryHeap<char>;
-	template class MemoryHeap<unsigned char>;
-	template class MemoryHeap<unsigned short>;
-	template class MemoryHeap<unsigned int>;
-	template class MemoryHeap<short>;
-	template class MemoryHeap<int>;
+	template class MemoryStack<char>;
+	template class MemoryStack<unsigned char>;
+	template class MemoryStack<unsigned short>;
+	template class MemoryStack<unsigned int>;
+	template class MemoryStack<short>;
+	template class MemoryStack<int>;
 }

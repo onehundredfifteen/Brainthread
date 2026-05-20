@@ -1,23 +1,23 @@
-#include "FunctionHeap.h"
+#include "FunctionStack.h"
 #include "DebugLogStream.h"
 #include "BrainThreadRuntimeException.h"
 
 namespace BT {
 
 	template < typename T >
-	FunctionHeap<T>::FunctionHeap() 
+	FunctionStack<T>::FunctionStack() 
 	{
 	}
 
 	template < typename T >
-	FunctionHeap<T>::FunctionHeap(const FunctionHeap<T>& fun)
+	FunctionStack<T>::FunctionStack(const FunctionStack<T>& fun)
 	{
 		functions = fun.functions;
 	}
 
 	//add new function to list
 	template < typename T >
-	void FunctionHeap<T>::Add(T const& index, unsigned int const& code_ptr)
+	void FunctionStack<T>::Add(T const& index, unsigned int const& code_ptr)
 	{
 		if (functions.find(index) != functions.end())
 			throw BFExistantFunctionException(index);  //funkcja istnieje
@@ -27,7 +27,7 @@ namespace BT {
 
 	//call function (move code pointer to function body and put old position on call stack)
 	template < typename T >
-	void FunctionHeap<T>::Call(T const& index, unsigned int* code_ptr)
+	void FunctionStack<T>::Call(T const& index, unsigned int* code_ptr)
 	{
 		if (functions.find(index) == functions.end())
 			throw BFUndefinedFunctionException(index);  //funkcja nie istnieje
@@ -40,7 +40,7 @@ namespace BT {
 
 	//return a function - pop calling code position from call stack
 	template < typename T >
-	bool FunctionHeap<T>::Return(unsigned int* code_ptr)
+	bool FunctionStack<T>::Return(unsigned int* code_ptr)
 	{
 		if (call_stack.empty() == false)
 		{
@@ -53,14 +53,14 @@ namespace BT {
 
 	//call stack size
 	template < typename T >
-	unsigned FunctionHeap<T>::Calls() const
+	unsigned FunctionStack<T>::Calls() const
 	{
 		return call_stack.size();
 	}
 
 	//stacktrace
 	template < typename T >
-	void FunctionHeap<T>::PrintStackTrace(std::ostream& s)
+	void FunctionStack<T>::PrintStackTrace(std::ostream& s)
 	{
 		std::stack<std::pair<unsigned int, T>> call_stack_trace = call_stack;
 
@@ -77,7 +77,7 @@ namespace BT {
 	}
 
 	template < typename T >
-	void FunctionHeap<T>::PrintDeclaredFunctions(std::ostream& s)
+	void FunctionStack<T>::PrintDeclaredFunctions(std::ostream& s)
 	{
 		s << "\n>List of already defined functions (" << functions.size() << ")";
 		for (typename std::map<T, unsigned int>::const_iterator mit = functions.begin(); mit != functions.end(); ++mit)
@@ -90,11 +90,11 @@ namespace BT {
 	}
 
 	// Explicit template instantiation
-	template class FunctionHeap<char>;
-	template class FunctionHeap<unsigned char>;
-	template class FunctionHeap<unsigned short>;
-	template class FunctionHeap<unsigned int>;
-	template class FunctionHeap<short>;
-	template class FunctionHeap<int>;
+	template class FunctionStack<char>;
+	template class FunctionStack<unsigned char>;
+	template class FunctionStack<unsigned short>;
+	template class FunctionStack<unsigned int>;
+	template class FunctionStack<short>;
+	template class FunctionStack<int>;
 }
 

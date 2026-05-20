@@ -4,18 +4,18 @@
 #include <ostream>
 
 /*
- * Klasa Stosu Pamiêci.
- * Pe³ni rolê pomocnicz¹ dla taœmy pamiêci. Dotatkowo pozwala zamieniaæ
- * ze sob¹ dwie ostatnie wartoœci. Wielkoœc stosu ogranicza zmienna 'stack_limit'.
+ * Klasa Stosu Pamiï¿½ci.
+ * Peï¿½ni rolï¿½ pomocniczï¿½ dla taï¿½my pamiï¿½ci. Dotatkowo pozwala zamieniaï¿½
+ * ze sobï¿½ dwie ostatnie wartoï¿½ci. Wielkoï¿½c stosu ogranicza zmienna 'stack_limit'.
 */
 
 namespace BT {
 
 	template < typename T >
-	class MemoryHeap
+	class MemoryStack
 	{
 	public:
-		MemoryHeap(void) {};
+		MemoryStack(void) {};
 
 		void Push(const T&);
 		T Pop(void);

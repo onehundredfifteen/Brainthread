@@ -10,7 +10,7 @@ void TestMemoryTapeIncrement();
 void TestMemoryTapeMovement();
 void TestMemoryTapeByteWrapping();
 void TestMemoryTapeDynamicGrowth();
-void TestMemoryHeap();
+void TestMemoryStack();
 
 void TestInterpreterBasicExecution();
 
