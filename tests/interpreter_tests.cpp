@@ -18,3 +18,15 @@ void TestInterpreterBasicExecution() {
 
     std::cout << "✓ Basic interpreter smoke tests passed" << std::endl;
 }
+
+void TestInterpreterExecution() {
+    std::cout << "Testing basic interpreter execution..." << std::endl;
+
+    Settings settings;
+    ParserBase parser = Parser<CodeLang::clBrainThread, 0>("++!>^");
+
+    auto interpreter = ProduceInterpreter(settings);
+    interpreter->Run(parser.GetInstructions());
+
+    std::cout << "✓ Basic interpreter smoke tests passed" << std::endl;
+}

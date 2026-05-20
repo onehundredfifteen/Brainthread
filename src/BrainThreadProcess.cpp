@@ -43,7 +43,6 @@ namespace BT {
 	template < typename T >
 	void BrainThreadProcess<T>::ExecInstructions(void)
 	{
-		std::mutex _mutex; //test to move it as class member
 		while (true)
 		{
 			const bt_instruction & current_instruction = code[this->code_pointer];
@@ -113,6 +112,7 @@ namespace BT {
 				break;
 			case bt_operation::btoJoin:
 				if (*(this->memory.GetValue()) == 0){
+					this->Detach();
 					return; //terminate thread if cell value is 0
 				}
 				this->Join();
@@ -204,8 +204,6 @@ namespace BT {
 		{
 			throw re;
 		}
-
-		
 		catch (const std::bad_alloc&)
 		{
 			throw BFForkThreadException(ERROR_CODE_NOTENOUGHMEMORY);
@@ -231,6 +229,15 @@ namespace BT {
 	}
 
 	template < typename T >
+	void BrainThreadProcess<T>::Detach(void)
+	{
+		for (std::thread& t : child_threads) {
+			t.detach();
+		}
+		child_threads.clear();
+	}
+
+	template < typename T >
 	void BrainThreadProcess<T>::PrintProcessInfo(std::ostream& s)
 	{
 		int i = 0;
@@ -250,7 +257,7 @@ namespace BT {
 		{
 			s << '\n' << (++i)
 			  << ". id: " << it->get_id()
-			  << " state: " << (it->joinable() ? "running" : "joined");
+			  << " state: " << (it->joinable() ? "running" : "detached");
 		}
 		s << std::endl;
 	}

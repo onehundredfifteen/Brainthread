@@ -11,8 +11,9 @@ Features:
 # Brainthread language
 * is Brainfuck compatible
 * has functions from pBrain (function call command is __*__, not __:__)
-* has threading from Brainfork: __{__ 'fork' enhanced by control command __}__ 'join' /'terminate' 
-* has a thread-safe heap: the command __!__ is 'push', __^__ 'pop' and __%__ 'swap'. Threads can commnicate this way.
+* has threading from Brainfork: __{__ 'fork' enhanced by control command __}__ 'join'.
+Waits for all children threads. If the current cell is equal to zero, terminated in a non-blocking way.
+* has a thread-safe stack: the command __!__ is 'push', __^__ 'pop' and __%__ 'swap'. Threads can commnicate this way.
 * introduces integer input and output (__;__ and __:__ commands)
 
 ## Legacy
@@ -36,8 +37,3 @@ and interptering '[-]' as ':=0'.
 Saving loop positions is default and always done. However optimiser itself needs to be turned on.
 
 Only one level of optimization is available.
-
-
-
-
-

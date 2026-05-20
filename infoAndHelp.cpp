@@ -49,7 +49,7 @@ void ShowInfo(std::ostream& out)
 		<< "Brainthread is a derivative of Brainfuck. Supports functions (like pBrain), threads (like Brainfork) and stack. "
 		<< "Each thread has it's own separate memory. Threads can use and communicate each other by the stack.\n"
 		<< "\n++ Threading commands ++\n"
-		<< " { - fork\t} - join or terminate if cell = 0\n"
+		<< " { - fork\t} - wait for children or terminate+detach if cell = 0\n"
 		<< "\n++ Function commands ++\n"
 		<< " ( - begin\t) - end of function definition\n"
 		<< " * - invoke the function of which the identifier is equal to the current cell value.\n"
@@ -60,6 +60,6 @@ void ShowInfo(std::ostream& out)
 		<< " M, D, # - memory dumps (#-brainfuck only)\n"
 		<< " F, E, S, T  - function/stack/thread dumps\n"
 		<< "\n++ Interactive mode ++\n"
-		<< " #Xnum - repeat X instruction num times i.e \"#21+\"\n"
+		<< " #numX - repeat instruction X num times i.e \"#21+\"\n"
 		<< std::endl;
 }

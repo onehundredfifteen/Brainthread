@@ -25,8 +25,8 @@ namespace BT {
 	private:
 		MemoryTape<T> memory;
 		FunctionStack<T> functions;
-		
 		std::shared_ptr<MemoryStack<T>> stack;
+
 		const CodeTape& code;
 		unsigned int code_pointer;
 
@@ -34,9 +34,11 @@ namespace BT {
 
 		void Fork(void);
 		void Join(void);
+		void Detach(void);
 		void ExecInstructions(void);
 
 	private:
+		mutable std::mutex _mutex;
 		bool isMain;
 	};
 }

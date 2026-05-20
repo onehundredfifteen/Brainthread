@@ -23,17 +23,15 @@ void TestParserValidSyntax() {
         ",.>.<",          // input/output operations
         "[+]"           // strange but valid loop
         "++comments--",   // valid with comments
-        //"++>>:;{}()^%&~"  // bt commands
-
-        "++>>^%&~:;{}()"  // bt commands
+        "++>>:;{}()^!%"  // bt commands
     };
 
     for (const auto& code : valid_commands) {
         ParserBase parser = Parser<CodeLang::clBrainThread, 1>(code);
         assert(parser.IsSyntaxValid());
 
-        //P//arserBase parser_opt = Parser<CodeLang::clBrainThread, 2>(code);
-        //assert(parser_opt.IsSyntaxValid() == false);
+        ParserBase parser_opt = Parser<CodeLang::clBrainThread, 2>(code);
+        assert(parser_opt.IsSyntaxValid());
     }
 
     // debug instructions: exercise debug pragma parsing (do not assert strict validity)
@@ -99,7 +97,9 @@ void TestParserBrainfuck() {
     assert(parser.IsSyntaxValid() == true);
 
     // Brainfuck should not support Brainthread commands
-    parser = Parser<CodeLang::clBrainFuck, 0>("+*");  // * is function call in brainthread
+    parser = Parser<CodeLang::clBrainFuck, 0>("+*+!");  // * is function call in brainthread
+    assert(parser.GetInstructions().size() == 3); // should only parse ++ and ignore *!
+    assert(parser.GetInstructions().back().operation == bt_operation::btoEndProgram);
 
     std::cout << "✓ Parser Brainfuck tests passed" << std::endl;
 }
