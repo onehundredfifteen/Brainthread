@@ -112,10 +112,11 @@ namespace BT {
 				this->Fork();
 				break;
 			case bt_operation::btoJoin:
+				if (*(this->memory.GetValue()) == 0){
+					return; //terminate thread if cell value is 0
+				}
 				this->Join();
 				break;
-			case bt_operation::btoTerminate:
-				return; 
 			case bt_operation::btoPush:
 				this->heap.Push(*(this->memory.GetValue()));
 				break;
@@ -125,25 +126,6 @@ namespace BT {
 			case bt_operation::btoSwap:
 				this->heap.Swap();
 				break;
-			case bt_operation::btoSharedPush:
-				{
-					const std::lock_guard<std::mutex> lock(_mutex);
-					shared_heap->Push(*(this->memory.GetValue()));
-				}
-				break;
-			case bt_operation::btoSharedPop:
-				{
-					const std::lock_guard<std::mutex> lock(_mutex);
-					*(this->memory.GetValue()) = shared_heap->Pop();
-				}
-				break;
-			case bt_operation::btoSharedSwap:
-				{
-					const std::lock_guard<std::mutex> lock(_mutex);
-					shared_heap->Swap();
-				}
-				break;
-
 				/**debug instructions
 				**/
 			case bt_operation::btoDEBUG_SimpleMemoryDump:
@@ -195,7 +177,6 @@ namespace BT {
 				break;
 
 			case bt_operation::btoOPT_NoOperation:
-			case bt_operation::btoSwitchHeap:
 				break;
 				/***********************
 				end debug instructions

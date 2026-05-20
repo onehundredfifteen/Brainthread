@@ -37,19 +37,19 @@ namespace BT {
 		void MemoryDump(std::ostream& o);
 
 	protected:
-		T* pointer; //piórko
+		T* pointer; 
 
-		T* mem; //pamiec
-		unsigned len; //aktualny rozmiar pamieci
+		T* mem; //memory
+		unsigned len; 
 
-		T* max_mem; //ostatnia komórka pamiêci
+		T* max_mem; //last cell
 
 		const mem_option mem_behavior; //zachowanie pamieci
-		const eof_option eof_behavior; //reakcja na EOF z wejœcia
+		const eof_option eof_behavior; //reakcja na EOF z wejï¿½cia
 
 		static const unsigned int double_mem_grow_limit = 2147483648; //2 Mb 
-		//ten limit oznacza, ze do tej liczby objêtoœæ pamiêci siê dubluje,
-		//potem dok³ada siê sta³a iloœci¹ - mem_grow_size
+		//ten limit oznacza, ze do tej liczby objï¿½toï¿½ï¿½ pamiï¿½ci siï¿½ dubluje,
+		//potem dokï¿½ada siï¿½ staï¿½a iloï¿½ciï¿½ - mem_grow_size
 
 		static const unsigned int mem_grow_size = 104857600; //100 kb
 

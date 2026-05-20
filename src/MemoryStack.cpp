@@ -59,7 +59,6 @@ namespace BT {
 		s << "\n>Memory stack (fifo, " << st.size() << ")\n";
 		while (!st.empty())
 		{
-			const std::lock_guard<std::mutex> lock(my_mutex);
 			PrintCellValue<T>(s, st.top());
 			st.pop();
 			s << (st.empty() ? '\n' : ',');

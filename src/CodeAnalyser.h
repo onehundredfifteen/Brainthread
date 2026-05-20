@@ -41,7 +41,7 @@ namespace BT {
 		bool TestForInfiniteLoops(CodeTapeIterator& it, const RepairFn & = nullptr, const RepairFn & = nullptr);
 		bool TestForFunctionsErrors(CodeTapeIterator& it, const RepairFn2 & = nullptr, const RepairFn & = nullptr);
 		bool TestForThreads(CodeTapeIterator& it, const RepairFn2 & = nullptr, const RepairFn2 & = nullptr);
-		bool TestForHeaps(CodeTapeIterator& it, const RepairFn2 & = nullptr, const RepairFn2 & = nullptr);
+		bool TestForStack(CodeTapeIterator& it, const RepairFn2 & = nullptr, const RepairFn2 & = nullptr);
 
 		bool TestLoopPerformance(CodeTapeIterator& it);
 		bool TestArithmetics(CodeTapeIterator& it, const RepairFn2i2 & = nullptr);
@@ -75,7 +75,6 @@ namespace BT {
 		static bool IsMoveInstruction(const bt_instruction& op);
 		static bool IsLinkableInstruction(const bt_instruction& op);
 		static bool IsChangingCellInstruction(const bt_instruction& op);
-		static bool IsSharedHeapInstruction(const bt_instruction& op);
 		static bool IsFlowChangingInstruction(const bt_instruction& op);
 		static bool IsRepetitionOptimizableOperator(const bt_operation& op);
 	};

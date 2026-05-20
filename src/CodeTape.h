@@ -25,15 +25,17 @@ namespace BT {
 		//threads - extended brainfork
 		btoFork,
 		btoJoin,
-		btoTerminate,
+		/* [obsolete] btoTerminate, */
 		//heap
 		btoPush,
 		btoPop,
 		btoSwap,
+		/* [obsolete] :
 		btoSharedPop,
 		btoSharedPush,
 		btoSharedSwap,
-		btoSwitchHeap, //non executable command
+		btoSwitchHeap */
+
 		//other
 		btoDecimalRead,
 		btoDecimalWrite,

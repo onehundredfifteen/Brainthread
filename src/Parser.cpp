@@ -31,9 +31,6 @@ namespace BT {
 		//non-code instruction count
 		unsigned int ignore_ins = 0;
 
-		//next stack op will be executed on shared stack
-		bool switchToSharedHeap = false;
-
 		//result
 		bool syntaxOk = true;
 
@@ -137,26 +134,6 @@ namespace BT {
 						errors->AddMessage(MessageLog::ErrCode::ecUnmatchedBreak, GetValidPos(it, source.begin(), ignore_ins), line_counter);
 					}
 				}*/
-				else if (curr_op == bt_operation::btoSwitchHeap)
-				{
-					switchToSharedHeap = true; 
-					++ignore_ins; //non executable operation
-				}
-				else if (switchToSharedHeap) {
-					switchToSharedHeap = false;
-					if (curr_op == bt_operation::btoPush || curr_op == bt_operation::btoPop || curr_op == bt_operation::btoSwap)
-					{
-						switch (curr_op) {
-							case bt_operation::btoPush: instructions.emplace_back(bt_operation::btoSharedPush); break;
-							case bt_operation::btoPop: instructions.emplace_back(bt_operation::btoSharedPop); break;
-							case bt_operation::btoSwap: instructions.emplace_back(bt_operation::btoSharedSwap); break;
-						}
-					}
-					else {
-						MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecUnexpectedSwitch, GetValidPos(it, source.begin(), ignore_ins));
-						syntaxOk = false;
-					}
-				}
 				else if constexpr (OLevel == 0) { //
 					if (curr_op == bt_operation::btoDEBUG_Pragma) {
 						//look for #115+++ -> #'115'
@@ -266,7 +243,6 @@ namespace BT {
 
 				case '{': return bt_operation::btoFork;
 				case '}': return bt_operation::btoJoin;
-				case '!': return bt_operation::btoTerminate;
 
 				case '(': return bt_operation::btoBeginFunction;
 				case ')': return bt_operation::btoEndFunction;
@@ -275,7 +251,6 @@ namespace BT {
 				case '&': return bt_operation::btoPush;
 				case '^': return bt_operation::btoPop;
 				case '%': return bt_operation::btoSwap;
-				case '~': return bt_operation::btoSwitchHeap;
 
 				case ':': return bt_operation::btoDecimalWrite;
 				case ';': return bt_operation::btoDecimalRead;

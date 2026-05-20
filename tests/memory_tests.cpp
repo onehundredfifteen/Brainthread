@@ -89,28 +89,28 @@ void TestMemoryTapeDynamicGrowth() {
 void TestMemoryStack() {
     std::cout << "Testing MemoryStack operations..." << std::endl;
 
-    MemoryStack<int> heap;
+    MemoryStack<int> stack;
 
     // Pop on empty returns 0
-    assert(heap.Pop() == 0);
+    assert(stack.Pop() == 0);
 
     // Push and Pop
-    heap.Push(1);
-    heap.Push(2);
-    assert(heap.Pop() == 2);
+    stack.Push(1);
+    stack.Push(2);
+    assert(stack.Pop() == 2);
 
     // Swap top two
-    heap.Push(3);
-    heap.Push(4);
-    heap.Swap();
-    assert(heap.Pop() == 3);
-    assert(heap.Pop() == 4);
+    stack.Push(3);
+    stack.Push(4);
+    stack.Swap();
+    assert(stack.Pop() == 3);
+    assert(stack.Pop() == 4);
 
     // PrintStack produces textual output
-    heap.Push(5);
-    heap.Push(6);
+    stack.Push(5);
+    stack.Push(6);
     std::stringstream ss;
-    heap.PrintStack(ss);
+    stack.PrintStack(ss);
     std::string out = ss.str();
     (void)out; // just ensure it compiles; content inspected by human if needed
 
