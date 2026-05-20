@@ -2,7 +2,7 @@
 ***A brainfuck derivative interpreter***
 
 Features:
-* Runs **Brainfuck**, pBrain, Brainfork and Brainthread code
+* Runs **Brainfuck**, pBrain, Brainfork and *Brainthread* code
 * **Interactive mode**
 * Cells can be either 8, 16 or 32 bits in size
 * Memory tape can grow automatically or be looped
@@ -11,11 +11,18 @@ Features:
 # Brainthread language
 * is Brainfuck compatible
 * has functions from pBrain (function call command is __*__, not __:__)
-* has threading from Brainfork: __{__ 'fork' inhanced by control commands __}__ 'join' and __!__ 'terminate' 
-* has heaps: the command __&__ is 'push', __^__ 'pop' and __%__ 'swap'. A heap command preceded by __~__ causes the shared heap to be used. Threads can commnicate this way.
+* has threading from Brainfork: __{__ 'fork' enhanced by control command __}__ 'join' /'terminate' 
+* has a thread-safe heap: the command __!__ is 'push', __^__ 'pop' and __%__ 'swap'. Threads can commnicate this way.
 * introduces integer input and output (__;__ and __:__ commands)
 
-## More about the Analyzer & Optimizer
+## Legacy
+Current Brainthread version is 2.0
+* Removed additional stack per thread
+* Command __!__ now means push, not terminate
+* Command __}__ now terminates a thread if current cell is equal to 0
+* Command __~__ loses sense and it is removed with __&__
+
+# More about the Analyzer & Optimizer
  The Analyzer can perform various tests on the code to identify potential issues and optimizations such as:
 
 * Testing for infinite loops, redundant moves, repetition, and loop performance.
