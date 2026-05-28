@@ -37,9 +37,7 @@ namespace BT {
 			ecFunctionLimitExceed,
 			ecFunctionExistsButNoCall,
 			ecInfinityRecurention,
-			ecJoinButNoFork,
 
-			ecTerminateRepeat,
 			ecJoinRepeat,
 			ecSwapRepeat,
 			ecJoinBeforeFork,

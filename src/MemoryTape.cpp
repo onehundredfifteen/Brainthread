@@ -45,7 +45,7 @@ namespace BT {
 		}
 
 		len = memory.len;
-		pointer = mem + memory.PointerPosition();
+		pointer = mem + memory.GetPointerPosition();
 		max_mem = (T*)&mem[len - 1];
 
 		memcpy(mem, memory.mem, sizeof(T) * len);
@@ -95,7 +95,7 @@ namespace BT {
 			case mem_option::moDynamic:
 			{
 				try	{
-					Realloc();
+					realloc();
 				}
 				catch (const BrainThreadRuntimeException& e) {
 					throw e;
@@ -104,7 +104,7 @@ namespace BT {
 			break;
 			case mem_option::moLimited:
 			default:
-				throw BFRangeException(PointerPosition() + 1);
+				throw BFRangeException(GetPointerPosition() + 1);
 			}
 		}
 		++pointer;
@@ -126,7 +126,7 @@ namespace BT {
 			switch (mem_behavior)
 			{
 			case mem_option::moContinuousTape:
-				pointer = max_mem; //na koniec
+				pointer = max_mem; 
 				return;
 			case mem_option::moDynamic:
 			case mem_option::moLimited:
@@ -158,8 +158,8 @@ namespace BT {
 		*pointer = std::cin.get();
 	}
 	/*
-	funkcja ma dwie specjalizacje - ascii sa od 0 do 127
-	Reszt� trzeba konwertowac na char
+	Write has 2 specializations - ascii are from 0 to 127
+	The rest needs to be converted to char
 	*/
 	template <>
 	void MemoryTape<char>::Write(void)
@@ -175,7 +175,7 @@ namespace BT {
 	template < typename T >
 	void MemoryTape<T>::DecimalRead(void)
 	{
-		unsigned int i; //niewa�ne, czy signed czy unsigned
+		unsigned int i; //does it matter, whether signed or unsigned
 		std::cin >> i;
 
 		if (std::cin.fail())
@@ -196,45 +196,8 @@ namespace BT {
 			std::cout << static_cast<unsigned int>(*pointer) << std::flush;
 	}
 
-	/*Funkcje wewntrzne tasmy*/
-
-	template < typename T >//funkcja zwraca nowa ilo�� pami�ci dla procesu
-	unsigned int MemoryTape<T>::GetNewMemorySize()
-	{
-		return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_size;
-	}
-
-	template < typename T > //realokuje pami�� (zmienia rozmiar pami�ci i kopiuje star� zawarto��)
-	void MemoryTape<T>::Realloc()
-	{
-		T* new_mem;
-		unsigned int new_mem_size = GetNewMemorySize();
-		unsigned int p_pos = PointerPosition();
-
-		try {
-			new_mem = new T[new_mem_size];
-		}
-		catch (const std::bad_alloc&) {
-			throw BFAllocException(new_mem_size, sizeof(T));
-		}
-		catch (...) {
-			throw BFUnkownException();
-		}
-
-		//copy and zero the new chunk
-		std::memset(new_mem + len, 0, sizeof(T) * (new_mem_size - len));
-		std::memcpy(new_mem, mem, len);
-
-		delete[] mem;
-
-		mem = new_mem;
-		pointer = mem + p_pos;
-		len = new_mem_size;
-		max_mem = (T*)&mem[len - 1];
-	}
-
 	template < typename T >
-	inline unsigned int MemoryTape<T>::PointerPosition() const
+	inline unsigned int MemoryTape<T>::GetPointerPosition() const
 	{
 		return pointer - mem;
 	}
@@ -245,16 +208,17 @@ namespace BT {
 		return pointer;
 	}
 
-	template < typename T > //pokazuje n kom�rek w lewo i w prawo ze wska�nikiem mozliwie po�rodku
-	void MemoryTape<T>::SimpleMemoryDump(std::ostream& s, unsigned near_cells)
+	//shows n cells near the pointer positioned in the middle if able
+	template < typename T >
+	void MemoryTape<T>::SimpleMemoryDump(std::ostream& s, unsigned near_cells) const
 	{
-		unsigned int start = ((int)PointerPosition() - (int)near_cells) <= 0 ? 0 : (PointerPosition() - near_cells);
-		const unsigned int end = near_cells * 2 + start;
+		unsigned int start = ((int)GetPointerPosition() - (int)near_cells) <= 0 ? 0 : (GetPointerPosition() - near_cells);
+		unsigned int end = near_cells * 2 + start;
 
 		s << "\n>Memory Dump (cells " << start << "-" << end << ")\t";
 		for (unsigned int i = start; i < len && i < end; ++i)
 		{
-			s << (PointerPosition() == i ? "<" : "") << i << (PointerPosition() == i ? ">" : ":");
+			s << (GetPointerPosition() == i ? "<" : "") << i << (GetPointerPosition() == i ? ">" : ":");
 			PrintCellValue<T>(s, mem[i]);
 			s << " ";
 		}
@@ -262,10 +226,10 @@ namespace BT {
 	}
 
 	template < typename T >
-	void MemoryTape<T>::MemoryDump(std::ostream& o)
+	void MemoryTape<T>::MemoryDump(std::ostream& o) const
 	{
 		o << "\nBRAINTHREAD MEMORY DUMP (shows only nonzero cells)\n"
-		  << "Pointer at: " << PointerPosition() << "\n"
+		  << "Pointer at: " << GetPointerPosition() << "\n"
 		  << "Memory cell size [bytes]: " << sizeof(T) << "\n"
 	      << "Memory size [cells], [bytes]: " << len << ", " << sizeof(T) * len << "\n"
 		  << "Memory tape mode: ";
@@ -303,6 +267,46 @@ namespace BT {
 		}
 		
 		o << std::endl;
+	}
+
+	//intenal
+	template < typename T >
+	unsigned int MemoryTape<T>::findNewMemorySize()
+	{
+		/*
+		memory expansion logic: 
+		double till limit, then add chunks of mem_grow_size
+		*/	
+		return (len <= double_mem_grow_limit) ? 2 * len : len + mem_grow_size;
+	}
+
+	template < typename T >
+	void MemoryTape<T>::realloc()
+	{	
+		T* new_mem;
+		unsigned int new_mem_size = findNewMemorySize();
+		unsigned int p_pos = GetPointerPosition();
+
+		try {
+			new_mem = new T[new_mem_size];
+		}
+		catch (const std::bad_alloc&) {
+			throw BFAllocException(new_mem_size, sizeof(T));
+		}
+		catch (...) {
+			throw BFUnkownException();
+		}
+
+		//copy and zero the new chunk
+		std::memset(new_mem + len, 0, sizeof(T) * (new_mem_size - len));
+		std::memcpy(new_mem, mem, len);
+
+		delete[] mem;
+
+		mem = new_mem;
+		pointer = mem + p_pos;
+		len = new_mem_size;
+		max_mem = (T*)&mem[len - 1];
 	}
 
 	// Explicit template instantiation

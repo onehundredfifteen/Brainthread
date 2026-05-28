@@ -39,7 +39,7 @@ namespace BT {
 
 	private:
 		mutable std::mutex _mutex;
-		bool isMain;
+		const bool isMain;
 	};
 }
 

@@ -122,9 +122,7 @@ namespace BT {
 		case ErrCode::ecFunctionLimitExceed: return "The set of names for the functions can be exceeded";
 		case ErrCode::ecFunctionExistsButNoCall: return "A function was declared but not used";
 
-		case ErrCode::ecJoinButNoFork: return "A join command exists but there is no fork";
-		case ErrCode::ecTerminateRepeat: return "Unnecessary terminate instruction repetition";
-		case ErrCode::ecJoinRepeat: return "Unnecessary join instruction repetition";
+		case ErrCode::ecJoinRepeat: return "Unnecessary join(terminate) instruction repetition";
 		case ErrCode::ecSwapRepeat: return "Unnecessary swap instruction repetition";
 		case ErrCode::ecJoinBeforeFork: return "Join before fork";
 

@@ -143,11 +143,7 @@ namespace BT {
 			++it;
 		}
 
-		//dodatkowe b��dy statystyczne
-		if (forks == 0 && joins > 0)
-		{
-			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinButNoFork, 1);
-		}
+		//additional checks after first pass
 
 		if (function_def > function_limit)
 		{
@@ -302,11 +298,7 @@ namespace BT {
 			++it;
 		}
 
-		//dodatkowe b��dy statystyczne
-		if (forks == 0 && joins > 0)
-		{
-			MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinButNoFork, 1);
-		}
+		//additional checks after first pass
 
 		if (function_def > function_limit)
 		{
@@ -482,7 +474,7 @@ namespace BT {
 				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinRepeat, it - parser.instructions.begin() + 1);
 
 
-			if (IsWithinFunction(it) == false && forks == 0) //join poza funkcj�. Mo�e byc call do p�niejszej funkcji z fork, ale to trudno stwierdzi�
+			if (IsWithinFunction(it) == false && forks == 0) 
 			{
 				MessageLog::Instance().AddMessage(MessageLog::ErrCode::ecJoinBeforeFork, it - parser.instructions.begin() + 1);
 				if (repairCB) //usuwamy join

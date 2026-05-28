@@ -38,18 +38,18 @@ void TestMemoryTapeMovement() {
 
     MemoryTape<unsigned char> tape(100, eof_option::eoZero, mem_option::moLimited);
 
-    unsigned int start_pos = tape.PointerPosition();
+    unsigned int start_pos = tape.GetPointerPosition();
     tape.MoveRight();
-    assert(tape.PointerPosition() == start_pos + 1);
+    assert(tape.GetPointerPosition() == start_pos + 1);
 
     tape.MoveRight(5);
-    assert(tape.PointerPosition() == start_pos + 6);
+    assert(tape.GetPointerPosition() == start_pos + 6);
 
     tape.MoveLeft();
-    assert(tape.PointerPosition() == start_pos + 5);
+    assert(tape.GetPointerPosition() == start_pos + 5);
 
     tape.MoveLeft(5);
-    assert(tape.PointerPosition() == start_pos);
+    assert(tape.GetPointerPosition() == start_pos);
 
     std::cout << "✓ MemoryTape movement tests passed" << std::endl;
 }
@@ -77,7 +77,7 @@ void TestMemoryTapeDynamicGrowth() {
     for (int i = 0; i < 20; i++) {
         tape.MoveRight();
     }
-    assert(tape.PointerPosition() == 20);
+    assert(tape.GetPointerPosition() == 20);
 
     std::cout << "✓ MemoryTape dynamic growth tests passed" << std::endl;
 }
