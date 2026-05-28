@@ -16,6 +16,7 @@ namespace BT {
 	{
 	public:
 		BrainThreadProcess(const CodeTape& c, unsigned int mem_size, mem_option mo, eof_option eo);
+		BrainThreadProcess(const CodeTape& c, const MemoryTape<T>& mem, const std::shared_ptr<MemoryStack<T>>& st);
 		BrainThreadProcess(const BrainThreadProcess<T>& parentProcess);
 
 		void Run(void);
@@ -23,23 +24,23 @@ namespace BT {
 		void PrintProcessInfo(std::ostream& s);
 
 	private:
+		const bool isMain;
+		
 		MemoryTape<T> memory;
-		FunctionStack<T> functions;
 		std::shared_ptr<MemoryStack<T>> stack;
 
 		const CodeTape& code;
 		unsigned int code_pointer;
 
+		FunctionStack<T> functions;
 		std::list<std::thread> child_threads;
+		mutable std::mutex _mutex;
 
+	private:
 		void Fork(void);
 		void Join(void);
 		void Detach(void);
 		void ExecInstructions(void);
-
-	private:
-		mutable std::mutex _mutex;
-		const bool isMain;
 	};
 }
 

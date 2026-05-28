@@ -8,10 +8,14 @@ namespace BT {
 	
 	template < typename T >
 	BrainThreadProcess<T>::BrainThreadProcess(const CodeTape& ctape, unsigned int mem_size, mem_option mo, eof_option eo)
-		: isMain(true), code(ctape), memory(mem_size, eo, mo)
+	: BrainThreadProcess<T>(ctape, MemoryTape<T>(mem_size, eo, mo), std::make_shared<MemoryStack<T>>())
 	{
-		code_pointer = 0;
-		stack = std::make_shared<MemoryStack<T>>();
+	}	
+
+	template < typename T >
+	BrainThreadProcess<T>::BrainThreadProcess(const CodeTape& ctape, const MemoryTape<T>& mem, const std::shared_ptr<MemoryStack<T>>& st)
+		: isMain(true), code(ctape), memory(mem), stack(st), code_pointer(0)
+	{
 	}
 
 	template < typename T >
